@@ -5,8 +5,12 @@ import { flowSeller } from "../flows/seller.flow";
 import { flowTalker } from "../flows/talker.flow";
 import * as path from "path";
 import fs from "fs";
+import { flowLocation } from "../flows/location.flow";
+import { flowService } from "../flows/service.flow";
+import { flowMenu } from "../flows/menu.flow";
+import { flowHello } from "../flows/hello.flow";
 
-const discriminatorDataPath = path.join("prompts", "/prompt-discriminator.txt");
+const discriminatorDataPath = path.join("src/chatbot/prompts", "/prompt-discriminator.txt");
 const discriminatorData = fs.readFileSync(discriminatorDataPath, "utf-8");
 
 const PROMPT_DISCRIMINATOR = discriminatorData;
@@ -31,8 +35,12 @@ export default async (
     "gpt-3.5-turbo"
   );
 
-  console.log(intent);
+  console.log(intent + '** IA intent');
 
   if (intent.includes('hacer_pedido')) return gotoFlow(flowSeller);
-  // if (prediction.includes('COMPRAR')) return gotoFlow(flowSeller)
+  if (intent.includes('preguntar_ubicacion')) return gotoFlow(flowLocation);
+  if (intent.includes('consultar_horarios')) return gotoFlow(flowService);
+  if (intent.includes('ver_menu')) return gotoFlow(flowMenu);
+  if (intent.includes('saludar')) return gotoFlow(flowHello);
+  
 };

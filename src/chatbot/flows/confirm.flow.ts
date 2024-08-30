@@ -1,6 +1,6 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
 import { clearHistory } from "../utils/handleHistory";
-import { writeRow } from "src/services/sheets/sheets";
+import { writeRow } from "src/chatbot/services/sheets/sheets";
 import { format } from 'date-fns';
 
 const flowConfirm = addKeyword(EVENTS.ACTION)

@@ -1,0 +1,32 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+}
+
+.login-form h2 {
+    margin-bottom: 20px;
+}
+
+.login-form input {
+    margin-bottom: 10px;
+    padding: 8px;
+    font-size: 16px;
+}
+
+.login-form button {
+    padding: 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.error-message {
+    color: red;
+}

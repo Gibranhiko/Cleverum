@@ -2,14 +2,14 @@ import { addKeyword, EVENTS } from "@builderbot/bot";
 import { generateTimer } from "../utils/generateTimer";
 import { getHistoryParse, handleHistory } from "../utils/handleHistory";
 import AIClass from "../services/ai";
-import { getFullCurrentDate } from "src/utils/currentDate";
+import { getFullCurrentDate } from "src/chatbot/utils/currentDate";
 import * as path from "path";
 import fs from "fs";
 
-const businessDataPath = path.join("prompts", "/base-data.txt");
+const businessDataPath = path.join("src/chatbot/prompts", "/base-data.txt");
 const businessData = fs.readFileSync(businessDataPath, "utf-8");
 
-const talkerDataPath = path.join("prompts", "/prompt-talker.txt");
+const talkerDataPath = path.join("src/chatbot/prompts", "/prompt-talker.txt");
 const talkerData = fs.readFileSync(talkerDataPath, "utf-8");
 
 const PROMPT_TALKER = talkerData;

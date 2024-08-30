@@ -5,3 +5,4 @@ node_modules
 *_sessions
 dist/*
 dacosta-rs-chatbot-f7a9600b0256.json
+src/client-admin/.next
