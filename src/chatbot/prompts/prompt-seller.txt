@@ -29,7 +29,7 @@ Salida esperada:
     { "peso": "1/2kg", "producto": "alitas" }
 ]
 
-Entrada del cliente: "Me gustaría pedir 250 gramos de boneless y una coca cola light."
+Entrada del cliente: "Me gustaría pedir unos boneless y una coca cola light."
 Salida esperada:
 [
     { "peso": "250gr", "producto": "boneless" },
@@ -44,9 +44,18 @@ Salida esperada:
     { "cantidad": 1, "producto": "coca cola" }
 ]
 
+Entrada del cliente: "Quiero unos nuggets y una coca." (Cuando el cliente dice "una coca" se refiere a cantidad: 1)
+Salida esperada:
+[
+    { "cantidad": "10", "producto": "nuggets" },
+    { "cantidad": 1, "producto": "coca cola" }
+]
+
 
 Instrucciones:
 
 Interpreta la solicitud del cliente y devuelve el pedido en el formato especificado.
 Si el cliente menciona productos en cantidades o pesos específicos, incluye esos detalles en los campos correspondientes.
 Si el cliente no especifica ningún producto en su solicitud, devuelve "undefined".
+Si el cliente no especifica una cantidad manda 1 por default.
+Si el cliente no especifica un peso, manda 1/2 KG por default.

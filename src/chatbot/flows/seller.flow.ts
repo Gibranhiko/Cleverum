@@ -52,7 +52,12 @@ const flowSeller = addKeyword(EVENTS.ACTION)
     console.log(order);
 
     if (!validateOrder(order, validProducts)) {
-      const notGetOrderMsg = "Lo siento, no he podido entender tu pedido o no contamos con ese producto ahora, ¿Podrías repetirlo?";
+      const notGetOrderMsg = "Te sugiero los siguientes productos: pollo, costillas, carne asada, alitas, boneless, nuggets, tenders, coca cola, coca cola light, agua de sabor, paquete 1, paquete 2";
+      await flowDynamic(notGetOrderMsg);
+      await clearHistory(state);
+      return endFlow();
+    } else if (validateOrder(order, validProducts) === "missing-quantity") {
+      const notGetOrderMsg = "***Aquí la IA NO puedo entender la cantidad o peso del proucto... se podría mappear contra el listado y sugerir una cantidad o peso***";
       await flowDynamic(notGetOrderMsg);
       await clearHistory(state);
       return endFlow();

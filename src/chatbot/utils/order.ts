@@ -4,7 +4,7 @@ interface OrderItem {
     peso?: string;
 }
 
-function validateOrder(order: OrderItem[], validProducts: string[]): boolean {
+function validateOrder(order: OrderItem[], validProducts: string[]): string | boolean {
     // Check if the order is an array and not empty
     if (!Array.isArray(order) || order.length === 0) {
         return false;
@@ -23,7 +23,7 @@ function validateOrder(order: OrderItem[], validProducts: string[]): boolean {
 
         // Validate that either 'cantidad' or 'peso' is present
         if (typeof item.cantidad !== 'number' && typeof item.peso !== 'string') {
-            return false;
+            return 'missing-quantity';
         }
     }
 

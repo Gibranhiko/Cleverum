@@ -169,7 +169,7 @@ class AIClass {
                                                 ]
                                             }
                                         },
-                                        required: ["producto"],
+                                        required: ["producto", "cantidad", "peso"],
                                     }
                                 },
                             },
