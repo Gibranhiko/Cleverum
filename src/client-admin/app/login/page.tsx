@@ -4,7 +4,8 @@ import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import "./styles.css";
-import { isAuthenticated, login } from "../lib/auth";
+import { isAuthenticated, login } from "../utils/auth";
+import Image from "next/image";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -25,7 +26,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="flex flex-col justify-center items-center min-h-screen bg-gray-900">
+      <Image
+        src="/images/cleverum-logo.png"
+        alt="Cleverum Logo"
+        width={200}
+        height={200}
+        className="mb-6"
+      />
       <form
         onSubmit={handleSubmit}
         className="bg-white p-8 rounded-lg shadow-md w-full max-w-md flex flex-col"
@@ -36,21 +44,21 @@ export default function LoginPage() {
           placeholder="Nombre de usuario"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
         />
         <input
           type="password"
           placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
         />
         {error && (
           <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
         )}
         <button
           type="submit"
-          className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
+          className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors w-full"
         >
           Ingresar
         </button>

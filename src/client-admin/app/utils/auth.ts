@@ -10,7 +10,7 @@ export function isAuthenticated(): boolean {
 // Function to log in the user
 export function login(username: string, password: string): boolean {
   // Simple authentication logic (replace with actual logic)
-  if (username === 'admin' && password === 'password') {
+  if (username === 'admin' && password === 'Gampaoler1029.6') {
     sessionStorage.setItem(SESSION_KEY, username);
     return true;
   }

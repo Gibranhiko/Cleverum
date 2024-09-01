@@ -79,7 +79,7 @@ const flowSeller = addKeyword(EVENTS.ACTION)
     if (body.toLowerCase().includes("si")) {
       return gotoFlow(flowConfirm);
     } else {
-      await flowDynamic("Ok, ¿Qué te gustaría pedir?");
+      await flowDynamic("Ok, ¿Qué te gustaría pedir? Si quieres ver el menú, solo dime *menú*");
       await clearHistory(state);
       return endFlow();
     }

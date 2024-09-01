@@ -3,8 +3,9 @@
 import React from "react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { isAuthenticated } from "./lib/auth";
+import { isAuthenticated } from "./utils/auth";
 import "./global.css";
+import { AppProvider } from "./context/AppContext";
 
 export default function RootLayout({
   children,
@@ -21,7 +22,9 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body>{children}</body>
+      <AppProvider>
+        <body>{children}</body>
+      </AppProvider>
     </html>
   );
 }
