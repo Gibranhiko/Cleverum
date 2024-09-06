@@ -5,6 +5,7 @@ import { createBot, MemoryDB } from "@builderbot/bot";
 import AIClass from "./chatbot/services/ai/index";
 import flow from "./chatbot/flows";
 import { provider } from "./chatbot/provider";
+import connectToDatabase from "./client-admin/app/utils/mongoose"; // Import your MongoDB connection
 
 const PORT = process.env.PORT || 3000;
 const dev = process.env.NODE_ENV !== "production";
@@ -16,6 +17,10 @@ const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-3.5-turbo");
 const main = async () => {
   await clientAdminApp.prepare();
   const app = express();
+
+  // Connect to MongoDB
+  await connectToDatabase();
+  console.log("Connected to MongoDB");
 
   // Handle Next.js app router requests
   app.all("*", (req, res) => {
@@ -37,7 +42,7 @@ const main = async () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 
-  httpServer(Number(PORT)+ 1);
+  httpServer(Number(PORT) + 1);
 };
 
 main();

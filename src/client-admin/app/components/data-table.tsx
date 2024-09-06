@@ -15,13 +15,19 @@ export default function DataTable({ columns, rows }) {
         </tr>
       </thead>
       <tbody>
-        {rows.map((row, rowIndex) => (
+        {rows.map((row: string [], rowIndex: number) => (
           <tr key={rowIndex} className="text-center">
-            {columns.map((column, colIndex) => (
-              <td key={colIndex} className="py-2 px-4 border-b">
-                {row[column]}
-              </td>
-            ))}
+            {columns.map((column, colIndex) =>
+              column === "Status" ? (
+                <td key={colIndex} className="py-2 px-4 border-b">
+                  {row[column] ? "Entregado" : "Pendiente"}
+                </td>
+              ) : (
+                <td key={colIndex} className="py-2 px-4 border-b">
+                  {row[column]}
+                </td>
+              )
+            )}
           </tr>
         ))}
       </tbody>
