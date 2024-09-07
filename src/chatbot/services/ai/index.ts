@@ -169,7 +169,8 @@ class AIClass {
                                                 ]
                                             }
                                         },
-                                        required: ["producto", "cantidad", "peso"],
+                                        required: ["producto"],
+                                        optional: ["cantidad", "peso"]
                                     }
                                 },
                             },

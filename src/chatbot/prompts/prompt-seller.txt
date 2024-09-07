@@ -24,8 +24,8 @@ Historial de la conversación (Vendedor/Cliente):
 Formato de salida esperado: 
 El pedido debe devolverse como un array de objetos, donde cada objeto tiene las siguientes propiedades:
 
-cantidad: (requerido) La cantidad de unidades solicitadas.
-peso: (requerido) El peso del producto solicitado.
+cantidad: (opcional) La cantidad de unidades solicitadas.
+peso: (opcional) El peso del producto solicitado.
 producto: (requerido) El nombre del producto solicitado.
 
 Ejemplos de pedidos y cómo deben estructurarse:

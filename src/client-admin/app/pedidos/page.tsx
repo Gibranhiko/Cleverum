@@ -16,7 +16,7 @@ export default async function OrdersPage() {
 
   const orders: IOrder[] = await res.json();
 
-  const columns = ['Nombre', 'Orden', 'Telefono', 'Fecha', 'Status'];
+  const columns = ['nombre', 'orden', 'telefono', 'fecha', 'status'];
 
   return (
     <>

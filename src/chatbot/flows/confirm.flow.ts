@@ -1,7 +1,7 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
 import { clearHistory } from "../utils/handleHistory";
-import { writeRow } from "src/chatbot/services/sheets/sheets";
-import { format } from 'date-fns';
+import { format } from "date-fns";
+import axios from "axios";
 
 const flowConfirm = addKeyword(EVENTS.ACTION)
   .addAction(async (_, { flowDynamic }) => {
@@ -24,15 +24,28 @@ const flowConfirm = addKeyword(EVENTS.ACTION)
   .addAction({ capture: true }, async (ctx, { state, flowDynamic }) => {
     await state.update({ phone: ctx.body });
 
-    const clientName = state.get("name");
-    const order = state.get("order");
-    const phone = state.get("phone");
-    const date = format(new Date(), "MMMM do, yyyy, h:mm a");
+    const orderData = {
+      nombre: state.get("name"),
+      orden: state.get("order"),
+      telefono: state.get("phone"),
+      fecha: format(new Date(), "yyyy-MM-dd"),
+      status: false,
+    };
 
-    await writeRow([clientName, order, phone, date], "Hoja 5!A:ZZ");
+    console.log("Order data:", orderData);
 
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/orders`, orderData);
+      await flowDynamic(
+        "Listo! tu orden esta en proceso, te contactaremos para confirmar el tiempo de entrega"
+      );
+    } catch (error) {
+      console.log("Error creating order:", error.response);
+      await flowDynamic(
+        "Hubo un problema al procesar tu pedido. Por favor intenta nuevamente."
+      );
+    }
     clearHistory(state);
-    await flowDynamic("Listo! tu orden esta en proceso, te contactaremos para confirmar el tiempo de entrega");
   });
 
 export { flowConfirm };

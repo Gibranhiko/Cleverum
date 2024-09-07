@@ -12,7 +12,7 @@ const flowMenu = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic }) => {
     await flowDynamic([
       {
-        media: "https://www.simpleimageresizer.com/_uploads/photos/f51b80a6/rey-del-pollito-menu-1.png",
+        media: "../img/rey-del-pollito-menu-1.png",
         delay: 1000, 
       },
     ]);
