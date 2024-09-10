@@ -15,15 +15,14 @@ export default async function OrdersPage() {
   }
 
   const orders: IOrder[] = await res.json();
-
-  const columns = ['nombre', 'orden', 'telefono', 'fecha', 'status'];
+  const columns = Object.keys(orders[0]).slice(1, -1);
 
   return (
     <>
       <Navbar />
       <div className="container mx-auto px-4 mt-2">
         <h1 className="text-2xl font-bold mb-4">Pedidos</h1>
-        <DataTable columns={columns} rows={orders} />
+        <DataTable columns={columns} initialRows={orders} />
       </div>
     </>
   );

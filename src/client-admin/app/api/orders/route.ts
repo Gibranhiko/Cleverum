@@ -50,3 +50,39 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function PATCH(req: Request) {
+  try {
+    const { id } = await req.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { message: 'Order ID is required' },
+        { status: 400 }
+      );
+    }
+
+    await connectToDatabase('orders');
+
+    const updatedOrder = await Order.findByIdAndUpdate(
+      id,
+      { status: true }, 
+      { new: true } 
+    );
+
+    if (!updatedOrder) {
+      return NextResponse.json(
+        { message: 'Order not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(updatedOrder, { status: 200 });
+  } catch (error) {
+    console.error('Failed to update order status:', error);
+    return NextResponse.json(
+      { message: 'Failed to update order status' },
+      { status: 500 }
+    );
+  }
+}
