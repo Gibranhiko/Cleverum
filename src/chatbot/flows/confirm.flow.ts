@@ -28,7 +28,7 @@ const flowConfirm = addKeyword(EVENTS.ACTION)
       nombre: state.get("name"),
       orden: state.get("order"),
       telefono: state.get("phone"),
-      fecha: format(new Date(), "yyyy-MM-dd"),
+      fecha: format(new Date(), "yyyy-MM-dd HH:mm"),
       status: false,
     };
 

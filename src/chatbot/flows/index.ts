@@ -7,6 +7,7 @@ import { flowLocation } from "./location.flow";
 import { flowService } from "./service.flow";
 import { flowMenu } from "./menu.flow";
 import { flowHello } from "./hello.flow";
+import { secretPhraseFlow } from "./startStop.flow";
 
 export default createFlow([
   welcomeFlow,
@@ -17,4 +18,5 @@ export default createFlow([
   flowService,
   flowMenu,
   flowHello,
+  secretPhraseFlow
 ]);

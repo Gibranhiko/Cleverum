@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Order from "../interfaces/Order";
 
@@ -7,11 +9,7 @@ interface DataTableProps {
   onStatusClick: (orderId: string) => void;
 }
 
-export default function DataTable({
-  columns = [],
-  rows = [],
-  onStatusClick,
-}: DataTableProps) {
+export default function DataTable({ columns = [], rows = [], onStatusClick }: DataTableProps) {
   const getPendingBtnLayout = (orderId: string) => (
     <a
       href="#"
@@ -46,7 +44,9 @@ export default function DataTable({
             {columns.map((column: string, colIndex: number) =>
               column === "status" ? (
                 <td key={colIndex} className="py-2 px-4 border-b">
-                  {row[column] ? "Entregado" : getPendingBtnLayout(row._id)}
+                  {row[column]
+                    ? "Entregado"
+                    : getPendingBtnLayout(row._id)}
                 </td>
               ) : (
                 <td key={colIndex} className="py-2 px-4 border-b">

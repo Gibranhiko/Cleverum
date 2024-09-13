@@ -2,7 +2,6 @@ import { BotContext, BotMethods } from "@builderbot/bot/dist/types";
 import { getHistoryParse } from "../utils/handleHistory";
 import AIClass from "../services/ai";
 import { flowSeller } from "../flows/seller.flow";
-import { flowTalker } from "../flows/talker.flow";
 import * as path from "path";
 import fs from "fs";
 import { flowLocation } from "../flows/location.flow";
