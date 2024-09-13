@@ -12,7 +12,7 @@ const flowMenu = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic }) => {
     await flowDynamic([
       {
-        media: "../img/rey-del-pollito-menu-1.png",
+        media: "https://i.ibb.co/grwsV2m/rey-del-pollito-menu-1.png",
         delay: 1000, 
       },
     ]);
