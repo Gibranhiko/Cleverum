@@ -4,10 +4,12 @@ import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAppContext } from "../context/AppContext";
+import NotificationBell from "./notification-bell";
 
 export default function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const { state, setState } = useAppContext();
+  const [notifications, setNotifications] = useState(3);
 
   const toggleDropdown = useCallback(() => {
     setIsDropdownOpen((prev) => !prev);
@@ -74,10 +76,12 @@ export default function Navbar() {
           </li>
         </ul>
       </div>
-      <div className="relative flex items-center space-x-2 z-10">
+      <div className="relative flex items-center space-x-6 z-10">
+        <NotificationBell notifications={notifications} onClick={() => setNotifications(notifications + 1)} />
+
         <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
           <Image
-            src="/images/rey-pollo-logo.png" // Update with your store logo path
+            src="/images/rey-pollo-logo.png"
             alt="Store Logo"
             width={40}
             height={40}
