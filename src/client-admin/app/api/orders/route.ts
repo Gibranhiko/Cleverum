@@ -41,6 +41,13 @@ export async function POST(req: Request) {
 
     await newOrder.save();
 
+     // Ensure `global.io` is defined before emitting
+     if (global.io) {
+      global.io.emit('new-order', newOrder);
+    } else {
+      console.warn("Socket.IO server is not initialized.");
+    }
+
     return NextResponse.json(newOrder, { status: 201 });
   } catch (error) {
     console.error('Failed to create order:', error);

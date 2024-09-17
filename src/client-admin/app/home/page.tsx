@@ -3,6 +3,7 @@ import Module from "../components/module";
 import Navbar from "../components/navbar";
 
 const HomePage = () => {
+
   return (
     <>
     <Navbar />

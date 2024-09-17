@@ -1,20 +1,80 @@
-import React from "react";
-import OrdersPageClient from "./orders-client";
-import Order from "../interfaces/Order";
+"use client";
 
-export const dynamic = "force-dynamic";
+import React, { useEffect, useState } from "react";
+import DataTable from "../components/data-table";
+import Navbar from "../components/navbar";
+import Modal from "../components/modal";
+import { useAppContext } from "../context/AppContext";
 
-export default async function OrdersPage() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
-    cache: "no-store",
-  });
+export default function OrdersPage() {
+  const { state } = useAppContext();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [localOrders, setLocalOrders] = useState([...state.orders || []]);
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch orders");
-  }
+  useEffect(() => {
+    setLocalOrders([...state.orders || []]);
+  }, [state.orders]);
 
-  const orders: Order[] = await res.json();
-  const columns = Object.keys(orders[0]).slice(1, -1);
+  const currentOrders = localOrders.filter(order => order.status === false);
+  const columns = ["nombre", "orden", "telefono", "fecha", "status"];
 
-  return <OrdersPageClient columns={columns} initialRows={orders} />;
+  const handleStatusClick = (orderId: string) => {
+    setModalMessage("¿Confirma que la orden ha sido entregada?");
+    setSelectedOrderId(orderId);
+    setIsModalOpen(true);
+  };
+
+  const handleAccept = async () => {
+    if (selectedOrderId) {
+      try {
+        const response = await fetch("/api/orders", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id: selectedOrderId }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update status");
+        }
+
+        setLocalOrders(prevOrders =>
+          prevOrders.map(order =>
+            order._id === selectedOrderId ? { ...order, status: true } : order
+          )
+        );
+
+        setIsModalOpen(false);
+      } catch (error) {
+        console.error("Error updating status:", error);
+      }
+    }
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
+
+  return (
+    <>
+      <Navbar />
+      <div className="container mx-auto px-4 mt-2">
+        <h1 className="text-2xl font-bold mb-4">Pedidos</h1>
+        <DataTable
+          columns={columns}
+          rows={currentOrders}
+          onStatusClick={handleStatusClick}
+        />
+      </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCancel}
+        onAccept={handleAccept}
+        message={modalMessage}
+      />
+    </>
+  );
 }

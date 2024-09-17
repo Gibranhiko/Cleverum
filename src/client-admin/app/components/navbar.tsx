@@ -5,22 +5,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAppContext } from "../context/AppContext";
 import NotificationBell from "./notification-bell";
+import DropDown from "./drop-down";
+
+const navMenu = [
+  { title: "Perfil", link: "/perfil" },
+  { title: "API keys", link: "/api-keys" },
+  { title: "Desconectar", link: "/logout" },
+];
 
 export default function Navbar() {
+  const {state, setState} = useAppContext();
+  const currentOrders = [...state.orders.filter(order => order.status === false)];
+
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { state, setState } = useAppContext();
-  const [notifications, setNotifications] = useState(3);
 
   const toggleDropdown = useCallback(() => {
     setIsDropdownOpen((prev) => !prev);
   }, []);
 
-  const updateCurrentPage = useCallback((page: string) => {
-    setState((prevState) => ({
-      ...prevState,
-      currentPage: page,
-    }));
-  }, [setState]);
+  const updateCurrentPage = useCallback(
+    (page: string) => {
+      setState((prevState) => ({
+        ...prevState,
+        currentPage: page,
+      }));
+    },
+    [setState]
+  );
 
   const getNavLinkClasses = (page: string) =>
     `block mt-4 lg:inline-block lg:mt-0 ${
@@ -49,7 +60,9 @@ export default function Navbar() {
               href="/pedidos"
               className={getNavLinkClasses("pedidos")}
               onClick={() => updateCurrentPage("pedidos")}
-              aria-current={state.currentPage === "pedidos" ? "page" : undefined}
+              aria-current={
+                state.currentPage === "pedidos" ? "page" : undefined
+              }
             >
               Pedidos
             </Link>
@@ -59,7 +72,9 @@ export default function Navbar() {
               href="/productos"
               className={getNavLinkClasses("productos")}
               onClick={() => updateCurrentPage("productos")}
-              aria-current={state.currentPage === "productos" ? "page" : undefined}
+              aria-current={
+                state.currentPage === "productos" ? "page" : undefined
+              }
             >
               Productos
             </Link>
@@ -69,7 +84,9 @@ export default function Navbar() {
               href="/promociones"
               className={getNavLinkClasses("promociones")}
               onClick={() => updateCurrentPage("promociones")}
-              aria-current={state.currentPage === "promociones" ? "page" : undefined}
+              aria-current={
+                state.currentPage === "promociones" ? "page" : undefined
+              }
             >
               Promociones
             </Link>
@@ -77,7 +94,9 @@ export default function Navbar() {
         </ul>
       </div>
       <div className="relative flex items-center space-x-6 z-10">
-        <NotificationBell notifications={notifications} onClick={() => setNotifications(notifications + 1)} />
+        <NotificationBell
+          notifications={currentOrders}
+        />
 
         <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
           <Image
@@ -111,26 +130,8 @@ export default function Navbar() {
             />
           </svg>
         </button>
-
-        {/* Dropdown Menu */}
         {isDropdownOpen && (
-          <ul className="absolute right-0 top-full mt-2 w-48 bg-white text-gray-800 shadow-lg rounded-lg z-20">
-            <li className="hover:bg-gray-200">
-              <Link href="/perfil" className="block px-4 py-2">
-                Perfil
-              </Link>
-            </li>
-            <li className="hover:bg-gray-200">
-              <Link href="/api-keys" className="block px-4 py-2">
-                API keys
-              </Link>
-            </li>
-            <li className="hover:bg-gray-200">
-              <Link href="/logout" className="block px-4 py-2">
-                Desconectar
-              </Link>
-            </li>
-          </ul>
+          <DropDown items={navMenu}/>
         )}
       </div>
     </nav>
