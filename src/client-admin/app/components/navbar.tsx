@@ -7,15 +7,29 @@ import { useAppContext } from "../context/AppContext";
 import NotificationBell from "./notification-bell";
 import DropDown from "./drop-down";
 
+interface Menu {
+  title: string;
+  link: string;
+}
+
 const navMenu = [
+  { title: "Pedidos", link: "/pedidos" },
+  { title: "Productos", link: "/productos" },
+  { title: "Promociones", link: "/promociones" },
+  { title: "Chatbot", link: "/chatbot" },
+];
+
+const dropDownMenu = [
   { title: "Perfil", link: "/perfil" },
   { title: "API keys", link: "/api-keys" },
   { title: "Desconectar", link: "/logout" },
 ];
 
 export default function Navbar() {
-  const {state, setState} = useAppContext();
-  const currentOrders = [...state.orders.filter(order => order.status === false)];
+  const { state, setState } = useAppContext();
+  const currentOrders = [
+    ...state.orders.filter((order) => order.status === false),
+  ];
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -49,54 +63,30 @@ export default function Navbar() {
           className="mr-2"
         />
         <div className="flex flex-col">
-          <Link href="/" onClick={() => updateCurrentPage("")}>
+          <Link href="/">
             <span className="text-xl font-bold">Cleverum</span>
           </Link>
           <span className="text-sm font-bold">Restaurant 1.0</span>
         </div>
         <ul className="flex space-x-4 ml-8">
-          <li>
-            <Link
-              href="/pedidos"
-              className={getNavLinkClasses("pedidos")}
-              onClick={() => updateCurrentPage("pedidos")}
-              aria-current={
-                state.currentPage === "pedidos" ? "page" : undefined
-              }
-            >
-              Pedidos
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/productos"
-              className={getNavLinkClasses("productos")}
-              onClick={() => updateCurrentPage("productos")}
-              aria-current={
-                state.currentPage === "productos" ? "page" : undefined
-              }
-            >
-              Productos
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/promociones"
-              className={getNavLinkClasses("promociones")}
-              onClick={() => updateCurrentPage("promociones")}
-              aria-current={
-                state.currentPage === "promociones" ? "page" : undefined
-              }
-            >
-              Promociones
-            </Link>
-          </li>
+          {navMenu.map((item: Menu, index: number) => (
+            <li key={index}>
+              <Link
+                href={item.link}
+                className={getNavLinkClasses(item.title)}
+                onClick={() => updateCurrentPage(item.title)}
+                aria-current={
+                  state.currentPage === item.title ? "page" : undefined
+                }
+              >
+                {item.title}
+              </Link>
+            </li>
+          ))}
         </ul>
       </div>
       <div className="relative flex items-center space-x-6 z-10">
-        <NotificationBell
-          notifications={currentOrders}
-        />
+        <NotificationBell notifications={currentOrders} />
 
         <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
           <Image
@@ -130,9 +120,7 @@ export default function Navbar() {
             />
           </svg>
         </button>
-        {isDropdownOpen && (
-          <DropDown items={navMenu}/>
-        )}
+        {isDropdownOpen && <DropDown items={dropDownMenu} />}
       </div>
     </nav>
   );

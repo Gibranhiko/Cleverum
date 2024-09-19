@@ -8,6 +8,9 @@ import flow from "./chatbot/flows";
 import { provider } from "./chatbot/provider";
 import connectToDatabase from "./client-admin/app/utils/mongoose";
 import { Server } from "socket.io";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const PORT = process.env.PORT || 3000;
 const dev = process.env.NODE_ENV !== "production";
@@ -15,6 +18,9 @@ const clientAdminApp = next({ dev, dir: "./src/client-admin" });
 const handle = clientAdminApp.getRequestHandler();
 
 const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-3.5-turbo");
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const main = async () => {
   await clientAdminApp.prepare();
@@ -27,13 +33,27 @@ const main = async () => {
   await connectToDatabase("orders");
   console.log("Connected to MongoDB");
 
+  // Serve QR code image
+  app.get("/getqr", (req, res) => {
+    const qrImagePath = path.join(__dirname, "../bot.qr.png");
+
+    fs.readFile(qrImagePath, (err, data) => {
+      if (err) {
+        console.log("Error reading the QR code image:", err);
+        return res.status(500).send("Error reading the QR code image");
+      }
+      res.contentType("image/png");
+      res.send(data);
+    });
+  });
+
   // Handle Next.js app router requests
   app.all("*", (req, res) => {
     return handle(req, res);
   });
 
   // Bot routes or middleware
-  const { httpServer } = await createBot(
+  await createBot(
     {
       database: new MemoryDB(),
       provider,
@@ -58,7 +78,6 @@ const main = async () => {
 
     socket.on("new-order", (order) => {
       console.log("New order received:", order);
-
       io.emit("new-order", order);
     });
 
@@ -71,8 +90,6 @@ const main = async () => {
   httpWebServer.listen(PORT, () => {
     console.log(`Web server running on http://localhost:${PORT}`);
   });
-
-  httpServer(Number(PORT) + 1);
 };
 
 main();
