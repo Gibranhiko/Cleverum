@@ -1,27 +1,50 @@
 "use client";
 
 import React from "react";
-import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import "./styles.css";
-import { isAuthenticated, login } from "../utils/auth";
 import Image from "next/image";
+import Link from "next/link";
+import Toast from "../components/toast";
+
+type FormData = {
+  username: string;
+  password: string;
+};
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
   const router = useRouter();
+  
+  // State for success and error messages
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    login(username, password);
+  const onSubmit = async (data: FormData) => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
 
-    // Simple credentials check
-    if (isAuthenticated()) {
-      router.push("/home");
-    } else {
-      setError("Nombre de usuario o contraseña incorrectos");
+      if (result.success) {
+        setSuccessMessage("Inicio de sesión exitoso. Redirigiendo...");
+        setErrorMessage(null);
+        // Redirect to home or another page upon successful login
+        router.push("/home");
+      } else {
+        // Handle login error
+        setErrorMessage(result.message);
+        setSuccessMessage(null);
+      }
+    } catch (error) {
+      setErrorMessage("Error al iniciar sesión" + error);
+      setSuccessMessage(null);
     }
   };
 
@@ -34,27 +57,45 @@ export default function LoginPage() {
         height={200}
         className="mb-6"
       />
+
+      {/* Toast for Success */}
+      {successMessage && (
+        <Toast 
+          type="success" 
+          message={successMessage} 
+        />
+      )}
+
+      {/* Toast for Error */}
+      {errorMessage && (
+        <Toast 
+          type="error" 
+          message={errorMessage} 
+        />
+      )}
+
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit(onSubmit)}
         className="bg-white p-8 rounded-lg shadow-md w-full max-w-md flex flex-col"
       >
         <h2 className="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h2>
         <input
           type="text"
           placeholder="Nombre de usuario"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+          {...register("username", { required: "Nombre de usuario es requerido" })}
+          className={`mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${errors.username ? 'border-red-500' : ''}`}
         />
+        {errors.username && (
+          <p className="text-red-500 text-sm mb-4 text-center">{errors.username.message}</p>
+        )}
         <input
           type="password"
           placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+          {...register("password", { required: "Contraseña es requerida" })}
+          className={`mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${errors.password ? 'border-red-500' : ''}`}
         />
-        {error && (
-          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+        {errors.password && (
+          <p className="text-red-500 text-sm mb-4 text-center">{errors.password.message}</p>
         )}
         <button
           type="submit"
@@ -62,6 +103,12 @@ export default function LoginPage() {
         >
           Ingresar
         </button>
+        <p className="mt-4 text-center">
+          ¿No tienes una cuenta?{" "}
+          <Link href="/registro" className="text-blue-500 hover:underline">
+            Regístrate aquí
+          </Link>
+        </p>
       </form>
     </div>
   );

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '../../utils/mongoose';
-import Order, { IOrder } from '../../models/Order';
+import connectToDatabase from '../utils/mongoose';
+import Order, { IOrder } from './models/Order';
 
 export async function GET() {
   try {

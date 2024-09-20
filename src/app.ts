@@ -6,7 +6,7 @@ import { createBot, MemoryDB } from "@builderbot/bot";
 import AIClass from "./chatbot/services/ai/index";
 import flow from "./chatbot/flows";
 import { provider } from "./chatbot/provider";
-import connectToDatabase from "./client-admin/app/utils/mongoose";
+import connectToDatabase from "./client-admin/app/api/utils/mongoose";
 import { Server } from "socket.io";
 import fs from "fs";
 import path from "path";
