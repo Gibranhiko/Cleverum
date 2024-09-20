@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAppContext } from "../context/AppContext";
 import NotificationBell from "./notification-bell";
 import DropDown from "./drop-down";
+import { useRouter } from "next/navigation";
 
 interface Menu {
   title: string;
@@ -20,9 +21,9 @@ const navMenu = [
 ];
 
 const dropDownMenu = [
-  { title: "Perfil", link: "/perfil" },
-  { title: "API keys", link: "/api-keys" },
-  { title: "Desconectar", link: "/logout" },
+  { title: "Perfil", link: "#" },
+  { title: "API keys", link: "#" },
+  { title: "Desconectar", link: "#" },
 ];
 
 export default function Navbar() {
@@ -30,6 +31,7 @@ export default function Navbar() {
   const currentOrders = [
     ...state.orders.filter((order) => order.status === false),
   ];
+  const router = useRouter();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -51,6 +53,24 @@ export default function Navbar() {
     `block mt-4 lg:inline-block lg:mt-0 ${
       state.currentPage === page ? "border-b-2 border-yellow-400" : ""
     }`;
+
+  const handleLogout = async () => {
+    // Call logout API endpoint
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      // Clear user state
+      setState({
+        ...state,
+        notifications: [],
+        orders: [],
+        isAuthenticated: false,
+      });
+      // Redirect to login
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <nav className="bg-gray-900 text-white p-4 flex items-center justify-between relative">
@@ -120,7 +140,9 @@ export default function Navbar() {
             />
           </svg>
         </button>
-        {isDropdownOpen && <DropDown items={dropDownMenu} />}
+        {isDropdownOpen && (
+          <DropDown items={dropDownMenu} handleLogout={handleLogout} />
+        )}
       </div>
     </nav>
   );

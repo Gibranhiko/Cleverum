@@ -8,7 +8,7 @@ import React, {
   useEffect,
 } from "react";
 import Order from "../interfaces/Order";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 interface AppState {
   isAuthenticated: boolean;
@@ -34,45 +34,58 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch orders");
+      if (state.isAuthenticated) {
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+            cache: "no-store",
+          });
+  
+          if (!res.ok) {
+            throw new Error("Failed to fetch orders");
+          }
+  
+          const orders: Order[] = await res.json();
+          setState((prevState) => ({
+            ...prevState,
+            orders,
+          }));
+        } catch (error) {
+          console.error("Error fetching orders:", error);
         }
-
-        const orders: Order[] = await res.json();
+      } else {
+        // Clear orders when logging out
         setState((prevState) => ({
           ...prevState,
-          orders,
+          orders: [],
         }));
-      } catch (error) {
-        console.error("Error fetching orders:", error);
       }
     };
-
+  
     fetchOrders();
-  }, []);
+  }, [state.isAuthenticated]);
 
   useEffect(() => {
-    const socket = io(process.env.PUBLIC_URL, {
-      transports: ["websocket"],
-    });
-
-    socket.on("new-order", (order: Order) => {
-      setState((prevState) => ({
-        ...prevState,
-        notifications: [...prevState.notifications, order],
-        orders: [...prevState.orders, order],
-      }));
-    });
-
+    let socket: Socket;
+    if (state.isAuthenticated) {
+      socket = io(process.env.PUBLIC_URL, {
+        transports: ["websocket"],
+      });
+  
+      socket.on("new-order", (order: Order) => {
+        setState((prevState) => ({
+          ...prevState,
+          notifications: [...prevState.notifications, order],
+          orders: [...prevState.orders, order],
+        }));
+      });
+    }
+  
     return () => {
-      socket.disconnect();
+      if (socket) {
+        socket.disconnect();
+      }
     };
-  }, []);
+  }, [state.isAuthenticated]);
 
   return (
     <AppContext.Provider value={{ state, setState }}>

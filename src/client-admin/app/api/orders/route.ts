@@ -40,8 +40,6 @@ export async function POST(req: Request) {
     });
 
     await newOrder.save();
-
-     // Ensure `global.io` is defined before emitting
      if (global.io) {
       global.io.emit('new-order', newOrder);
     } else {

@@ -7,6 +7,7 @@ import "./styles.css";
 import Image from "next/image";
 import Link from "next/link";
 import Toast from "../components/toast";
+import { useAppContext } from "../context/AppContext";
 
 type FormData = {
   username: string;
@@ -20,6 +21,8 @@ export default function LoginPage() {
   // State for success and error messages
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+
+  const {setState} = useAppContext();
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -35,8 +38,14 @@ export default function LoginPage() {
       if (result.success) {
         setSuccessMessage("Inicio de sesión exitoso. Redirigiendo...");
         setErrorMessage(null);
-        // Redirect to home or another page upon successful login
-        router.push("/home");
+
+        setState((prevState) => ({
+          ...prevState,
+          isAuthenticated: true
+        }));
+
+        // Redirect to home
+        router.push("/");
       } else {
         // Handle login error
         setErrorMessage(result.message);
