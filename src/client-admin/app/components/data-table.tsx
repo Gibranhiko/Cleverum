@@ -2,11 +2,13 @@
 
 import React from "react";
 import Order from "../interfaces/Order";
+import Product from "../interfaces/Product";
+import Promo from "../interfaces/Promo";
 
 interface DataTableProps {
   columns: string[];
-  rows: Order[];
-  onStatusClick: (orderId: string) => void;
+  rows: Order[] | Product[] | Promo[];
+  onStatusClick?: (orderId: string) => void;
 }
 
 export default function DataTable({ columns = [], rows = [], onStatusClick }: DataTableProps) {
@@ -39,7 +41,7 @@ export default function DataTable({ columns = [], rows = [], onStatusClick }: Da
         </tr>
       </thead>
       <tbody>
-        {rows.map((row: Order) => (
+        {rows.map((row: Order | Product | Promo) => (
           <tr key={row._id} className="text-center">
             {columns.map((column: string, colIndex: number) =>
               column === "status" ? (

@@ -1,25 +1,29 @@
 import React from "react";
 import DataTable from "../components/data-table";
 import Navbar from "../components/navbar";
+import Promo from "../interfaces/Promo";
 
 export default function PromosTable() {
-  const columns = ["DIA", "PROMO", "PRECIO", "DESCRIPCION"];
-  const rows = [
+  const columns = ["dia", "promo", "precio", "descripcion"];
+  const rows: Promo[] = [
     {
-      DIA: "LUNES",
-      PROMO: "1/2 KG DE ALITAS 2X1",
-      PRECIO: "$240.00",
-      DESCRIPCION:
+      _id: "1",
+      dia: "LUNES",
+      promo: "1/2 KG DE ALITAS 2X1",
+      precio: "$240.00",
+      descripcion:
         "Todos los lunes son de alitas al 2x1 (Incluye apio, zanahoria y aderezo a elegir).",
     },
     {
-      DIA: "MARTES",
-      PROMO: "3 POLLOS AL PRECIO DE 2",
-      PRECIO: "$430.00",
-      DESCRIPCION:
+      _id: "2",
+      dia: "MARTES",
+      promo: "3 POLLOS AL PRECIO DE 2",
+      precio: "$430.00",
+      descripcion:
         "Todos los martes te tratamos como rey (Incluye tortillas, totopos, limón, salsas y arroz).",
     },
   ];
+  
 
   return (
     <>

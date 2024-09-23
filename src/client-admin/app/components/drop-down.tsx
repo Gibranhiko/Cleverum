@@ -8,7 +8,7 @@ interface DropDownItem {
 
 interface DropDownProps {
   items: DropDownItem[];
-  handleLogout: () => void;
+  handleLogout?: () => void;
 }
 
 const DropDown: React.FC<DropDownProps> = ({ items, handleLogout }) => {

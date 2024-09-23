@@ -1,14 +1,6 @@
-"use client";
-
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-} from "react";
-import Order from "../interfaces/Order";
+import React, { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
+import Order from "../interfaces/Order";
 
 interface AppState {
   isAuthenticated: boolean;
@@ -32,54 +24,67 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     orders: [],
   });
 
+  // Check auth tomanage context state
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (state.isAuthenticated) {
-        try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
-            cache: "no-store",
-          });
-  
-          if (!res.ok) {
-            throw new Error("Failed to fetch orders");
-          }
-  
-          const orders: Order[] = await res.json();
-          setState((prevState) => ({
-            ...prevState,
-            orders,
-          }));
-        } catch (error) {
-          console.error("Error fetching orders:", error);
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/check-auth');
+        const result = await res.json();
+        if (result.isAuthenticated) {
+          setState(prevState => ({ ...prevState, isAuthenticated: true }));
         }
-      } else {
-        // Clear orders when logging out
-        setState((prevState) => ({
-          ...prevState,
-          orders: [],
-        }));
+      } catch (error) {
+        console.error('Error checking auth:', error);
       }
     };
-  
+    
+    checkAuth();
+  }, []);
+
+  // Fetch orders when authenticated
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!state.isAuthenticated) return;
+
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch orders");
+        }
+
+        const fetchedOrders: Order[] = await res.json();
+        setState(prevState => ({
+          ...prevState,
+          orders: fetchedOrders,
+        }));
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      }
+    };
+
     fetchOrders();
   }, [state.isAuthenticated]);
 
+  // Handle WebSocket connection for real-time orders when authenticated
   useEffect(() => {
     let socket: Socket;
     if (state.isAuthenticated) {
       socket = io(process.env.PUBLIC_URL, {
         transports: ["websocket"],
       });
-  
+
       socket.on("new-order", (order: Order) => {
-        setState((prevState) => ({
+        setState(prevState => ({
           ...prevState,
           notifications: [...prevState.notifications, order],
           orders: [...prevState.orders, order],
         }));
       });
     }
-  
+
     return () => {
       if (socket) {
         socket.disconnect();

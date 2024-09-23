@@ -49,6 +49,15 @@ export default function Navbar() {
     [setState]
   );
 
+  const handleHomeClick = () => {
+    // Reset currentPage to home when navigating to home
+    setState((prevState) => ({
+      ...prevState,
+      currentPage: "Home",
+    }));
+    router.push("/"); // Navigate to home
+  };
+
   const getNavLinkClasses = (page: string) =>
     `block mt-4 lg:inline-block lg:mt-0 ${
       state.currentPage === page ? "border-b-2 border-yellow-400" : ""
@@ -75,18 +84,19 @@ export default function Navbar() {
   return (
     <nav className="bg-gray-900 text-white p-4 flex items-center justify-between relative">
       <div className="flex items-center space-x-8">
-        <Image
-          src="/images/cleverum-brain.png"
-          alt="Cleverum Logo"
-          width={40}
-          height={40}
-          className="mr-2"
-        />
+        <Link href="/" onClick={handleHomeClick}>
+          <Image
+            src="/images/cleverum-brain.png"
+            alt="Cleverum Logo"
+            width={40}
+            height={40}
+            className="mr-2"
+          />
+        </Link>
         <div className="flex flex-col">
-          <Link href="/">
-            <span className="text-xl font-bold">Cleverum</span>
+          <Link href="/" onClick={handleHomeClick}>
+            <span className="text-xl font-bold">Cleverum rest 1.0</span>
           </Link>
-          <span className="text-sm font-bold">Restaurant 1.0</span>
         </div>
         <ul className="flex space-x-4 ml-8">
           {navMenu.map((item: Menu, index: number) => (
