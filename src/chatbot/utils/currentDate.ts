@@ -12,7 +12,6 @@ const getFullCurrentDate = (): string => {
 
 const getDayToday = (): string => {
   const currentD = new Date();
-  const formatDate = format(currentD, "yyyy/MM/dd HH:mm", { locale: es });
   const day = format(currentD, "EEEE", { locale: es });
 
   return [day].join(" ");

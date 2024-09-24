@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/navbar";
+import Image from "next/image";
 
 export default function ChatBotPage() {
   const [qrCodeSrc, setQrCodeSrc] = useState("");
@@ -33,7 +34,7 @@ export default function ChatBotPage() {
           Escanea el código QR para iniciar el Bot
         </h1>
         {qrCodeSrc && (
-          <img
+          <Image
             src={qrCodeSrc}
             alt="Código QR"
             width={300}

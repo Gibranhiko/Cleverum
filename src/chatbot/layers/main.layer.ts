@@ -4,7 +4,6 @@ import AIClass from "../services/ai";
 import { flowSeller } from "../flows/seller.flow";
 import * as path from "path";
 import fs from "fs";
-import { flowLocation } from "../flows/location.flow";
 import { flowService } from "../flows/service.flow";
 import { flowMenu } from "../flows/menu.flow";
 import { flowHello } from "../flows/hello.flow";
@@ -37,7 +36,6 @@ export default async (
   console.log(intent + '** IA intent');
 
   if (intent.includes('hacer_pedido')) return gotoFlow(flowSeller);
-  if (intent.includes('preguntar_ubicacion')) return gotoFlow(flowLocation);
   if (intent.includes('consultar_horarios')) return gotoFlow(flowService);
   if (intent.includes('ver_menu')) return gotoFlow(flowMenu);
   if (intent.includes('saludar')) return gotoFlow(flowHello);

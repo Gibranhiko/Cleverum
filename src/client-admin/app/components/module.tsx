@@ -1,3 +1,5 @@
+import React from 'react';
+
 export default function Module({ title, content }) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">

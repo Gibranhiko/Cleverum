@@ -16,6 +16,6 @@
     "incremental": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*", "tailwind.config.js", "postcss.config.js"],
+  "include": ["src/**/*", "tailwind.config.js", "postcss.config.js", "next.config.js"],
   "exclude": ["node_modules", "dist"]
 }
