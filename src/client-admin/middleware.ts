@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function middleware(req: NextRequest) {
   // Exclude token validation for the /login page
   if (req.nextUrl.pathname === '/login') {
-    console.log('return when login page');
     return NextResponse.next();
   }
 
@@ -12,7 +11,6 @@ export async function middleware(req: NextRequest) {
   const token = tokenCookie ? tokenCookie.value : null;
 
   if (!token) {
-    console.log('no token');
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
@@ -32,8 +30,6 @@ export async function middleware(req: NextRequest) {
 
     const { user } = await res.json();
 
-    //console.log(user, 'token val success res');
-
     // Attach the decoded data to the req object (optional for further use)
     (req as NextRequest & { user: typeof user }).user = user;
 
@@ -44,7 +40,7 @@ export async function middleware(req: NextRequest) {
   }
 }
 
-// Configuration to specify which routes the middleware should apply to
+// Routes config
 export const config = {
   matcher: ['/', '/home', '/pedidos', '/productos', '/promociones', '/chatbot'],
 };
