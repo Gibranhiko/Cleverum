@@ -5,8 +5,8 @@ import typescript from '@rollup/plugin-typescript';
 export default {
   input: 'src/app.ts',
   output: {
-    file: 'dist/app.js',
-    format: 'cjs',  // CommonJS format for Node.js
+    file: 'dist/app.cjs',
+    format: 'cjs',
   },
   plugins: [
     resolve(),

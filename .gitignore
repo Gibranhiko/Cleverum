@@ -3,7 +3,7 @@ node_modules
 *.log
 *.png
 *_sessions
-dist/*
+dist
 dacosta-rs-chatbot-f7a9600b0256.json
 src/client-admin/.next
 .rollup.cache

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "prestart": "npx eslint ./src/chatbot --no-ignore",
-    "start": "node ./dist/app.js",
+    "start": "node ./dist/app.cjs",
     "dev": "nodemon src/app.ts",
     "build": "npx rollup -c"
   },
