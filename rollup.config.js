@@ -9,7 +9,7 @@ export default {
     format: 'cjs',
   },
   plugins: [
-    resolve(),
+    resolve({ preferBuiltins: true }),
     commonjs(),
     typescript(),
   ],
