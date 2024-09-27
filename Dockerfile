@@ -1,43 +1,25 @@
-# Use a specific Node.js version for the build stage
-FROM node:18-alpine AS builder
-
-# Install build dependencies
-RUN apk add --no-cache python3 make g++
+# Use Node.js 18 with Alpine for a smaller image
+FROM node:21-alpine3.18 as builder
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if exists)
-COPY package.json package-lock.json ./
+COPY package*.json ./
+
+# Copy the rest of your app code (including package.json and package-lock.json)
+COPY . .
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of your app code
-COPY . .
-
 # Build the application
 RUN npm run build
 
-# Production stage
-FROM node:18-alpine AS deploy
-
-# Set NODE_ENV to production
+# Set NODE_ENV to production for runtime
 ENV NODE_ENV=production
-
-# Set working directory
-WORKDIR /app
-
-# Copy only the necessary files from the builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/rollup.config.js ./
 
 # Expose the application port
 EXPOSE 3000
-
-# Health check
-HEALTHCHECK CMD curl --fail http://localhost:3000/ || exit 1
 
 # Command to run the application
 CMD ["npm", "start"]
