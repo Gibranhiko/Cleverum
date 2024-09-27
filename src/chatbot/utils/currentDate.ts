@@ -1,6 +1,5 @@
 import { parse, format } from "date-fns";
 import { es } from "date-fns/locale";
-import { toZonedTime } from 'date-fns-tz';
 
 const getFullCurrentDate = (): string => {
   const currentD = new Date();
@@ -35,14 +34,4 @@ const isWorkableDate = (date: Date): boolean => {
   return false;
 };
 
-function splitISODate(ISODate: Date): string[] {
-  const timeZone = 'America/Mexico_City';
-  const toSpecificZone = toZonedTime(ISODate, timeZone);
-
-  const formatDate = format(toSpecificZone, 'dd/MM/yyyy');
-  const formatHours = format(toSpecificZone, 'h:mm a');
-
-  return [formatDate, formatHours];
-}
-
-export { getFullCurrentDate, formatToISO, isWorkableDate, splitISODate, getDayToday };
+export { getFullCurrentDate, formatToISO, isWorkableDate, getDayToday };

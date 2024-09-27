@@ -1,27 +1,43 @@
-FROM node:21-alpine3.18 as builder
+# Use a specific Node.js version for the build stage
+FROM node:18-alpine AS builder
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-ENV PNPM_HOME=/usr/local/bin
+# Install build dependencies
+RUN apk add --no-cache python3 make g++
 
+# Set working directory
 WORKDIR /app
 
-COPY package*.json pnpm-lock.yaml ./
+# Copy package.json and package-lock.json (if exists)
+COPY package.json package-lock.json ./
 
-RUN apk add --no-cache \
-    git 
+# Install dependencies
+RUN npm install
 
+# Copy the rest of your app code
 COPY . .
-RUN pnpm i
-RUN pnpm build
 
-#Etapa de producción
-FROM builder as deploy
+# Build the application
+RUN npm run build
 
-ARG RAILWAY_STATIC_URL
-ARG PUBLIC_URL
-ARG PORT
+# Production stage
+FROM node:18-alpine AS deploy
+
+# Set NODE_ENV to production
+ENV NODE_ENV=production
+
+# Set working directory
+WORKDIR /app
+
+# Copy only the necessary files from the builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml ./
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/rollup.config.js ./
 
-RUN pnpm install --frozen-lockfile --production
+# Expose the application port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK CMD curl --fail http://localhost:3000/ || exit 1
+
+# Command to run the application
 CMD ["npm", "start"]

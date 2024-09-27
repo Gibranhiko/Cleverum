@@ -16,6 +16,6 @@ export default {
   external: [
     'fs', 'path', 'http', 'url', 'dotenv/config', 'express', 'socket.io', 
     'mongoose', 'openai', '@builderbot/bot', '@builderbot/provider-baileys', 
-    'axios', 'date-fns', 'date-fns-tz', 'date-fns/locale', 'next',
+    'axios', 'date-fns', 'date-fns/locale', 'next',
   ],
 };
