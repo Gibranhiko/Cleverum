@@ -10,8 +10,13 @@ COPY package*.json ./
 # Instalar las dependencias de desarrollo y producción
 RUN npm install
 
+# Copy config files
+COPY rollup.config.js ./
+COPY tsconfig.json ./
+COPY postcss.config.js ./
+
 # Copiar el resto del código de la aplicación
-COPY . .
+COPY ./src ./src
 
 # Construir la aplicación
 RUN npm run build
@@ -29,6 +34,7 @@ WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src ./src
 
 # Exponer el puerto de la aplicación
 EXPOSE 3000

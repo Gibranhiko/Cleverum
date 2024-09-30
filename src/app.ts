@@ -54,7 +54,7 @@ const main = async () => {
     });
 
     // Bot routes or middleware
-    await createBot(
+    const { httpServer } = await createBot(
       {
         database: new MemoryDB(),
         provider,
@@ -91,6 +91,7 @@ const main = async () => {
     httpWebServer.listen(PORT, () => {
       console.log(`Web server running on http://localhost:${PORT}`);
     });
+    httpServer(Number(PORT));
   } catch (err) {
     console.log("App could not start" + err);
   }
