@@ -91,7 +91,7 @@ const main = async () => {
     httpWebServer.listen(PORT, () => {
       console.log(`Web server running on http://localhost:${PORT}`);
     });
-    httpServer(Number(PORT));
+    httpServer(Number(PORT) + 1);
   } catch (err) {
     console.log("App could not start" + err);
   }
