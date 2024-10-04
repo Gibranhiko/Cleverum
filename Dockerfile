@@ -1,43 +1,42 @@
-# Etapa 1: Builder
+# Builder stage
 FROM node:18-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copiar package.json y package-lock.json
+# Install dependencies
 COPY package*.json ./
-
-# Instalar las dependencias de desarrollo y producción
 RUN npm install
 
-# Copy config files
-COPY rollup.config.js ./
-COPY tsconfig.json ./
-COPY postcss.config.js ./
+# Copy environment files
+COPY ./src/client-admin/.env.local ./src/client-admin/.env.local
+COPY .env.local .env.local
 
-# Copiar el resto del código de la aplicación
+# Copy the entire source code, including both client-admin and chatbot
 COPY ./src ./src
 
-# Construir la aplicación
-RUN npm run build
+# Build Next.js client-admin app
+RUN npm run build:client-admin
 
-# Etapa 2: Producción (Runtime)
+# Build backend with Rollup
+COPY rollup.config.js tsconfig.json ./
+RUN npm run build:server
+
+# Production stage
 FROM node:18-alpine AS production
-
-# Setear la variable de entorno para producción
 ENV NODE_ENV=production
 
-# Setear el directorio de trabajo en /app
 WORKDIR /app
 
-# Copiar solamente las dependencias necesarias para producción
+# Copy Next.js built files
+COPY --from=builder /app/src/client-admin/.next ./src/client-admin/.next
+
+# Copy backend build files
+COPY --from=builder /app/dist ./dist
+
+# Copy necessary production dependencies
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/src ./src
 
-# Exponer el puerto de la aplicación
 EXPOSE 3000
-
-# Comando para ejecutar la aplicación
 CMD ["npm", "start"]

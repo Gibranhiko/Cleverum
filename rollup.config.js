@@ -9,7 +9,10 @@ export default {
     format: 'cjs',
   },
   plugins: [
-    resolve({ preferBuiltins: true }),
+    resolve({
+      preferBuiltins: true,
+      extensions: ['.js'],
+    }),
     commonjs(),
     typescript(),
   ],
@@ -17,5 +20,5 @@ export default {
     'fs', 'path', 'http', 'url', 'dotenv/config', 'express', 'socket.io', 
     'mongoose', 'openai', '@builderbot/bot', '@builderbot/provider-baileys', 
     'axios', 'date-fns', 'date-fns/locale', 'next',
-  ],
+  ]
 };

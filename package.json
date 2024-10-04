@@ -7,7 +7,9 @@
     "lint": "npx eslint --config ./src/chatbot/eslint.config.cjs ./src/chatbot",
     "start": "node ./dist/app.cjs",
     "dev": "nodemon src/app.ts",
-    "build": "npx rollup -c"
+    "build": "npm run build:client-admin && npm run build:server",
+    "build:client-admin": "next build src/client-admin",
+    "build:server": "npx rollup -c"
   },
   "keywords": [],
   "author": "",
