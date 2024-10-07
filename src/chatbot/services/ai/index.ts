@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { OpenAI } from 'openai';
 import fs from "fs";
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 

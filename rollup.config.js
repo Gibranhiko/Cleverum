@@ -1,6 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import typescript from '@rollup/plugin-typescript';
+import typescript from 'rollup-plugin-typescript2';
 
 export default {
   input: 'src/app.ts',
@@ -11,10 +11,14 @@ export default {
   plugins: [
     resolve({
       preferBuiltins: true,
-      extensions: ['.js'],
+      extensions: ['.js', '.ts'],
     }),
     commonjs(),
-    typescript(),
+    typescript({
+      tsconfig: './tsconfig.json',
+      useTsconfigDeclarationDir: true,
+      clean: true,
+    }),
   ],
   external: [
     'fs', 'path', 'http', 'url', 'dotenv/config', 'express', 'socket.io', 
