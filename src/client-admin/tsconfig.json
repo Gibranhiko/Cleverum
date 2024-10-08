@@ -25,10 +25,11 @@
   },
   "include": [
     "next-env.d.ts",
-    ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
-, "next.config.cjs"  ],
+    "**/*.tsx",
+    "next.config.cjs",
+    ".next/types/**/*.ts"
+  ],
   "exclude": [
     "node_modules"
   ]

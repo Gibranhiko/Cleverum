@@ -7,19 +7,14 @@ WORKDIR /app
 COPY package*.json ./ 
 RUN npm ci
 
-# Copy environment files
-COPY .env.local .env.local
-COPY ./src/client-admin/.env.local ./src/client-admin/.env.local
-
 # Copy the entire source code (including client-admin and chatbot)
 COPY ./src ./src
 
-# Build Next.js client-admin app
-RUN npm run build:client-admin
-
-# Build backend with Rollup
+# Copy rollup config and tsconfig
 COPY rollup.config.js tsconfig.json ./ 
-RUN npm run build:server
+
+# Build Nnext app and server
+RUN npm run build
 
 # Production stage
 FROM node:18-alpine AS production
@@ -38,8 +33,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 
 # Copy environment files
-COPY --from=builder /app/.env.local .env.local
-COPY --from=builder /app/src/client-admin/.env.local ./src/client-admin/.env.local
 COPY --from=builder /app/src/chatbot/prompts ./src/chatbot/prompts
 
 # Expose the port your app runs on
