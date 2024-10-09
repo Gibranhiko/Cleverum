@@ -10,8 +10,8 @@ RUN npm ci
 # Copy the entire source code (including client-admin and chatbot)
 COPY ./src ./src
 
-# Copy rollup config and tsconfig
-COPY rollup.config.js tsconfig.json ./ 
+# Copy rollup tsconfig tailwind config
+COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
 
 # Build Nnext app and server
 RUN npm run build
@@ -34,6 +34,9 @@ COPY --from=builder /app/package*.json ./
 
 # Copy environment files
 COPY --from=builder /app/src/chatbot/prompts ./src/chatbot/prompts
+
+# Copy the public directory for static assets (images, etc.)
+COPY --from=builder /app/src/client-admin/public ./src/client-admin/public
 
 # Expose the port your app runs on
 EXPOSE 3000
