@@ -16,6 +16,9 @@ COPY ./src ./src
 # Copy rollup tsconfig tailwind config
 COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
 
+# Increase Node.js memory limit
+ENV NODE_OPTIONS=--max-old-space-size=2048
+
 # Print MONGODB_URI to confirm it is being set correctly
 RUN echo "Building with MONGODB_URI: ${MONGODB_URI}" && MONGODB_URI=${MONGODB_URI} npm run build
 
