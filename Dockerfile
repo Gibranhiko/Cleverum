@@ -3,6 +3,9 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# Define build arguments for sensitive information
+ARG MONGODB_URI
+
 # Install dependencies
 COPY package*.json ./ 
 RUN npm ci
@@ -20,10 +23,8 @@ RUN echo "Building with MONGODB_URI: ${MONGODB_URI}" && MONGODB_URI=${MONGODB_UR
 FROM node:18-alpine AS production
 ENV NODE_ENV=production
 
-# Define build arguments for sensitive information
-ARG MONGODB_URI
-
 # Set environment variable
+ARG MONGODB_URI
 ENV MONGODB_URI=${MONGODB_URI}
 
 WORKDIR /app
@@ -36,7 +37,7 @@ COPY --from=builder /app/dist ./dist
 
 # Copy production dependencies
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/package*.json ./ 
 
 # Copy environment files
 COPY --from=builder /app/src/chatbot/prompts ./src/chatbot/prompts
