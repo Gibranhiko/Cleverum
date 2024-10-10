@@ -16,7 +16,7 @@ export async function middleware(req: NextRequest) {
 
   try {
     // Call the validate-token API to check the token, and pass the token in the Authorization header
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/validate-token`, {
+    const res = await fetch(`${process.env.PUBLIC_URL}api/auth/validate-token`, {
       method: 'GET',
       credentials: 'include',
       headers: {

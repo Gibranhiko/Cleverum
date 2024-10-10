@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/validate-token`, {
+    const response = await fetch(`${process.env.PUBLIC_URL}api/auth/validate-token`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

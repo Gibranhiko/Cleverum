@@ -35,7 +35,7 @@ const flowConfirm = addKeyword(EVENTS.ACTION)
     console.log("Order data:", orderData);
 
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/orders`, orderData);
+      await axios.post(`${process.env.PUBLIC_URL}api/orders`, orderData);
       await flowDynamic(
         "Listo! tu orden esta en proceso, te contactaremos para confirmar el tiempo de entrega"
       );
