@@ -47,7 +47,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (!state.isAuthenticated) return;
 
       try {
-        const res = await fetch(`${process.env.PUBLIC_URL}api/orders`, {
+        const res = await fetch(`api/orders`, {
           cache: "no-store",
         });
 
