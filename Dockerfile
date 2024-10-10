@@ -13,8 +13,8 @@ COPY ./src ./src
 # Copy rollup tsconfig tailwind config
 COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
 
-# Build Nnext app and server
-RUN npm run build
+# Print MONGODB_URI to confirm it is being set correctly
+RUN echo "Building with MONGODB_URI: ${MONGODB_URI}" && MONGODB_URI=${MONGODB_URI} npm run build
 
 # Production stage
 FROM node:18-alpine AS production
