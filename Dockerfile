@@ -20,6 +20,12 @@ RUN npm run build
 FROM node:18-alpine AS production
 ENV NODE_ENV=production
 
+# Define build arguments for sensitive information
+ARG MONGODB_URI
+
+# Set environment variable
+ENV MONGODB_URI=${MONGODB_URI}
+
 WORKDIR /app
 
 # Copy Next.js built files (client-admin)
