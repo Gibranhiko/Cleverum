@@ -46,7 +46,7 @@ const flowSeller = addKeyword(EVENTS.ACTION)
           content: promptInfo,
         },
       ],
-      "gpt-3.5-turbo"
+      "gpt-4"
     );
 
     console.log(order);
@@ -57,7 +57,7 @@ const flowSeller = addKeyword(EVENTS.ACTION)
       await clearHistory(state);
       return endFlow();
     } else if (validateOrder(order, validProducts) === "missing-quantity") {
-      const notGetOrderMsg = "***Aquí la IA NO puedo entender la cantidad o peso del proucto... se podría mappear contra el listado y sugerir una cantidad o peso***";
+      const notGetOrderMsg = "Una disculpa no pude entender tu orden, si quieres ver el menú, solo dime *menú*";
       await flowDynamic(notGetOrderMsg);
       await clearHistory(state);
       return endFlow();
