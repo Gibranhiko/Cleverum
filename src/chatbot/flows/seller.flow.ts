@@ -1,10 +1,10 @@
+import { addKeyword, EVENTS } from "@builderbot/bot";
 import { clearHistory, getHistoryParse, handleHistory } from "../utils/handleHistory";
 import AIClass from "../services/ai";
 import * as path from "path";
 import fs from "fs";
-import { addKeyword, EVENTS } from "@builderbot/bot";
-import { flowConfirm } from "./confirm.flow";
 import { validateOrder } from "../utils/order";
+import { flowConfirmQty } from "./qty-confirm.flow";
 
 const sellerDataPath = path.join("src/chatbot/prompts", "/prompt-seller.txt");
 const sellerData = fs.readFileSync(sellerDataPath, "utf-8");
@@ -16,29 +16,32 @@ export const generatePromptSeller = (history: string) => {
 };
 
 const validProducts = [
-  "pollo",
-  "costillas",
-  "carne asada",
-  "alitas",
-  "boneless",
-  "nuggets",
-  "tenders",
-  "coca cola",
-  "coca cola light",
-  "agua de sabor",
-  "paquete 1",
-  "paquete 2"
+  { product: "pollo", type: "qty" },
+  { product: "costillas", type: "weight" },
+  { product: "carne asada", type: "weight" },
+  { product: "alitas", type: "qty" },
+  { product: "boneless", type: "qty" },
+  { product: "nuggets", type: "qty" },
+  { product: "tenders", type: "qty" },
+  { product: "coca cola", type: "qty" },
+  { product: "coca cola light", type: "qty" },
+  { product: "agua de sabor", type: "qty" },
+  { product: "paquete 1", type: "qty" },
+  { product: "paquete 2", type: "qty" },
 ];
 
-const flowSeller = addKeyword(EVENTS.ACTION)
-  .addAction(async (_, { extensions, state, flowDynamic, endFlow }) => {
+// Main flow handling the user's order
+const flowSeller = addKeyword(EVENTS.ACTION).addAction(
+  async (_, { extensions, state, flowDynamic, endFlow, gotoFlow }) => {
     const assiMsgOrder = "Claro, vamos a tomar tu pedido...";
     await flowDynamic(assiMsgOrder);
     await handleHistory({ content: assiMsgOrder, role: "assistant" }, state);
+
     const ai = extensions.ai as AIClass;
     const history = getHistoryParse(state);
     const promptInfo = generatePromptSeller(history);
 
+    // AI model response for the order
     const { order } = await ai.determineOrderFn(
       [
         {
@@ -51,38 +54,43 @@ const flowSeller = addKeyword(EVENTS.ACTION)
 
     console.log(order);
 
+    // Validate if the order contains valid products
     if (!validateOrder(order, validProducts)) {
-      const notGetOrderMsg = "Te sugiero los siguientes productos: pollo, costillas, carne asada, alitas, boneless, nuggets, tenders, coca cola, coca cola light, agua de sabor, paquete 1, paquete 2";
-      await flowDynamic(notGetOrderMsg);
-      await clearHistory(state);
-      return endFlow();
-    } else if (validateOrder(order, validProducts) === "missing-quantity") {
-      const notGetOrderMsg = "***Aquí la IA NO puedo entender la cantidad o peso del proucto... se podría mappear contra el listado y sugerir una cantidad o peso***";
+      const notGetOrderMsg =
+        "Te sugiero los siguientes productos: pollo, costillas, carne asada, alitas, boneless, nuggets, tenders, coca cola, coca cola light, agua de sabor, paquete 1, paquete 2";
       await flowDynamic(notGetOrderMsg);
       await clearHistory(state);
       return endFlow();
     }
 
-    const formattedOrder = order
-      .map((item) => `${item.cantidad ?? item.peso} ${item.producto}`)
-      .join(", ");
+    // Store the incomplete order in the state
+    await state.update({ pendingOrder: order });
 
-    await state.update({ order: formattedOrder });
-    const formattedOrderMsg = `¿Es correcta tu orden de: ${formattedOrder} ? *si* o *no*`;
-    await flowDynamic(formattedOrderMsg);
-    await handleHistory(
-      { content: formattedOrderMsg, role: "assistant" },
-      state
-    );
-  })
-  .addAction({ capture: true }, async ({ body }, { gotoFlow, flowDynamic, state, endFlow }) => {
-    if (body.toLowerCase().includes("si")) {
-      return gotoFlow(flowConfirm);
-    } else {
-      await flowDynamic("Ok, ¿Qué te gustaría pedir? Si quieres ver el menú, solo dime *menú*");
-      await clearHistory(state);
-      return endFlow();
+    // Check if there are products missing quantity or weight
+    for (const item of order) {
+      const validProduct = validProducts.find(
+        (p) => p.product.toLowerCase() === item.producto.toLowerCase()
+      );
+
+      if (validProduct) {
+        if (validProduct.type === "qty") {
+          // Set state and redirect to the confirmation flow for quantity
+          await state.update({
+            awaitingQtyFor: item.producto,
+            pendingOrder: order,
+          });
+          return gotoFlow(flowConfirmQty); // Redirect to confirmation flow
+        } else if (validProduct.type === "weight") {
+          // Redirect to confirm weight (handled elsewhere)
+          await state.update({
+            awaitingWeightFor: item.producto,
+            pendingOrder: order,
+          });
+          return gotoFlow(flowConfirmQty); // Assuming weight confirmation will also be handled here
+        }
+      }
     }
-  });
+  }
+);
 
 export { flowSeller };

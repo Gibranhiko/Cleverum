@@ -72,3 +72,9 @@ Salida esperada:
     { "cantidad": 1, "producto": "coca cola" }
 ]
 Explicación: Cuando el cliente dice "una coca" se refiere a cantidad de 1.
+
+Entrada del cliente: "Quiero un paquete 1."
+Salida esperada:
+[
+    { "cantidad": "1", "producto": "paquete 1" }
+]
