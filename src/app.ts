@@ -2,10 +2,10 @@ import "dotenv/config";
 import express from "express";
 import next from "next";
 import { createServer } from "http";
-import { createBot, MemoryDB } from "@builderbot/bot";
+import { createBot, createProvider, MemoryDB } from "@builderbot/bot";
+import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
 import AIClass from "./chatbot/services/ai/index";
 import flow from "./chatbot/flows";
-import { provider } from "./chatbot/provider";
 import connectToDatabase from "./client-admin/app/api/utils/mongoose";
 import { Server } from "socket.io";
 import fs from "fs";
@@ -26,6 +26,10 @@ const main = async () => {
   try {
     await clientAdminApp.prepare();
     const app = express();
+
+    const adapterProvider = createProvider(Provider, {
+      timeRelease: 10800000, // 3 hours in milliseconds
+    });
 
     // Create an HTTP server instance from Express
     const httpWebServer = createServer(app);
@@ -57,7 +61,7 @@ const main = async () => {
     const { httpServer } = await createBot(
       {
         database: new MemoryDB(),
-        provider,
+        provider: adapterProvider,
         flow,
       },
       { extensions: { ai } }
