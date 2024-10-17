@@ -3,7 +3,7 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Define build arguments for sensitive information
+# Use an environment variable for MongoDB URI instead of hardcoding it
 ARG MONGODB_URI
 
 # Install dependencies
@@ -19,15 +19,14 @@ COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./
 # Increase Node.js memory limit
 ENV NODE_OPTIONS=--max-old-space-size=2048
 
-# Print MONGODB_URI to confirm it is being set correctly
+# Build with the MONGODB_URI passed as an argument during the run
 RUN echo "Building with MONGODB_URI: ${MONGODB_URI}" && MONGODB_URI=${MONGODB_URI} npm run build
 
 # Production stage
 FROM node:18-alpine AS production
 ENV NODE_ENV=production
 
-# Set environment variable
-ARG MONGODB_URI
+# Accept the MONGODB_URI as an environment variable
 ENV MONGODB_URI=${MONGODB_URI}
 
 WORKDIR /app
