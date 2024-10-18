@@ -17,7 +17,7 @@ COPY ./src ./src
 COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
 
 # Increase Node.js memory limit and run the build
-RUN node --max-old-space-size=2048 $(npm bin)/npm run build
+RUN node --max-old-space-size=2048 npm run build
 
 # Production stage
 FROM node:18-alpine AS production
