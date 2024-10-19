@@ -16,8 +16,11 @@ COPY ./src ./src
 # Copy rollup tsconfig tailwind config
 COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
 
-# Increase Node.js memory limit using NODE_OPTIONS and run the build
-RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
+# Step 1: Build the server (Rollup)
+RUN npm run build:server
+
+# Step 2: Build the client-admin (Next.js app)
+RUN npm run build:client-admin
 
 # Production stage
 FROM node:18-alpine AS production
