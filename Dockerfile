@@ -1,6 +1,5 @@
 # Builder stage
 FROM node:18-alpine AS builder
-
 WORKDIR /app
 
 # Define build arguments for sensitive information
@@ -22,14 +21,14 @@ RUN npm run build:server
 # Step 2: Build the client-admin (Next.js app)
 RUN npm run build:client-admin
 
+
 # Production stage
 FROM node:18-alpine AS production
-ENV NODE_ENV=production
-
-# Set environment variable
-ENV MONGODB_URI=${MONGODB_URI}
-
 WORKDIR /app
+
+# Set environment variable from ARG
+ARG MONGODB_URI
+ENV MONGODB_URI=$MONGODB_URI
 
 # Copy Next.js built files (client-admin)
 COPY --from=builder /app/src/client-admin/.next ./src/client-admin/.next
