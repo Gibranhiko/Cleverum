@@ -95,7 +95,8 @@ class AIClass {
                                         "preguntar_ubicacion",
                                         "consultar_horarios",
                                         "ver_menu",
-                                        "saludar"
+                                        "saludar",
+                                        "hablar"
                                     ]
                                 }
                             },

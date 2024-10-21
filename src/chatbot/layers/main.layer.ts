@@ -7,6 +7,7 @@ import fs from "fs";
 import { flowService } from "../flows/service.flow";
 import { flowMenu } from "../flows/menu.flow";
 import { flowHello } from "../flows/hello.flow";
+import { flowTalker } from "../flows/talker.flow";
 
 const discriminatorDataPath = path.join("src/chatbot/prompts", "/prompt-discriminator.txt");
 const discriminatorData = fs.readFileSync(discriminatorDataPath, "utf-8");
@@ -39,5 +40,6 @@ export default async (
   if (intent.includes('consultar_horarios')) return gotoFlow(flowService);
   if (intent.includes('ver_menu')) return gotoFlow(flowMenu);
   if (intent.includes('saludar')) return gotoFlow(flowHello);
+  if (intent.includes('hablar')) return gotoFlow(flowTalker);
   
 };

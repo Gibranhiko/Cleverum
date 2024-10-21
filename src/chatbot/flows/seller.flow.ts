@@ -1,4 +1,8 @@
-import { clearHistory, getHistoryParse, handleHistory } from "../utils/handleHistory";
+import {
+  clearHistory,
+  getHistoryParse,
+  handleHistory,
+} from "../utils/handleHistory";
 import AIClass from "../services/ai";
 import * as path from "path";
 import fs from "fs";
@@ -11,7 +15,7 @@ const sellerData = fs.readFileSync(sellerDataPath, "utf-8");
 
 const PROMPT_SELLER = sellerData;
 
-export const generatePromptSeller = (history: string) => {
+export const generatePromptSeller = (history) => {
   return PROMPT_SELLER.replace("{HISTORY}", history);
 };
 
@@ -27,7 +31,7 @@ const validProducts = [
   "coca cola light",
   "agua de sabor",
   "paquete 1",
-  "paquete 2"
+  "paquete 2",
 ];
 
 const flowSeller = addKeyword(EVENTS.ACTION)
@@ -46,42 +50,66 @@ const flowSeller = addKeyword(EVENTS.ACTION)
           content: promptInfo,
         },
       ],
-      "gpt-4"
+      "gpt-4-turbo"
     );
 
     console.log(order);
 
     if (!validateOrder(order, validProducts)) {
-      const notGetOrderMsg = "Te sugiero los siguientes productos: pollo, costillas, carne asada, alitas, boneless, nuggets, tenders, coca cola, coca cola light, agua de sabor, paquete 1, paquete 2";
+      const notGetOrderMsg =
+        "Te sugiero los siguientes productos: pollo, costillas, carne asada, alitas, boneless, nuggets, tenders, coca cola, coca cola light, agua de sabor, paquete 1, paquete 2";
       await flowDynamic(notGetOrderMsg);
       await clearHistory(state);
       return endFlow();
     } else if (validateOrder(order, validProducts) === "missing-quantity") {
-      const notGetOrderMsg = "Una disculpa no pude entender tu orden, si quieres ver el menú, solo dime *menú*";
+      const notGetOrderMsg =
+        "Una disculpa no pude entender tu orden, si quieres ver el menú, solo dime *menú*";
       await flowDynamic(notGetOrderMsg);
       await clearHistory(state);
       return endFlow();
     }
 
-    const formattedOrder = order
+    const previousOrder = state.get("orderData") || [];
+
+    let newOrder;
+
+    if (previousOrder.length > 0) {
+      newOrder = order.filter(
+        (newItem) => !previousOrder.some(
+          (prevItem) => prevItem.producto === newItem.producto
+        )
+      );
+    } else {
+      newOrder = order;
+    }
+
+    const updatedOrder = previousOrder.concat(newOrder);
+    await state.update({ orderData: updatedOrder });
+
+    const formattedOrder = updatedOrder
       .map((item) => `${item.cantidad ?? item.peso} ${item.producto}`)
       .join(", ");
 
-    await state.update({ order: formattedOrder });
-    const formattedOrderMsg = `¿Es correcta tu orden de: ${formattedOrder} ? *si* o *no*`;
+    const formattedOrderMsg = `Tu orden de (${formattedOrder}) ¿Está completa? Escribe *SI* o *NO*`;
     await flowDynamic(formattedOrderMsg);
     await handleHistory(
       { content: formattedOrderMsg, role: "assistant" },
       state
     );
+    await state.update({ order: formattedOrder });
   })
-  .addAction({ capture: true }, async ({ body }, { gotoFlow, flowDynamic, state, endFlow }) => {
+  .addAction({ capture: true }, async ({ body }, { gotoFlow, flowDynamic }) => {
     if (body.toLowerCase().includes("si")) {
       return gotoFlow(flowConfirm);
+    } else if (body.toLowerCase().includes("no")) {
+      await flowDynamic(
+        "Ok, vamos a agregar más productos. ¿Qué te gustaría pedir?"
+      );
+      return;
     } else {
-      await flowDynamic("Ok, ¿Qué te gustaría pedir? Si quieres ver el menú, solo dime *menú*");
-      await clearHistory(state);
-      return endFlow();
+      await flowDynamic(
+        "No entendí tu respuesta. Por favor escribe *SI* o *NO*."
+      );
     }
   });
 
