@@ -50,7 +50,7 @@ const flowSeller = addKeyword(EVENTS.ACTION)
           content: promptInfo,
         },
       ],
-      "gpt-4-turbo"
+      "gpt-3.5-turbo"
     );
 
     console.log(order);
