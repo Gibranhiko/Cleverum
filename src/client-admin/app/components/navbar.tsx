@@ -95,7 +95,7 @@ export default function Navbar() {
         </Link>
         <div className="flex flex-col">
           <Link href="/" onClick={handleHomeClick}>
-            <span className="text-xl font-bold">Cleverum rest 1.0</span>
+            <span className="text-xl font-bold">Cleverum 1.0</span>
           </Link>
         </div>
         <ul className="flex space-x-4 ml-8">

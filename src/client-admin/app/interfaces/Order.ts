@@ -5,4 +5,9 @@ export default interface Order {
   telefono: string;
   fecha: string;
   status: boolean;
+  tipoEntrega: string;
+  total: number;
+  dirección: string;
+  ubicación: string;
+  pago: string;
 }

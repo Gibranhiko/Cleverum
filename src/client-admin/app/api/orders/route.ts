@@ -20,11 +20,30 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { nombre, orden, telefono, fecha, status } = await req.json();
+    const {
+      nombre,
+      orden,
+      telefono,
+      fecha,
+      status,
+      tipoEntrega,
+      total,
+      direccion,
+      ubicacion,
+      metodoPago,
+      pagoCliente
+    } = await req.json();
 
-    if (!nombre || !orden || !telefono || !fecha || typeof status !== 'boolean') {
+    if (!nombre || !orden || !telefono || !fecha || !tipoEntrega || !total) {
       return NextResponse.json(
-        { message: 'Missing required fields or invalid data' },
+        { message: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    if (tipoEntrega === 'domicilio' && (!direccion) &&(!metodoPago)) {
+      return NextResponse.json(
+        { message: 'Address and payment type are required for delivery' },
         { status: 400 }
       );
     }
@@ -37,10 +56,17 @@ export async function POST(req: Request) {
       telefono,
       fecha,
       status,
+      tipoEntrega,
+      total,
+      direccion: tipoEntrega === 'domicilio' ? direccion : null,
+      ubicacion: tipoEntrega === 'domicilio' ? ubicacion : null,
+      metodoPago: tipoEntrega === 'domicilio' ? metodoPago : null,
+      pagoCliente: tipoEntrega === 'domicilio' ? pagoCliente : null,
     });
 
     await newOrder.save();
-     if (global.io) {
+
+    if (global.io) {
       global.io.emit('new-order', newOrder);
     } else {
       console.warn("Socket.IO server is not initialized.");

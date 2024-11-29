@@ -1,7 +1,7 @@
 import { clearHistory, handleHistory } from "../utils/handleHistory";
 import { addKeyword, EVENTS } from "@builderbot/bot";
 
-const flowMenu = addKeyword(EVENTS.ACTION).addAction(
+const menu = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic }) => {
     const menuMsg = "Muy bien, dame un segundo para enviarte nuestro menú...";
     await handleHistory({ content: menuMsg, role: "assistant" }, state);
@@ -19,5 +19,10 @@ const flowMenu = addKeyword(EVENTS.ACTION).addAction(
     await clearHistory(state);
   }
 )
+.addAction(
+  async (_, { flowDynamic }) => {
+    await flowDynamic("Si necesitas algo más solo di hola!");
+  }
+)
 
-export { flowMenu };
+export { menu };

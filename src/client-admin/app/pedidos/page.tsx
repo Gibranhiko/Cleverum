@@ -18,7 +18,11 @@ export default function OrdersPage() {
   }, [state.orders]);
 
   const currentOrders = localOrders.filter(order => order.status === false);
-  const columns = ["nombre", "orden", "telefono", "fecha", "status"];
+  const deliveryOrders = currentOrders.filter(order => order.tipoEntrega === "domicilio");
+  const pickupOrders = currentOrders.filter(order => order.tipoEntrega === "recoger");
+
+  const deliveryColumns = ["nombre", "orden", "telefono", "fecha", "direccion", "ubicacion", "metodoPago", "pagoCliente", "total", "status"];
+  const pickupColumns = ["nombre", "orden", "telefono", "fecha", "total", "status"];
 
   const handleStatusClick = (orderId: string) => {
     setModalMessage("¿Confirma que la orden ha sido entregada?");
@@ -63,12 +67,26 @@ export default function OrdersPage() {
       <Navbar />
       <div className="container mx-auto px-4 mt-2">
         <h1 className="text-2xl font-bold mb-4">Pedidos</h1>
-        <DataTable
-          columns={columns}
-          rows={currentOrders}
-          onStatusClick={handleStatusClick}
-        />
+
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-2">Envios a Domicilio</h2>
+          <DataTable
+            columns={deliveryColumns}
+            rows={deliveryOrders}
+            onStatusClick={handleStatusClick}
+          />
+        </div>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Recoger en Tienda</h2>
+          <DataTable
+            columns={pickupColumns}
+            rows={pickupOrders}
+            onStatusClick={handleStatusClick}
+          />
+        </div>
       </div>
+
       <Modal
         isOpen={isModalOpen}
         onClose={handleCancel}

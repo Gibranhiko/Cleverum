@@ -11,7 +11,11 @@ interface DataTableProps {
   onStatusClick?: (orderId: string) => void;
 }
 
-export default function DataTable({ columns = [], rows = [], onStatusClick }: DataTableProps) {
+export default function DataTable({
+  columns = [],
+  rows = [],
+  onStatusClick,
+}: DataTableProps) {
   const getPendingBtnLayout = (orderId: string) => (
     <a
       href="#"
@@ -30,11 +34,17 @@ export default function DataTable({ columns = [], rows = [], onStatusClick }: Da
   }
 
   return (
-    <table className="min-w-full bg-white border border-gray-200">
+    <table
+      className="min-w-full bg-white border border-gray-200 table-fixed"
+      style={{ tableLayout: "fixed", width: "100%" }}
+    >
       <thead>
         <tr>
           {columns.map((column: string, index: number) => (
-            <th key={index} className="py-2 px-4 border-b">
+            <th
+              key={index}
+              className="py-2 px-4 border border-gray-300 bg-gray-100 text-center"
+            >
               {column.toUpperCase()}
             </th>
           ))}
@@ -43,19 +53,58 @@ export default function DataTable({ columns = [], rows = [], onStatusClick }: Da
       <tbody>
         {rows.map((row: Order | Product | Promo) => (
           <tr key={row._id} className="text-center">
-            {columns.map((column: string, colIndex: number) =>
-              column === "status" ? (
-                <td key={colIndex} className="py-2 px-4 border-b">
-                  {row[column]
-                    ? "Entregado"
-                    : getPendingBtnLayout(row._id)}
-                </td>
-              ) : (
-                <td key={colIndex} className="py-2 px-4 border-b">
-                  {row[column]}
-                </td>
-              )
-            )}
+            {columns.map((column: string, colIndex: number) => {
+              if (column === "status") {
+                return (
+                  <td key={colIndex} className="py-2 px-4 border border-gray-300">
+                    {row[column] ? "Entregado" : getPendingBtnLayout(row._id)}
+                  </td>
+                );
+              } else if (column === "orden") {
+                return (
+                  <td key={colIndex} className="py-2 px-4 border border-gray-300 text-left">
+                    {row[column].map((line, index) => (
+                      <div key={index}>{line}</div>
+                    ))}
+                  </td>
+                );
+              } else if (column === "ubicacion") {
+                return (
+                  <td key={colIndex} className="py-2 px-4 border border-gray-300">
+                    <a
+                      href={row[column]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 hover:underline"
+                    >
+                      Ubicación
+                    </a>
+                  </td>
+                );
+              } else if (column === "fecha") {
+                const formattedDate = new Date(row[column]).toLocaleString('es-MX', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: 'numeric',
+                  second: 'numeric',
+                  hour12: true,
+                });
+                return (
+                  <td key={colIndex} className="py-2 px-4 border border-gray-300">
+                    {formattedDate}
+                  </td>
+                );
+              } else {
+                return (
+                  <td key={colIndex} className="py-2 px-4 border border-gray-300">
+                    {row[column]}
+                  </td>
+                );
+              }
+            })}
           </tr>
         ))}
       </tbody>
