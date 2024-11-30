@@ -56,21 +56,30 @@ export default function DataTable({
             {columns.map((column: string, colIndex: number) => {
               if (column === "status") {
                 return (
-                  <td key={colIndex} className="py-2 px-4 border border-gray-300">
+                  <td
+                    key={colIndex}
+                    className="py-2 px-4 border border-gray-300"
+                  >
                     {row[column] ? "Entregado" : getPendingBtnLayout(row._id)}
                   </td>
                 );
               } else if (column === "orden") {
                 return (
-                  <td key={colIndex} className="py-2 px-4 border border-gray-300 text-left">
+                  <td
+                    key={colIndex}
+                    className="py-2 px-4 border border-gray-300 text-left"
+                  >
                     {row[column].map((line, index) => (
                       <div key={index}>{line}</div>
                     ))}
                   </td>
                 );
-              } else if (column === "ubicacion") {
+              } else if (column === "ubicacion" && row[column]) {
                 return (
-                  <td key={colIndex} className="py-2 px-4 border border-gray-300">
+                  <td
+                    key={colIndex}
+                    className="py-2 px-4 border border-gray-300"
+                  >
                     <a
                       href={row[column]}
                       target="_blank"
@@ -82,24 +91,33 @@ export default function DataTable({
                   </td>
                 );
               } else if (column === "fecha") {
-                const formattedDate = new Date(row[column]).toLocaleString('es-MX', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: 'numeric',
-                  second: 'numeric',
-                  hour12: true,
-                });
+                const formattedDate = new Date(row[column]).toLocaleString(
+                  "es-MX",
+                  {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
+                    second: "numeric",
+                    hour12: true,
+                  }
+                );
                 return (
-                  <td key={colIndex} className="py-2 px-4 border border-gray-300">
+                  <td
+                    key={colIndex}
+                    className="py-2 px-4 border border-gray-300"
+                  >
                     {formattedDate}
                   </td>
                 );
               } else {
                 return (
-                  <td key={colIndex} className="py-2 px-4 border border-gray-300">
+                  <td
+                    key={colIndex}
+                    className="py-2 px-4 border border-gray-300"
+                  >
                     {row[column]}
                   </td>
                 );

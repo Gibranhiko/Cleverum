@@ -1,28 +1,45 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import DataTable from "../components/data-table";
 import Navbar from "../components/navbar";
 import Modal from "../components/modal";
 import { useAppContext } from "../context/AppContext";
 
 export default function OrdersPage() {
-  const { state } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [localOrders, setLocalOrders] = useState([...state.orders || []]);
+  const { state, setState } = useAppContext();
 
-  useEffect(() => {
-    setLocalOrders([...state.orders || []]);
-  }, [state.orders]);
+  const currentOrders = state.orders.filter((order) => order.status === false);
+  const deliveryOrders = currentOrders.filter(
+    (order) => order.tipoEntrega === "domicilio"
+  );
+  const pickupOrders = currentOrders.filter(
+    (order) => order.tipoEntrega === "recoger"
+  );
 
-  const currentOrders = localOrders.filter(order => order.status === false);
-  const deliveryOrders = currentOrders.filter(order => order.tipoEntrega === "domicilio");
-  const pickupOrders = currentOrders.filter(order => order.tipoEntrega === "recoger");
-
-  const deliveryColumns = ["nombre", "orden", "telefono", "fecha", "direccion", "ubicacion", "metodoPago", "pagoCliente", "total", "status"];
-  const pickupColumns = ["nombre", "orden", "telefono", "fecha", "total", "status"];
+  const deliveryColumns = [
+    "nombre",
+    "orden",
+    "telefono",
+    "fecha",
+    "direccion",
+    "ubicacion",
+    "metodoPago",
+    "pagoCliente",
+    "total",
+    "status",
+  ];
+  const pickupColumns = [
+    "nombre",
+    "orden",
+    "telefono",
+    "fecha",
+    "total",
+    "status",
+  ];
 
   const handleStatusClick = (orderId: string) => {
     setModalMessage("¿Confirma que la orden ha sido entregada?");
@@ -45,11 +62,12 @@ export default function OrdersPage() {
           throw new Error("Failed to update status");
         }
 
-        setLocalOrders(prevOrders =>
-          prevOrders.map(order =>
+        setState((prevState) => ({
+          ...prevState,
+          orders: prevState.orders.map((order) =>
             order._id === selectedOrderId ? { ...order, status: true } : order
-          )
-        );
+          ),
+        }));
 
         setIsModalOpen(false);
       } catch (error) {
