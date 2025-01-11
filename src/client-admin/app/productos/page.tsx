@@ -8,6 +8,8 @@ import ProductTable from "./products-table";
 import ColumnConfig from "../interfaces/Column";
 import { productFields } from "../utils/constants";
 import { IProduct } from "../api/products/models/Product";
+import { useAppContext } from "../context/AppContext";
+import InlineLoader from "../components/inline-loader";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<IProduct[]>([]);
@@ -17,6 +19,7 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<IProduct | null>(null);
   const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
   const [columnsConfig, setColumnsConfig] = useState<ColumnConfig[]>([]);
+  const { loaders, setLoader } = useAppContext();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -70,6 +73,7 @@ export default function ProductsPage() {
   };
 
   const deleteProduct = async (productId: string) => {
+    setLoader("deleteProduct", true);
     try {
       const res = await fetch(`/api/products/${productId}`, {
         method: "DELETE",
@@ -79,6 +83,8 @@ export default function ProductsPage() {
       setDeleteModalOpen(false);
     } catch (error) {
       console.error("Error deleting product:", error);
+    } finally {
+      setLoader("deleteProduct", false);
     }
   };
 
@@ -147,8 +153,16 @@ export default function ProductsPage() {
             <button
               onClick={() => deleteProduct(productToDelete!._id)}
               className="bg-red-500 text-white py-2 px-4 rounded"
+              disabled={loaders.deleteProduct}
             >
-              Eliminar
+              {loaders.deleteProduct ? (
+                <>
+                  <InlineLoader margin="mr-2" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar"
+              )}
             </button>
           </div>
         </div>

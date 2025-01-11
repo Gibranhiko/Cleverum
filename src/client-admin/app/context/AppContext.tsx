@@ -1,18 +1,23 @@
-import React, { createContext, useContext, ReactNode, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  ReactNode,
+  useEffect,
+  useState,
+} from "react";
 import { io, Socket } from "socket.io-client";
-import {IOrder} from "../api/orders/models/Order";
-
-
+import { IOrder } from "../api/orders/models/Order";
 interface AppState {
   isAuthenticated: boolean;
   currentPage: string;
   notifications: IOrder[];
   orders: IOrder[];
 }
-
 interface AppContextType {
   state: AppState;
   setState: React.Dispatch<React.SetStateAction<AppState>>;
+  loaders: {[key: string]: boolean};
+  setLoader: (key: string, state: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -25,20 +30,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     orders: [],
   });
 
-  // Check auth tomanage context state
+  const [loaders, setLoaders] = useState<{ [key: string]: boolean }>({});
+
+  const setLoader = (key: string, state: boolean) => {
+    setLoaders((prev) => ({ ...prev, [key]: state }));
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/check-auth');
+        const res = await fetch("/api/auth/check-auth");
         const result = await res.json();
         if (result.isAuthenticated) {
-          setState(prevState => ({ ...prevState, isAuthenticated: true }));
+          setState((prevState) => ({ ...prevState, isAuthenticated: true }));
         }
       } catch (error) {
-        console.error('Error checking auth:', error);
+        console.error("Error checking auth:", error);
       }
     };
-    
+
     checkAuth();
   }, []);
 
@@ -57,7 +67,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
 
         const fetchedOrders: IOrder[] = await res.json();
-        setState(prevState => ({
+        setState((prevState) => ({
           ...prevState,
           orders: fetchedOrders,
         }));
@@ -78,7 +88,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       });
 
       socket.on("new-order", (order: IOrder) => {
-        setState(prevState => ({
+        setState((prevState) => ({
           ...prevState,
           notifications: [...prevState.notifications, order],
           orders: [...prevState.orders, order],
@@ -94,7 +104,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [state.isAuthenticated]);
 
   return (
-    <AppContext.Provider value={{ state, setState }}>
+    <AppContext.Provider value={{ state, setState, loaders, setLoader }}>
       {children}
     </AppContext.Provider>
   );
