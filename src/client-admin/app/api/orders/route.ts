@@ -21,27 +21,27 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const {
-      nombre,
-      orden,
-      telefono,
-      fecha,
+      name,
+      order,
+      phone,
+      date,
       status,
-      tipoEntrega,
+      deliveryType,
       total,
-      direccion,
-      ubicacion,
-      metodoPago,
-      pagoCliente
+      address,
+      location,
+      paymentMethod,
+      clientPayment
     } = await req.json();
 
-    if (!nombre || !orden || !telefono || !fecha || !tipoEntrega || !total) {
+    if (!name || !order || !phone || !date || !deliveryType || !total) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    if (tipoEntrega === 'domicilio' && (!direccion) &&(!metodoPago)) {
+    if (deliveryType === 'domicilio' && (!address) &&(!paymentMethod)) {
       return NextResponse.json(
         { message: 'Address and payment type are required for delivery' },
         { status: 400 }
@@ -51,17 +51,17 @@ export async function POST(req: Request) {
     await connectToDatabase('orders');
 
     const newOrder: IOrder = new Order({
-      nombre,
-      orden,
-      telefono,
-      fecha,
+      name,
+      order,
+      phone,
+      date,
       status,
-      tipoEntrega,
+      deliveryType,
       total,
-      direccion: tipoEntrega === 'domicilio' ? direccion : null,
-      ubicacion: tipoEntrega === 'domicilio' ? ubicacion : null,
-      metodoPago: tipoEntrega === 'domicilio' ? metodoPago : null,
-      pagoCliente: tipoEntrega === 'domicilio' ? pagoCliente : null,
+      direccion: deliveryType === 'domicilio' ? address : null,
+      ubicacion: deliveryType === 'domicilio' ? location : null,
+      metodoPago: deliveryType === 'domicilio' ? paymentMethod : null,
+      pagoCliente: deliveryType === 'domicilio' ? clientPayment : null,
     });
 
     await newOrder.save();

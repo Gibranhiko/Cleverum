@@ -1,31 +1,32 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
 
 export interface IOrder extends Document {
-  nombre: string;
-  orden: string[];
-  telefono: string;
-  fecha: Date; 
-  tipoEntrega: string;
+  _id: string;
+  name: string;
+  order: string[];
+  phone: string;
+  date: Date; 
+  deliveryType: string;
   total: number;
   status: boolean;
-  direccion?: string | null;
-  ubicacion?: string | null;
-  metodoPago?: string | null;
-  pagoCliente?: number | null;
+  address?: string | null;
+  location?: string | null;
+  paymentMethod?: string | null;
+  clientPayment?: number | null;
 }
 
 const OrderSchema = new Schema<IOrder>({
-  nombre: { type: String, required: true },
-  orden: { type: [String], required: true },
-  telefono: { type: String, required: true },
-  fecha: { type: Date, required: true },
-  tipoEntrega: { type: String, required: true },
+  name: { type: String, required: true },
+  order: { type: [String], required: true },
+  phone: { type: String, required: true },
+  date: { type: Date, required: true },
+  deliveryType: { type: String, required: true },
   total: { type: Number, required: true },
   status: { type: Boolean, required: true },
-  direccion: { type: String, default: null },
-  ubicacion: { type: String, default: null },
-  metodoPago: { type: String, default: null },
-  pagoCliente: { type: Number, default: null },
+  address: { type: String, default: null },
+  location: { type: String, default: null },
+  paymentMethod: { type: String, default: null },
+  clientPayment: { type: Number, default: null },
 });
 
 const Order: Model<IOrder> =

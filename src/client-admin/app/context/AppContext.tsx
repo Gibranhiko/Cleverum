@@ -1,12 +1,13 @@
 import React, { createContext, useContext, ReactNode, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
-import Order from "../interfaces/Order";
+import {IOrder} from "../api/orders/models/Order";
+
 
 interface AppState {
   isAuthenticated: boolean;
   currentPage: string;
-  notifications: Order[];
-  orders: Order[];
+  notifications: IOrder[];
+  orders: IOrder[];
 }
 
 interface AppContextType {
@@ -55,7 +56,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           throw new Error("Failed to fetch orders");
         }
 
-        const fetchedOrders: Order[] = await res.json();
+        const fetchedOrders: IOrder[] = await res.json();
         setState(prevState => ({
           ...prevState,
           orders: fetchedOrders,
@@ -76,7 +77,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         transports: ["websocket"],
       });
 
-      socket.on("new-order", (order: Order) => {
+      socket.on("new-order", (order: IOrder) => {
         setState(prevState => ({
           ...prevState,
           notifications: [...prevState.notifications, order],
