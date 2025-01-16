@@ -1,5 +1,5 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
-import { clearHistory } from "../utils/handleHistory";
+import { clearHistory } from "../../utils/handleHistory";
 import { format } from "date-fns";
 import axios from "axios";
 

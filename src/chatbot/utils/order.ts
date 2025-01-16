@@ -43,41 +43,38 @@ function flatProducts(products) {
 
 function formatProducts(products) {
   return products
-  .map((product, index) => {
+    .map((product, index) => {
       let productMessage =
         `${index + 1}️⃣ *${product.name}*\n` +
         `${product.description}\n` +
         `Incluye ${product.includes.toLowerCase()}\n`;
 
-      if (product.options) {
+      if (Array.isArray(product.options) && product.options.length > 0) {
         const optionsMessage = product.options
           .map((option) => {
             let pricePerUnit = option.price;
 
-            if (product.type === "kilo") {
-              if (option.min === 0.5) {
-                return `Medio kg = $${pricePerUnit.toFixed(2)} c/u`;
-              } else if (option.max) {
-                return `${option.min}-${option.max} kg = $${pricePerUnit.toFixed(2)} c/u`;
-              } else {
-                return `${option.min} kg = $${pricePerUnit.toFixed(2)} c/u`;
-              }
-            } else if (product.type === "unidad") {
-              if (option.min === 0.5) {
-                return `Medio = $${option.price.toFixed(2)}`;
-              } else if (option.max && option.min !== option.max) {
-                return `${option.min}-${option.max} = $${option.price.toFixed(2)} c/u`;
-              }
-              return `${option.min} = $${option.price.toFixed(2)} c/u`;
+            // Check for the "medio" case (min: 0.5 and max: 0.5)
+            if (option.min === 0.5 && option.max === 0.5) {
+              return `medio = $${pricePerUnit.toFixed(2)}`;
             }
-            return "";
-          })
-          .join(", ");
 
+            // For other kilo or unidad types with ranges
+            if (product.type === "kilo" || product.type === "unidad") {
+              if (option.max && option.min !== option.max) {
+                return `${option.min}-${option.max} = $${pricePerUnit.toFixed(2)}`;
+              } else {
+                return `${option.min} = $${pricePerUnit.toFixed(2)}`;
+              }
+            }
+
+            return `${option.min}${option.max ? `-${option.max}` : ""} = $${pricePerUnit.toFixed(2)}`;
+          })
+          .filter((message) => message.trim() !== "")
+          .join(", ");
         productMessage += optionsMessage;
       }
-
-      return productMessage;
+      return productMessage.trim();
     })
     .join("\n\n");
 }
@@ -85,14 +82,24 @@ function formatProducts(products) {
 function formatOrder(orderList) {
   const orderDetails = [];
   orderList.forEach((item) => {
-    const productName = item.name;
+    const productName = item.name || "Producto desconocido";
     let quantityText = "";
-    if (item.type === "kilo") {
-      quantityText = `${item.quantity} kilo${item.quantity > 1 ? "s" : ""}`;
+
+    if (item.type === "kg") {
+      if (item.quantity) {
+        quantityText = `${item.quantity} kilo${item.quantity > 1 ? "s" : ""}`;
+      } else {
+        quantityText = "Cantidad no especificada";
+      }
     } else if (item.type === "unidad") {
-      quantityText = `${item.quantity} unidad${item.quantity > 1 ? "es" : ""}`;
+      if (item.quantity) {
+        quantityText = `${item.quantity} unidad${item.quantity > 1 ? "es" : ""}`;
+      } else {
+        quantityText = "Cantidad no especificada";
+      }
     }
-    const totalCost = item.totalCost;
+
+    const totalCost = item.totalCost || 0; // Default to 0 if totalCost is missing
     orderDetails.push(
       `${productName} - ${quantityText} = $${totalCost.toFixed(2)}`
     );
@@ -101,12 +108,21 @@ function formatOrder(orderList) {
   return orderDetails;
 }
 
-
-const paymentConfirmation = (name, address, phone, paymentMethod, orderDetails, totalOrderCost, changeAmount?) => {
+const paymentConfirmation = (
+  name,
+  address,
+  phone,
+  paymentMethod,
+  orderDetails,
+  totalOrderCost,
+  changeAmount?
+) => {
   const payment =
     paymentMethod === "tarjeta"
       ? "tarjeta"
-      : `efectivo (cambio para $${paymentMethod === "efectivo" ? changeAmount : 0})`;
+      : `efectivo (cambio para $${
+          paymentMethod === "efectivo" ? changeAmount : 0
+        })`;
 
   return [
     `Gracias, *${name}*. Tu pedido ha sido confirmado para envío a:\n` +
@@ -118,4 +134,11 @@ const paymentConfirmation = (name, address, phone, paymentMethod, orderDetails, 
   ];
 };
 
-export { OrderItem, validateOrder, flatProducts, formatProducts, formatOrder, paymentConfirmation };
+export {
+  OrderItem,
+  validateOrder,
+  flatProducts,
+  formatProducts,
+  formatOrder,
+  paymentConfirmation,
+};

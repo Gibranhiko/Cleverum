@@ -1,4 +1,4 @@
-import { handleHistory } from "../utils/handleHistory";
+import { handleHistory } from "../../utils/handleHistory";
 import { addKeyword, EVENTS } from "@builderbot/bot";
 
 const flowHello = addKeyword(EVENTS.ACTION).addAction(

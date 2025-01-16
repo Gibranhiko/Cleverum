@@ -1,12 +1,12 @@
 import { BotContext, BotMethods } from "@builderbot/bot/dist/types";
 import { getHistoryParse } from "../utils/handleHistory";
 import AIClass from "../services/ai";
-import { flowSeller } from "../flows/seller.flow";
+import { flowSeller } from "../flows/unused/seller.flow";
 import * as path from "path";
 import fs from "fs";
-import { flowService } from "../flows/service.flow";
-import { flowHello } from "../flows/hello.flow";
-import { flowTalker } from "../flows/talker.flow";
+import { flowService } from "../flows/unused/service.flow";
+import { flowHello } from "../flows/unused/hello.flow";
+import { flowTalker } from "../flows/unused/talker.flow";
 
 const discriminatorDataPath = path.join("src/chatbot/prompts", "/prompt-discriminator.txt");
 const discriminatorData = fs.readFileSync(discriminatorDataPath, "utf-8");

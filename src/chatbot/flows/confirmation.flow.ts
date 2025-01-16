@@ -89,15 +89,14 @@ export const confirmation = addKeyword(EVENTS.ACTION)
         );
 
         const orderData = {
-          nombre: name,
-          orden: orderDetails,
-          telefono: phone,
-          fecha: new Date().toISOString(),
-          tipoEntrega: deliveryMethod,
+          name: name,
+          order: orderList,
+          phone: phone,
+          date: new Date().toISOString(),
+          deliveryType: deliveryMethod,
           total: totalOrderCost,
           status: false
         };
-        console.log(orderData);
 
         try {
           await sendOrder(orderData);
@@ -177,16 +176,16 @@ export const confirmation = addKeyword(EVENTS.ACTION)
           totalOrderCost
         );
         const orderData = {
-          nombre: name,
-          orden: orderDetails,
-          telefono: phone,
-          fecha: new Date().toISOString(),
-          tipoEntrega: deliveryMethod,
+          name: name,
+          order: orderList,
+          phone: phone,
+          date: new Date().toISOString(),
+          deliveryType: deliveryMethod,
           total: totalOrderCost,
-          direccion: address,
-          ...(location && { ubicacion: location }),
+          address: address,
+          ...(location && { location: location }),
           status: false,
-          metodoPago: paymentMethod
+          paymentMethod: paymentMethod
         };
   
         try {
@@ -252,18 +251,18 @@ export const confirmation = addKeyword(EVENTS.ACTION)
       );
 
       const orderData = {
-        nombre: name,
-        orden: orderDetails,
-        telefono: phone,
-        fecha: new Date().toISOString(),
-        tipoEntrega: deliveryMethod,
+        name: name,
+        order: orderList,
+        phone: phone,
+        date: new Date().toISOString(),
+        deliveryType: deliveryMethod,
         total: totalOrderCost,
-        direccion: address,
-        ...(location && { ubicacion: location }),
-        pago: changeAmount,
+        address: address,
+        ...(location && { location: location }),
+        payment: changeAmount,
         status: false,
-        metodoPago: paymentMethod,
-        pagoCliente: changeAmount
+        paymentMethod: paymentMethod,
+        clientPayment: changeAmount
       };
 
       try {

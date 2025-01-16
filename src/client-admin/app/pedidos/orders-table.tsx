@@ -2,6 +2,7 @@ import React from "react";
 import DataTable from "../components/data-table";
 import { IOrder } from "../api/orders/models/Order";
 import ColumnConfig from "../interfaces/Column";
+import { formatOrder } from "../../../chatbot/utils/order";
 
 interface OrdersTableProps {
   orders: IOrder[];
@@ -27,19 +28,48 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
 
     columnsConfig.forEach((col) => {
       if (order[col.field] !== null && order[col.field] !== undefined) {
-        row[col.title] = order[col.field];
+        if (col.field === "date") {
+          row[col.title] = new Date(order.date).toLocaleString();
+        } else if (col.field === "status") {
+          row[col.title] = (
+            <button
+              onClick={() => onStatusClick(order._id)}
+              className="text-blue-500 hover:underline"
+            >
+              Entregar
+            </button>
+          );
+        } else if (col.field === "order" && Array.isArray(order[col.field])) {
+          const formattedOrder = formatOrder(order[col.field]);
+          row[col.title] = (
+            <ul>
+              {formattedOrder.map((detail, index) => (
+                <li key={index}>{detail}</li>
+              ))}
+            </ul>
+          );
+        } else if (col.field === "location") {
+          if (typeof order[col.field] === "string") {
+            row[col.title] = (
+              <a
+                href={order[col.field]}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              >
+                {order[col.field]}
+              </a>
+            );
+          } else {
+            row[col.title] = "Ubicación no disponible";
+          }
+        } else {
+          row[col.title] = order[col.field];
+        }
+      } else {
+        row[col.title] = "-";
       }
     });
-    row["Fecha"] = new Date(order.date).toLocaleString();
-
-    row["Estado"] = (
-      <button
-        onClick={() => onStatusClick(order._id)}
-        className="text-blue-500 hover:underline"
-      >
-        Entregar
-      </button>
-    );
 
     return row;
   });

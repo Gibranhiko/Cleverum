@@ -1,4 +1,4 @@
-import { clearHistory, handleHistory } from "../utils/handleHistory";
+import { clearHistory, handleHistory } from "../../utils/handleHistory";
 import { addKeyword, EVENTS } from "@builderbot/bot";
 
 const info = addKeyword(EVENTS.ACTION).addAction(

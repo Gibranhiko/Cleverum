@@ -1,46 +1,88 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
+import { selection } from "./selection.flow";
+import { fetchProducts } from "../utils/api";
 
-// Flujos específicos para cada opción
-import { mainCourse } from "./mainCourse.flow";
-import { snack } from "./snack.flow";
-import { combo } from "./combo.flow";
-import { menu } from "./menu.flow";
-import { info } from "./info.flow";
-import { drink } from "./drink.flow";
+const generateMenuOptions = (products) => {
+  if (products.length === 0) {
+    return "No hay productos disponibles en este momento. Por favor, inténtalo más tarde.";
+  }
+  const categories = {};
+
+  products.forEach((product) => {
+    if (!categories[product.category]) {
+      categories[product.category] = [];
+    }
+    categories[product.category].push(product.name);
+  });
+
+  const menuOptions = Object.keys(categories).map((category, index) => {
+    return {
+      display: `${index + 1}️⃣ *${category}*`,
+      category,
+    };
+  });
+
+  return menuOptions;
+};
 
 const welcome = addKeyword(EVENTS.WELCOME).addAnswer(
-  `Hola Bienvenido al Rey del Pollito 🐔 Selecciona una opción:
-  
-  1️⃣ *Ordenar plato fuerte (pollo, carne asada, costillas)*
-  2️⃣ *Ordenar una botana (nuggets, alitas, boneless, tenders)*
-  3️⃣ *Ordenar un combo (pollo + carnes y extras)*
-  4️⃣ *Ordenar bebidas (refrescos, aguas)*
-  5️⃣ *Ver todo el menú*
-  6️⃣ *Información de la empresa*`,
-  { capture: true },
-  async (ctx, { gotoFlow, fallBack }) => {
-    // Validación de la respuesta del usuario
-    if (!["1", "2", "3", "4", "5", "6"].includes(ctx.body)) {
-      return fallBack(
-        "Respuesta inválida. Por favor selecciona una de las opciones (1, 2, 3, 4, 5, 6)."
+  "Hola Bienvenido al Rey del Pollito 🐔",
+  null,
+  async (_, { flowDynamic, endFlow, state }) => {
+    try {
+      const products = await fetchProducts();
+      const menuOptions = generateMenuOptions(products);
+
+      await state.update({ menuOptions: menuOptions });
+      await state.update({ products: products });
+
+      if (typeof menuOptions === "string") {
+        await flowDynamic(menuOptions);
+        return endFlow();
+      }
+
+      const answer = menuOptions.map((option) => option.display).join("\n");
+
+      await flowDynamic(`Selecciona una opción:\n\n${answer}`);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+
+      await flowDynamic(
+        "Hubo un problema al obtener los productos, inténtalo de nuevo más tarde."
       );
-    }
-    // Lógica de redirección según la respuesta del usuario
-    switch (ctx.body) {
-      case "1":
-        return gotoFlow(mainCourse);
-      case "2":
-        return gotoFlow(snack);
-      case "3":
-        return gotoFlow(combo);
-      case "4":
-        return gotoFlow(drink);
-      case "5":
-        return gotoFlow(menu);
-      case "6":
-        return gotoFlow(info);
+      return endFlow();
     }
   }
-);
+)
+.addAction(
+    { capture: true },
+    async (ctx, { fallBack, state, gotoFlow}) => { 
+      const menuOptions = state.get("menuOptions");
+      const products = state.get("products");
 
-export { welcome };
+      const validOptions = menuOptions.map((_, index) =>
+        (index + 1).toString()
+      );
+      
+      if (!validOptions.includes(ctx.body)) {
+        return fallBack(
+          "Respuesta inválida. Por favor selecciona una de las opciones disponibles."
+        );
+      }
+      
+      const selectedCategoryIndex = parseInt(ctx.body, 10) - 1;
+      const selectedCategory = menuOptions[selectedCategoryIndex]?.category;
+      
+      const filteredProducts = products.filter(
+        (product) => product.category === selectedCategory
+      );
+
+      await state.update({ filteredProducts: filteredProducts });
+      
+      return gotoFlow(selection);
+
+    });
+
+    export { welcome };
+
+
