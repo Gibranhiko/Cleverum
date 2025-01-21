@@ -57,7 +57,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 rel="noopener noreferrer"
                 className="text-blue-500 hover:underline"
               >
-                {order[col.field]}
+                Ubicación
               </a>
             );
           } else {

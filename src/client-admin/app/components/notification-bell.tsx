@@ -16,7 +16,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
   }, []);
 
   const notificationsList = notifications?.map((notification) => ({
-    title: `${notification.nombre} - "${notification.telefono}"`,
+    title: `${notification.name} - "${notification.phone}"`,
     link: "/pedidos",
   }));
 

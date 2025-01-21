@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "../utils/mongoose";
 import Order, { IOrder } from "./models/Order";
 
+// Fetch all orders
 export async function GET() {
   try {
     await connectToDatabase("orders");
-
     const orders: IOrder[] = await Order.find({});
-
     return NextResponse.json(orders, { status: 200 });
   } catch (error) {
     console.error("Failed to fetch orders:", error);
@@ -18,6 +17,7 @@ export async function GET() {
   }
 }
 
+// Create a new order
 export async function POST(req: Request) {
   try {
     const {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       address,
       location,
       paymentMethod,
-      clientPayment
+      clientPayment,
     } = await req.json();
 
     if (!name || !order || !phone || !date || !deliveryType || !total) {
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (deliveryType === "domicilio" && !address && !paymentMethod) {
+    if (deliveryType === "domicilio" && (!address || !paymentMethod)) {
       return NextResponse.json(
         { message: "Address and payment type are required for delivery" },
         { status: 400 }
@@ -68,8 +68,6 @@ export async function POST(req: Request) {
 
     if (global.io) {
       global.io.emit("new-order", newOrder);
-    } else {
-      console.warn("Socket.IO server is not initialized.");
     }
 
     return NextResponse.json(newOrder, { status: 201 });
@@ -77,39 +75,6 @@ export async function POST(req: Request) {
     console.error("Failed to create order:", error);
     return NextResponse.json(
       { message: "Failed to create order" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PATCH(req: Request) {
-  try {
-    const { id } = await req.json();
-
-    if (!id) {
-      return NextResponse.json(
-        { message: "Order ID is required" },
-        { status: 400 }
-      );
-    }
-
-    await connectToDatabase("orders");
-
-    const updatedOrder = await Order.findByIdAndUpdate(
-      id,
-      { status: true },
-      { new: true }
-    );
-
-    if (!updatedOrder) {
-      return NextResponse.json({ message: "Order not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(updatedOrder, { status: 200 });
-  } catch (error) {
-    console.error("Failed to update order status:", error);
-    return NextResponse.json(
-      { message: "Failed to update order status" },
       { status: 500 }
     );
   }

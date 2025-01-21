@@ -1,4 +1,4 @@
-import mongoose, { Document, Model, Schema } from 'mongoose';
+import mongoose, { Document, Model, Schema } from "mongoose";
 
 interface IOrderItem {
   _id: string;
@@ -21,7 +21,7 @@ export interface IOrder extends Document {
   name: string;
   order: IOrderItem[];
   phone: string;
-  date: Date; 
+  date: Date;
   deliveryType: string;
   total: number;
   status: boolean;
@@ -31,23 +31,26 @@ export interface IOrder extends Document {
   clientPayment?: number | null;
 }
 
-const OrderItemSchema = new Schema<IOrderItem>({
-  _id: { type: String, required: true },
-  category: { type: String, required: true },
-  name: { type: String, required: true },
-  description: { type: String, required: true },
-  type: { type: String, required: true },
-  options: [
-    {
-      min: { type: Number, required: true },
-      max: { type: Number },
-      price: { type: Number, required: true },
-    },
-  ],
-  includes: { type: String, required: true },
-  quantity: { type: Number, required: true },
-  totalCost: { type: Number, required: true },
-});
+const OrderItemSchema = new Schema<IOrderItem>(
+  {
+    category: { type: String, required: true },
+    name: { type: String, required: true },
+    description: { type: String, required: true },
+    type: { type: String, required: true },
+    options: [
+      {
+        min: { type: Number, required: true },
+        max: { type: Number },
+        price: { type: Number, required: true },
+      },
+      { _id: false },
+    ],
+    includes: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    totalCost: { type: Number, required: true },
+  },
+  { _id: false }
+);
 
 const OrderSchema = new Schema<IOrder>({
   name: { type: String, required: true },
@@ -64,6 +67,6 @@ const OrderSchema = new Schema<IOrder>({
 });
 
 const Order: Model<IOrder> =
-  mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
+  mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
 
 export default Order;
