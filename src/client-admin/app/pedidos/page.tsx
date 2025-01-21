@@ -8,12 +8,13 @@ import OrdersTable from "./orders-table";
 import { IOrder } from "../api/orders/models/Order";
 import ColumnConfig from "../interfaces/Column";
 import { orderFields } from "../utils/constants";
+import InlineLoader from "../components/inline-loader";
 
 export default function OrdersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const { state, setState } = useAppContext();
+  const { state, setState, loaders, setLoader } = useAppContext();
   const [columnsConfig, setColumnsConfig] = useState<ColumnConfig[]>([]);
 
   const currentOrders = state.orders.filter((order) => order.status === false);
@@ -36,29 +37,34 @@ export default function OrdersPage() {
 
   const handleAccept = async () => {
     if (selectedOrderId) {
+      setLoader("acceptOrder", true);
       try {
-        const response = await fetch("/api/orders", {
+        const response = await fetch(`/api/orders/${selectedOrderId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ id: selectedOrderId }),
+          body: JSON.stringify({ status: true }),
         });
 
         if (!response.ok) {
           throw new Error("Failed to update status");
         }
 
+        const updatedOrder = await response.json();
+
         setState((prevState) => ({
           ...prevState,
           orders: prevState.orders.map((order) =>
-            order._id === selectedOrderId ? { ...order, status: true } : order
+            order._id === updatedOrder._id ? updatedOrder : order
           ) as IOrder[],
         }));
 
         setIsModalOpen(false);
       } catch (error) {
         console.error("Error updating status:", error);
+      } finally {
+        setLoader("acceptOrder", false);
       }
     }
   };
@@ -103,9 +109,17 @@ export default function OrdersPage() {
           </button>
           <button
             onClick={handleAccept}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="flex items-center justify-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loaders.acceptOrder}
           >
-            Aceptar
+            {loaders.acceptOrder ? (
+              <>
+                <InlineLoader margin="mr-2" />
+                Procesando...
+              </>
+            ) : (
+              "Aceptar"
+            )}
           </button>
         </div>
       </Modal>
