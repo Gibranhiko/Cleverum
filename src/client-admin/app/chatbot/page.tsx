@@ -7,12 +7,11 @@ import Image from "next/image";
 export default function ChatBotPage() {
   const [qrCodeSrc, setQrCodeSrc] = useState("");
 
-  // Function to fetch the QR code image
   const fetchQRCode = async () => {
     try {
-      const response = await fetch("/getqr");
+      const response = await fetch("/api/chatbot");
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        throw new Error(`Failed to fetch QR code: ${response.statusText}`);
       }
       const blob = await response.blob();
       const imageUrl = URL.createObjectURL(blob);
@@ -21,10 +20,10 @@ export default function ChatBotPage() {
       console.error("Error fetching QR code:", error);
     }
   };
-
+  
   useEffect(() => {
     fetchQRCode();
-  }, []);
+  }, []);  
 
   return (
     <>
