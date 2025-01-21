@@ -11,6 +11,7 @@ import { Server } from "socket.io";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { provider } from "./chatbot/provider";
 
 const PORT = process.env.PORT;
 const dev = process.env.NODE_ENV !== "production";
@@ -38,20 +39,6 @@ const main = async () => {
     await connectToDatabase("orders");
     console.log("Connected to MongoDB");
 
-    // Serve QR code image
-    app.get("/getqr", (req, res) => {
-      const qrImagePath = path.join(__dirname, "../bot.qr.png");
-
-      fs.readFile(qrImagePath, (err, data) => {
-        if (err) {
-          console.log("Error reading the QR code image:", err);
-          return res.status(500).send("Error reading the QR code image");
-        }
-        res.contentType("image/png");
-        res.send(data);
-      });
-    });
-
     // Handle Next.js app router requests
     app.all("*", (req, res) => {
       return handle(req, res);
@@ -66,6 +53,8 @@ const main = async () => {
       },
       { extensions: { ai } }
     );
+
+    console.log(provider);
 
     // Initialize Socket.IO
     const io = new Server(httpWebServer, {

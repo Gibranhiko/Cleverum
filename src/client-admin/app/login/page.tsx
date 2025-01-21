@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Toast from "../components/toast";
 import { useAppContext } from "../context/AppContext";
+import InlineLoader from "../components/inline-loader";
 
 type FormData = {
   username: string;
@@ -15,16 +16,23 @@ type FormData = {
 };
 
 export default function LoginPage() {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>();
   const router = useRouter();
-  
-  // State for success and error messages
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(
+    null
+  );
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  const {setState} = useAppContext();
+  const { loaders, setLoader, setState } = useAppContext();
 
   const onSubmit = async (data: FormData) => {
+    setLoader("login", true);
+
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
@@ -41,19 +49,19 @@ export default function LoginPage() {
 
         setState((prevState) => ({
           ...prevState,
-          isAuthenticated: true
+          isAuthenticated: true,
         }));
 
-        // Redirect to home
         router.push("/");
       } else {
-        // Handle login error
         setErrorMessage(result.message);
         setSuccessMessage(null);
       }
     } catch (error) {
-      setErrorMessage("Error al iniciar sesión" + error);
+      setErrorMessage("Error al iniciar sesión: " + error);
       setSuccessMessage(null);
+    } finally {
+      setLoader("login", false);
     }
   };
 
@@ -66,22 +74,8 @@ export default function LoginPage() {
         height={200}
         className="mb-6"
       />
-
-      {/* Toast for Success */}
-      {successMessage && (
-        <Toast 
-          type="success" 
-          message={successMessage} 
-        />
-      )}
-
-      {/* Toast for Error */}
-      {errorMessage && (
-        <Toast 
-          type="error" 
-          message={errorMessage} 
-        />
-      )}
+      {successMessage && <Toast type="success" message={successMessage} />}
+      {errorMessage && <Toast type="error" message={errorMessage} />}
 
       <form
         onSubmit={handleSubmit(onSubmit)}
@@ -91,26 +85,46 @@ export default function LoginPage() {
         <input
           type="text"
           placeholder="Nombre de usuario"
-          {...register("username", { required: "Nombre de usuario es requerido" })}
-          className={`mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${errors.username ? 'border-red-500' : ''}`}
+          {...register("username", {
+            required: "Nombre de usuario es requerido",
+          })}
+          className={`mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${
+            errors.username ? "border-red-500" : ""
+          }`}
+          disabled={loaders.login}
         />
         {errors.username && (
-          <p className="text-red-500 text-sm mb-4 text-center">{errors.username.message}</p>
+          <p className="text-red-500 text-sm mb-4 text-center">
+            {errors.username.message}
+          </p>
         )}
         <input
           type="password"
           placeholder="Contraseña"
           {...register("password", { required: "Contraseña es requerida" })}
-          className={`mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${errors.password ? 'border-red-500' : ''}`}
+          className={`mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${
+            errors.password ? "border-red-500" : ""
+          }`}
+          disabled={loaders.login}
         />
         {errors.password && (
-          <p className="text-red-500 text-sm mb-4 text-center">{errors.password.message}</p>
+          <p className="text-red-500 text-sm mb-4 text-center">
+            {errors.password.message}
+          </p>
         )}
         <button
           type="submit"
-          className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors w-full"
+          className="flex items-center justify-center bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors w-full disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loaders.login}
         >
-          Ingresar
+          {loaders.login ? (
+            <>
+              <InlineLoader margin="mr-2" />
+              Procesando...
+            </>
+          ) : (
+            "Ingresar"
+          )}
         </button>
         <p className="mt-4 text-center">
           ¿No tienes una cuenta?{" "}

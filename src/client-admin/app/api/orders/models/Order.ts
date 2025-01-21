@@ -1,22 +1,72 @@
-import mongoose, { Document, Model, Schema } from 'mongoose';
+import mongoose, { Document, Model, Schema } from "mongoose";
 
-export interface IOrder extends Document {
-  nombre: string;
-  orden: string;
-  telefono: string;
-  fecha: string;
-  status: boolean;
+interface IOrderItem {
+  _id: string;
+  category: string;
+  name: string;
+  description: string;
+  type: string;
+  options: {
+    min: number;
+    max?: number;
+    price: number;
+  }[];
+  includes: string;
+  quantity: number;
+  totalCost: number;
 }
 
-const OrderSchema: Schema<IOrder> = new Schema({
-  nombre: { type: String, required: true },
-  orden: { type: String, required: true },
-  telefono: { type: String, required: true },
-  fecha: { type: String, required: true },
+export interface IOrder extends Document {
+  _id: string;
+  name: string;
+  order: IOrderItem[];
+  phone: string;
+  date: Date;
+  deliveryType: string;
+  total: number;
+  status: boolean;
+  address?: string | null;
+  location?: string | null;
+  paymentMethod?: string | null;
+  clientPayment?: number | null;
+}
+
+const OrderItemSchema = new Schema<IOrderItem>(
+  {
+    category: { type: String, required: true },
+    name: { type: String, required: true },
+    description: { type: String, required: true },
+    type: { type: String, required: true },
+    options: [
+      {
+        min: { type: Number, required: true },
+        max: { type: Number },
+        price: { type: Number, required: true },
+      },
+      { _id: false },
+    ],
+    includes: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    totalCost: { type: Number, required: true },
+  },
+  { _id: false }
+);
+
+const OrderSchema = new Schema<IOrder>({
+  name: { type: String, required: true },
+  order: { type: [OrderItemSchema], required: true },
+  phone: { type: String, required: true },
+  date: { type: Date, required: true },
+  deliveryType: { type: String, required: true },
+  total: { type: Number, required: true },
   status: { type: Boolean, required: true },
+  address: { type: String, default: null },
+  location: { type: String, default: null },
+  paymentMethod: { type: String, default: null },
+  clientPayment: { type: Number, default: null },
 });
 
 const Order: Model<IOrder> =
-  mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
+  mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
 
 export default Order;

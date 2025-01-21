@@ -1,64 +1,37 @@
-"use client";
-
 import React from "react";
-import Order from "../interfaces/Order";
-import Product from "../interfaces/Product";
-import Promo from "../interfaces/Promo";
 
-interface DataTableProps {
+interface DataTableProps<T> {
   columns: string[];
-  rows: Order[] | Product[] | Promo[];
-  onStatusClick?: (orderId: string) => void;
+  rows: T[];
 }
 
-export default function DataTable({ columns = [], rows = [], onStatusClick }: DataTableProps) {
-  const getPendingBtnLayout = (orderId: string) => (
-    <a
-      href="#"
-      onClick={(e) => {
-        e.preventDefault();
-        onStatusClick(orderId);
-      }}
-      className="text-blue-500 hover:underline"
-    >
-      Pendiente
-    </a>
-  );
-
-  if (!columns.length || !rows.length) {
-    return <p>No data available.</p>;
-  }
-
+const DataTable = <T,>({ columns, rows }: DataTableProps<T>) => {
   return (
-    <table className="min-w-full bg-white border border-gray-200">
+    <table className="min-w-full border">
       <thead>
         <tr>
-          {columns.map((column: string, index: number) => (
-            <th key={index} className="py-2 px-4 border-b">
-              {column.toUpperCase()}
+          {columns.map((col, index) => (
+            <th key={index} className="py-2 px-4 border">
+              {col}
             </th>
           ))}
         </tr>
       </thead>
       <tbody>
-        {rows.map((row: Order | Product | Promo) => (
-          <tr key={row._id} className="text-center">
-            {columns.map((column: string, colIndex: number) =>
-              column === "status" ? (
-                <td key={colIndex} className="py-2 px-4 border-b">
-                  {row[column]
-                    ? "Entregado"
-                    : getPendingBtnLayout(row._id)}
+        {rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {columns.map((col, colIndex) => {
+              return row[col] !== null && row[col] !== undefined ? (
+                <td key={colIndex} className="py-2 px-4 border">
+                  {row[col]}
                 </td>
-              ) : (
-                <td key={colIndex} className="py-2 px-4 border-b">
-                  {row[column]}
-                </td>
-              )
-            )}
+              ) : null;
+            })}
           </tr>
         ))}
       </tbody>
     </table>
   );
-}
+};
+
+export default DataTable;

@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from "react";
 import { BellIcon } from "@heroicons/react/24/outline";
-import Order from "../interfaces/Order";
+import { IOrder } from "../api/orders/models/Order";
 import DropDown from "./drop-down";
 interface NotificationBellProps {
-  notifications: Order[];
+  notifications: IOrder[];
 }
 
 const NotificationBell: React.FC<NotificationBellProps> = ({
@@ -16,7 +16,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
   }, []);
 
   const notificationsList = notifications?.map((notification) => ({
-    title: `${notification.nombre} - "${notification.telefono}"`,
+    title: `${notification.name} - "${notification.phone}"`,
     link: "/pedidos",
   }));
 
