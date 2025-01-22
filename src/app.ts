@@ -54,8 +54,6 @@ const main = async () => {
       { extensions: { ai } }
     );
 
-    console.log(provider);
-
     // Initialize Socket.IO
     const io = new Server(httpWebServer, {
       cors: {
