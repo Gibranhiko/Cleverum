@@ -7,16 +7,28 @@ import React, {
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { IOrder } from "../api/orders/models/Order";
+
 interface AppState {
   isAuthenticated: boolean;
   currentPage: string;
   notifications: IOrder[];
   orders: IOrder[];
+  profileData: {
+    adminName: string;
+    companyName: string;
+    companyAddress: string;
+    companyEmail: string;
+    whatsappPhone: string;
+    facebookLink: string;
+    instagramLink: string;
+    logoUrl: string;
+  };
 }
+
 interface AppContextType {
   state: AppState;
   setState: React.Dispatch<React.SetStateAction<AppState>>;
-  loaders: {[key: string]: boolean};
+  loaders: { [key: string]: boolean };
   setLoader: (key: string, state: boolean) => void;
 }
 
@@ -28,6 +40,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     currentPage: "/",
     notifications: [],
     orders: [],
+    profileData: {
+      adminName: "",
+      companyName: "",
+      companyAddress: "",
+      companyEmail: "",
+      whatsappPhone: "",
+      facebookLink: "",
+      instagramLink: "",
+      logoUrl: "",
+    },
   });
 
   const [loaders, setLoaders] = useState<{ [key: string]: boolean }>({});
@@ -36,6 +58,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setLoaders((prev) => ({ ...prev, [key]: state }));
   };
 
+  // Check user authentication
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -77,6 +100,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchOrders();
+  }, [state.isAuthenticated]);
+
+  // Fetch profile data when authenticated
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!state.isAuthenticated) return;
+
+      try {
+        const res = await fetch("/api/profile", { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to fetch profile data");
+
+        const profileData = await res.json();
+        setState((prevState) => ({
+          ...prevState,
+          profileData,
+        }));
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      }
+    };
+
+    fetchProfile();
   }, [state.isAuthenticated]);
 
   // Handle WebSocket connection for real-time orders when authenticated

@@ -9,3 +9,4 @@ src/client-admin/.next
 .rollup.cache
 tsconfig.tsbuildinfo
 package-lock.json
+*.png

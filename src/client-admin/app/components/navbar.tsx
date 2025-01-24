@@ -21,13 +21,13 @@ const navMenu = [
 ];
 
 const dropDownMenu = [
-  { title: "Perfil", link: "#" },
-  { title: "API keys", link: "#" },
+  { title: "Perfil", link: "/perfil" },
   { title: "Desconectar", link: "#" },
 ];
 
 export default function Navbar() {
   const { state, setState } = useAppContext();
+  const { profileData } = state;
   const currentOrders = [
     ...state.orders.filter((order) => order.status === false),
   ];
@@ -120,13 +120,13 @@ export default function Navbar() {
 
         <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
           <Image
-            src="/images/rey-pollo-logo.png"
+            src="/uploads/logo-company.png"
             alt="Store Logo"
             width={40}
             height={40}
           />
         </div>
-        <span className="font-bold">El rey del pollito</span>
+        <span className="font-bold">{profileData.companyName}</span>
         <button
           onClick={toggleDropdown}
           className="focus:outline-none flex items-center"
