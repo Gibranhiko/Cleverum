@@ -135,7 +135,6 @@ const paymentConfirmation = (
 };
 
 export {
-  OrderItem,
   validateOrder,
   flatProducts,
   formatProducts,
