@@ -8,10 +8,8 @@ import AIClass from "./chatbot/services/ai/index";
 import flow from "./chatbot/flows";
 import connectToDatabase from "./client-admin/app/api/utils/mongoose";
 import { Server } from "socket.io";
-import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { provider } from "./chatbot/provider";
 
 const PORT = process.env.PORT;
 const dev = process.env.NODE_ENV !== "production";
