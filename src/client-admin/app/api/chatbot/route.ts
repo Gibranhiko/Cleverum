@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 export async function GET() {
   try {
     const qrImagePath = path.join(__dirname, "../../../../../bot.qr.png");
+    console.log("QR Image Path:", qrImagePath);
 
     // Check if the file exists
     if (!fs.existsSync(qrImagePath)) {
