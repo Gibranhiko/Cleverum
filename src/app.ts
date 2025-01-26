@@ -10,6 +10,7 @@ import connectToDatabase from "./client-admin/app/api/utils/mongoose";
 import { Server } from "socket.io";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const PORT = process.env.PORT;
 const dev = process.env.NODE_ENV !== "production";
@@ -36,6 +37,20 @@ const main = async () => {
     // Connect to MongoDB
     await connectToDatabase("orders");
     console.log("Connected to MongoDB");
+
+    // Serve QR code image
+    app.get("/getqr", (req, res) => {
+      const qrImagePath = path.join(__dirname, "../bot.qr.png");
+
+      fs.readFile(qrImagePath, (err, data) => {
+        if (err) {
+          console.log("Error reading the QR code image:", err);
+          return res.status(500).send("Error reading the QR code image");
+        }
+        res.contentType("image/png");
+        res.send(data);
+      });
+    });
 
     // Handle Next.js app router requests
     app.all("*", (req, res) => {
