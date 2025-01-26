@@ -24,3 +24,14 @@ export const fetchProducts = async () => {
     throw error;
   }
 };
+
+export const fetchProfile = async () => {
+  try {
+    const response = await axios.get(`${process.env.PUBLIC_URL}api/profile`);
+    console.log("Fetched profile:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching profile from API:", error);
+    throw error;
+  }
+};

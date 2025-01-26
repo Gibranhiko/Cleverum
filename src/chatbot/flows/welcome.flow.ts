@@ -1,6 +1,7 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
 import { selection } from "./selection.flow";
 import { fetchProducts } from "../utils/api";
+import { fetchProfile } from "../utils/api";
 
 const generateMenuOptions = (products) => {
   if (products.length === 0) {
@@ -26,9 +27,22 @@ const generateMenuOptions = (products) => {
 };
 
 const welcome = addKeyword(EVENTS.WELCOME).addAnswer(
-  "Hola Bienvenido al Rey del Pollito 🐔",
+  "!Hola¡",
   null,
   async (_, { flowDynamic, endFlow, state }) => {
+    try {
+      const profile = await fetchProfile();
+      const { companyName } = profile;
+      const welcomeMessage = `Bienvenido a ${companyName}! \n\n¿Qué te gustaría ordenar hoy?`;
+      await flowDynamic(welcomeMessage);
+    } catch (error) {
+      console.error("Error fetching products or profile", error);
+
+      await flowDynamic(
+        "Hubo un problema al obtener los productos, inténtalo de nuevo más tarde."
+      );
+      return endFlow();
+    } 
     try {
       const products = await fetchProducts();
       const menuOptions = generateMenuOptions(products);
@@ -40,12 +54,11 @@ const welcome = addKeyword(EVENTS.WELCOME).addAnswer(
         await flowDynamic(menuOptions);
         return endFlow();
       }
-
       const answer = menuOptions.map((option) => option.display).join("\n");
-
+      
       await flowDynamic(`Selecciona una opción:\n\n${answer}`);
     } catch (error) {
-      console.error("Error fetching products:", error);
+      console.error("Error fetching products or profile", error);
 
       await flowDynamic(
         "Hubo un problema al obtener los productos, inténtalo de nuevo más tarde."
