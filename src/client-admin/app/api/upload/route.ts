@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import busboy from "busboy";
 import { Readable } from "stream";
+import AWS from "aws-sdk";
 
 // Convert a Web ReadableStream to a Node.js Readable stream
 function readableStreamToNodeStream(stream: ReadableStream): Readable {
@@ -51,26 +50,33 @@ async function parseForm(req: NextRequest): Promise<{ fields: any; file: Buffer;
   });
 }
 
-// Export the POST method for handling file uploads
 export async function POST(req: NextRequest) {
   try {
-    const { file } = await parseForm(req);
+    const { fields, file } = await parseForm(req);
 
-    // Save the file to the server
-    const uploadsDir = path.join(process.cwd(), "src/client-admin/public/uploads");
+    const spacesEndpoint = new AWS.Endpoint(process.env.DO_ENDPOINT);
+    const s3 = new AWS.S3({
+      endpoint: spacesEndpoint,
+      accessKeyId: process.env.DO_ACCESS_KEY_ID,
+      secretAccessKey: process.env.DO_SECRET_ACCESS_KEY,
+    });
 
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    const bucketName = process.env.DO_BUCKET_NAME;
 
-    const filePath = path.join(uploadsDir, 'logo-company.png');
-    fs.writeFileSync(filePath, file);
+    // Upload the file
+    const uploadResult = await s3
+      .upload({
+        Bucket: bucketName,
+        Key: `uploads/${fields.fileName || "logo-company.png"}`,
+        Body: file,
+        ACL: "public-read",
+        ContentType: "image/png",
+      })
+      .promise();
 
-    // Respond with the file URL
-    const fileUrl = `uploads/logo-company.png`;
-    return NextResponse.json({ fileUrl });
+    return NextResponse.json({ fileUrl: uploadResult.Location });
   } catch (error) {
-    console.error("File upload error:", error);
+    console.error("Error uploading to Spaces:", error);
     return new NextResponse("Failed to upload file", { status: 500 });
   }
 }

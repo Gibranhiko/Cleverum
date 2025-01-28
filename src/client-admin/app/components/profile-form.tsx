@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useAppContext } from "../context/AppContext";
+import InlineLoader from "./inline-loader";
 
 interface ProfileFormProps {
   profileData: {
@@ -33,6 +35,8 @@ export default function ProfileForm({
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const { loaders, setLoader, setState } = useAppContext();
+
   useEffect(() => {
     if (profileData.logoUrl) {
       setLogoPreview(profileData.logoUrl);
@@ -48,6 +52,7 @@ export default function ProfileForm({
   };
 
   const onSubmit = async (data: any) => {
+    setLoader("upload", true);
     if (selectedFile) {
       if (selectedFile.type !== "image/png") {
         setErrorMessage("Only PNG files are allowed.");
@@ -72,6 +77,8 @@ export default function ProfileForm({
       } catch (error) {
         console.error("Error uploading file:", error);
         return;
+      } finally {
+        setLoader("upload", false);
       }
     } else {
       // If no file is selected, set logoUrl to null
@@ -97,6 +104,8 @@ export default function ProfileForm({
       // Display error message
       console.error("Error saving profile:", error.message);
       setErrorMessage(error.message);
+    } finally {
+      setLoader("upload", false);
     }
   };
 
@@ -235,8 +244,16 @@ export default function ProfileForm({
         <button
           type="submit"
           className="bg-green-500 text-white py-2 px-4 rounded mr-2"
+          disabled={loaders.upload}
         >
-          Guardar
+          {loaders.upload ? (
+            <>
+              <InlineLoader margin="mr-2" />
+              Guardando...
+            </>
+          ) : (
+            "Guardar"
+          )}
         </button>
         <button
           type="button"

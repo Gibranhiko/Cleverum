@@ -18,6 +18,7 @@
     "@builderbot/bot": "^1.2.2",
     "@builderbot/provider-baileys": "^1.2.2",
     "@heroicons/react": "^2.1.5",
+    "aws-sdk": "^2.1692.0",
     "axios": "^1.7.7",
     "bcrypt": "^5.1.1",
     "date-fns": "^3.3.1",

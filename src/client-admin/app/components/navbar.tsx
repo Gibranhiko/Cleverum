@@ -119,8 +119,8 @@ export default function Navbar() {
         <NotificationBell notifications={currentOrders} />
 
         <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
-          <Image
-            src="/uploads/logo-company.png"
+          <img
+            src={profileData.logoUrl}
             alt="Store Logo"
             width={40}
             height={40}
