@@ -1,38 +1,28 @@
-# Base Stage for Dependencies
-FROM node:18-alpine AS base
+# Builder stage
+FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Define build arguments for sensitive information
 ARG MONGODB_URI
-ENV MONGODB_URI=$MONGODB_URI
 
 # Install dependencies
-COPY package*.json ./
+COPY package*.json ./ 
 RUN npm ci
 
-# Copy common configurations
-COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./
-
-# Server Build Stage
-FROM base AS server-builder
-
-# Copy server source code
+# Copy the entire source code (including client-admin and chatbot)
 COPY ./src ./src
 
-# Build the server (Rollup)
+# Copy rollup tsconfig tailwind config
+COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
+
+# Step 1: Build the server (Rollup)
 RUN npm run build:server
 
-# Client Build Stage
-FROM base AS client-builder
+# Step 2: Build the client-admin (Next.js app)
+RUN npm run build:client-admin
 
-# Copy client-admin source code
-COPY ./src/client-admin ./src/client-admin
 
-# Build the client-admin (Next.js)
-WORKDIR /app/src/client-admin
-RUN npm run build
-
-# Production Stage
+# Production stage
 FROM node:18-alpine AS production
 WORKDIR /app
 
@@ -40,24 +30,24 @@ WORKDIR /app
 ARG MONGODB_URI
 ENV MONGODB_URI=$MONGODB_URI
 
-# Copy backend build files (server)
-COPY --from=server-builder /app/dist ./dist
+# Copy Next.js built files (client-admin)
+COPY --from=builder /app/src/client-admin/.next ./src/client-admin/.next
 
-# Copy client-admin built files (Next.js)
-COPY --from=client-builder /app/src/client-admin/.next ./src/client-admin/.next
+# Copy backend build files (dist)
+COPY --from=builder /app/dist ./dist
 
 # Copy production dependencies
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./ 
+
+# Copy environment files
+COPY --from=builder /app/src/chatbot/prompts ./src/chatbot/prompts
 
 # Copy the public directory for static assets (images, etc.)
-COPY ./src/client-admin/public ./src/client-admin/public
-
-# Copy chatbot-related files (e.g., prompts)
-COPY ./src/chatbot/prompts ./src/chatbot/prompts
+COPY --from=builder /app/src/client-admin/public ./src/client-admin/public
 
 # Expose the port your app runs on
 EXPOSE 3000
 
-# Start the application
+# Start the application (backend)
 CMD ["npm", "start"]
