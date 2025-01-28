@@ -13,19 +13,19 @@ RUN npm ci
 # Copy common configurations
 COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./
 
-# Build Stage for the Server
+# Server Build Stage
 FROM base AS server-builder
 
-# Copy the server source code
+# Copy server source code
 COPY ./src ./src
 
 # Build the server (Rollup)
 RUN npm run build:server
 
-# Build Stage for the Client-Admin
+# Client Build Stage
 FROM base AS client-builder
 
-# Copy the client-admin source code
+# Copy client-admin source code
 COPY ./src/client-admin ./src/client-admin
 
 # Build the client-admin (Next.js)
