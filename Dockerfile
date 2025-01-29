@@ -16,7 +16,7 @@ COPY ./src ./src
 COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
 
 # Set Node.js memory limit for the build process (e.g., 4GB)
-ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # Step 1: Build the server (Rollup)
 RUN npm run build:server
