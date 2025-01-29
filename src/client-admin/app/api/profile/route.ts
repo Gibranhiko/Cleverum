@@ -8,14 +8,7 @@ export async function GET(_: Request) {
     await connectToDatabase("profiles");
     const profile = await Profile.findOne();
 
-    if (!profile) {
-      return NextResponse.json(
-        { message: "Profile not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(profile, { status: 200 });
+    return NextResponse.json(profile || {}, { status: 200 });
   } catch (error) {
     console.error("Failed to fetch profile:", error);
     return NextResponse.json(
