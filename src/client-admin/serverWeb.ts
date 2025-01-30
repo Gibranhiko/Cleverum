@@ -3,7 +3,7 @@ import express from "express";
 import next from "next";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import connectToDatabase from "./client-admin/app/api/utils/mongoose";
+import connectToDatabase from "./app/api/utils/mongoose";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";

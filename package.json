@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "lint": "npx eslint --config ./src/chatbot/eslint.config.cjs ./src/chatbot",
-    "dev:web": "nodemon src/serverWeb.ts",
-    "dev:bot": "nodemon src/serverBot.ts",
+    "dev:web": "nodemon --config nodemon.web.json src/client-admin/serverWeb.ts",
+    "dev:bot": "nodemon --config nodemon.chatbot.json src/chatbot/serverBot.ts",
     "dev": "npm-run-all --parallel dev:web dev:bot",
     "build": "npm run build:web && npm run build:bot",
     "build:web": "next build src/client-admin",
