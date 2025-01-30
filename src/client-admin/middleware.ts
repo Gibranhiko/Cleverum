@@ -42,5 +42,5 @@ export async function middleware(req: NextRequest) {
 
 // Routes config
 export const config = {
-  matcher: ['/', '/home', '/pedidos', '/productos', '/promociones', '/chatbot'],
+  matcher: ['/', '/home', '/pedidos', '/productos', '/promociones', '/chatbot', '/perfil'],
 };
