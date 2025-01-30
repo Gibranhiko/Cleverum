@@ -8,7 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.WEB_PORT;
 const dev = process.env.NODE_ENV !== "production";
 const clientAdminApp = next({ dev, dir: "./src/client-admin" });
 const handle = clientAdminApp.getRequestHandler();

@@ -4,7 +4,7 @@ import { BaileysProvider as Provider } from '@builderbot/provider-baileys';
 import AIClass from "./chatbot/services/ai/index";
 import flow from "./chatbot/flows";
 
-const PORT = process.env.BOT_PORT || 3001;
+const PORT = process.env.BOT_PORT;
 
 const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-3.5-turbo");
 
