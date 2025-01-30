@@ -2,22 +2,16 @@ import "dotenv/config";
 import express from "express";
 import next from "next";
 import { createServer } from "http";
-import { createBot, createProvider, MemoryDB } from "@builderbot/bot";
-import { BaileysProvider as Provider } from '@builderbot/provider-baileys'
-import AIClass from "./chatbot/services/ai/index";
-import flow from "./chatbot/flows";
-import connectToDatabase from "./client-admin/app/api/utils/mongoose";
 import { Server } from "socket.io";
+import connectToDatabase from "./client-admin/app/api/utils/mongoose";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 const dev = process.env.NODE_ENV !== "production";
 const clientAdminApp = next({ dev, dir: "./src/client-admin" });
 const handle = clientAdminApp.getRequestHandler();
-
-const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-3.5-turbo");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,19 +20,13 @@ const main = async () => {
   try {
     await clientAdminApp.prepare();
     const app = express();
-
-    const adapterProvider = createProvider(Provider, {
-      timeRelease: 10800000, // 3 hours in milliseconds
-    });
-
-    // Create an HTTP server instance from Express
     const httpWebServer = createServer(app);
 
-    // Connect to MongoDB
+    // Conectar a MongoDB
     await connectToDatabase("orders");
     console.log("Connected to MongoDB");
 
-    // Serve QR code image
+    // Servir QR Code
     app.get("/getqr", (req, res) => {
       const qrImagePath = path.join(__dirname, "../bot.qr.png");
 
@@ -52,32 +40,21 @@ const main = async () => {
       });
     });
 
-    // Handle Next.js app router requests
+    // Next.js handler
     app.all("*", (req, res) => {
       return handle(req, res);
     });
 
-    // Bot routes or middleware
-    const { httpServer } = await createBot(
-      {
-        database: new MemoryDB(),
-        provider: adapterProvider,
-        flow,
-      },
-      { extensions: { ai } }
-    );
-
-    // Initialize Socket.IO
+    // WebSockets
     const io = new Server(httpWebServer, {
       cors: {
-        origin: "*", // Handle specific origin request on PROD
+        origin: "*",
         methods: ["GET", "POST"],
       },
     });
 
     global.io = io;
 
-    // Handle WebSocket connections
     io.on("connection", (socket) => {
       console.log("New WebSocket connection:", socket.id);
 
@@ -91,13 +68,13 @@ const main = async () => {
       });
     });
 
-    // Start the server
+    // Iniciar el servidor
     httpWebServer.listen(PORT, () => {
       console.log(`Web server running on http://localhost:${PORT}`);
     });
-    httpServer(Number(PORT) + 1);
+
   } catch (err) {
-    console.log("App could not start" + err);
+    console.log("Web server could not start: " + err);
   }
 };
 

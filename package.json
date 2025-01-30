@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "lint": "npx eslint --config ./src/chatbot/eslint.config.cjs ./src/chatbot",
-    "start": "node ./dist/app.cjs",
-    "dev": "nodemon src/app.ts",
-    "build": "npm run build:client-admin && npm run build:server",
-    "build:client-admin": "next build src/client-admin",
-    "build:server": "npx rollup -c"
+    "dev:web": "nodemon src/serverWeb.ts",
+    "dev:bot": "nodemon src/serverBot.ts",
+    "dev": "npm-run-all --parallel dev:web dev:bot",
+    "build": "npm run build:web && npm run build:bot",
+    "build:web": "next build src/client-admin",
+    "build:bot": "npx rollup -c",
+    "start:web": "node ./dist/serverWeb.cjs",
+    "start:bot": "node ./dist/serverBot.cjs",
+    "start:all": "npm-run-all --parallel start:web start:bot"
   },
   "keywords": [],
   "author": "",
