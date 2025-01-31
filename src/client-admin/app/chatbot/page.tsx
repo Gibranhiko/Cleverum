@@ -25,7 +25,8 @@ export default function ChatBotPage() {
 
   const startBot = async () => {
     try {
-      const response = await fetch(`/api/chatbotApi/start-bot/${userId}`, { method: "POST" });
+      const response = await fetch(`http://localhost:3000/start-bot/${userId}`, { method: "POST" });
+      console.log(response);
       if (response.ok) {
         setBotActive(true);
         fetchQRCode();
