@@ -7,8 +7,10 @@ import {
 import fs from "fs";
 import qrcode from "qrcode";
 import { Boom } from "@hapi/boom";
+import cors from "cors";
 
 const app = express();
+app.use(cors({ origin: "http://localhost:4000" }));
 const userBots = new Map();
 const usedPorts = new Set();
 
