@@ -1,6 +1,0 @@
-{
-  "watch": ["src/client-admin"],
-  "ext": "ts",
-  "ignore": ["*.test.ts"],
-  "exec": "tsx src/client-admin/serverWeb.ts"
-}

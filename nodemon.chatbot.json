@@ -1,6 +1,0 @@
-{
-  "watch": ["src/chatbot"],
-  "ext": "ts",
-  "ignore": ["*.test.ts"],
-  "exec": "tsx src/chatbot/serverBot.ts"
-}
