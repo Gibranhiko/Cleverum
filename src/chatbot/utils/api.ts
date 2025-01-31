@@ -3,7 +3,7 @@ import axios from "axios";
 export const sendOrder = async (orderData) => {
   try {
     const response = await axios.post(
-      `${process.env.PUBLIC_URL}api/orders`,
+      `${process.env.WEB_PUBLIC_URL}api/orders`,
       orderData
     );
     console.log("Order API response:", response.data);
@@ -16,7 +16,7 @@ export const sendOrder = async (orderData) => {
 
 export const fetchProducts = async () => {
   try {
-    const response = await axios.get(`${process.env.PUBLIC_URL}api/products`);
+    const response = await axios.get(`${process.env.WEB_PUBLIC_URL}api/products`);
     console.log("Fetched products:", response.data);
     return response.data;
   } catch (error) {
@@ -27,7 +27,7 @@ export const fetchProducts = async () => {
 
 export const fetchProfile = async () => {
   try {
-    const response = await axios.get(`${process.env.PUBLIC_URL}api/profile`);
+    const response = await axios.get(`${process.env.WEB_PUBLIC_URL}api/profile`);
     console.log("Fetched profile:", response.data);
     return response.data;
   } catch (error) {

@@ -22,11 +22,9 @@ const main = async () => {
     const app = express();
     const httpWebServer = createServer(app);
 
-    // Conectar a MongoDB
     await connectToDatabase("orders");
     console.log("Connected to MongoDB");
 
-    // Servir QR Code
     app.get("/getqr", (req, res) => {
       const qrImagePath = path.join(__dirname, "../bot.qr.png");
 
@@ -68,7 +66,6 @@ const main = async () => {
       });
     });
 
-    // Iniciar el servidor
     httpWebServer.listen(PORT, () => {
       console.log(`Web server running on http://localhost:${PORT}`);
     });

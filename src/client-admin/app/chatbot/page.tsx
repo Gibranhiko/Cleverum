@@ -7,10 +7,11 @@ import Image from "next/image";
 export default function ChatBotPage() {
   const [qrCodeSrc, setQrCodeSrc] = useState("");
   const [botActive, setBotActive] = useState(false);
+  const [userId, setUserId] = useState("user123"); // Example user ID, replace with dynamic user identifier
 
   const fetchQRCode = async () => {
     try {
-      const response = await fetch("/getqr");
+      const response = await fetch(`/getqr/${userId}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch QR code: ${response.statusText}`);
       }
@@ -24,10 +25,12 @@ export default function ChatBotPage() {
 
   const startBot = async () => {
     try {
-      const response = await fetch("/start-bot", { method: "POST" });
+      const response = await fetch(`/api/chatbotApi/start-bot/${userId}`, { method: "POST" });
       if (response.ok) {
         setBotActive(true);
         fetchQRCode();
+      } else {
+        console.error("Error starting chatbot:", response.statusText);
       }
     } catch (error) {
       console.error("Error starting chatbot:", error);
@@ -36,7 +39,7 @@ export default function ChatBotPage() {
 
   const stopBot = async () => {
     try {
-      const response = await fetch("/stop-bot", { method: "POST" });
+      const response = await fetch(`/delete-bot/${userId}`, { method: "DELETE" });
       if (response.ok) {
         setBotActive(false);
         setQrCodeSrc("");

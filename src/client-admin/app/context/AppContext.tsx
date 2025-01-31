@@ -128,7 +128,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let socket: Socket;
     if (state.isAuthenticated) {
-      socket = io(process.env.PUBLIC_URL, {
+      socket = io(process.env.WEB_PUBLIC_URL, {
         transports: ["websocket"],
       });
 
