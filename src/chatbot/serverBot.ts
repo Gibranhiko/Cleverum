@@ -1,6 +1,12 @@
 import express from "express";
-import { makeWASocket, useMultiFileAuthState, DisconnectReason } from "@whiskeysockets/baileys";
+import {
+  makeWASocket,
+  useMultiFileAuthState,
+  DisconnectReason,
+} from "@whiskeysockets/baileys";
 import fs from "fs";
+import qrcode from "qrcode";
+import { Boom } from "@hapi/boom";
 
 const app = express();
 const userBots = new Map();
@@ -21,34 +27,27 @@ const initializeUserBot = async (userId) => {
       const userPort = getNextAvailablePort();
       const authDir = `./sessions/${userId}`;
       if (!fs.existsSync(authDir)) fs.mkdirSync(authDir, { recursive: true });
-      
+
       const { state, saveCreds } = await useMultiFileAuthState(authDir);
       const sock = makeWASocket({
         auth: state,
-        printQRInTerminal: false,  // Disable printing QR code in the terminal
       });
 
       sock.ev.on("creds.update", saveCreds);
-      sock.ev.on("connection.update", ({ connection, lastDisconnect, qr }) => {
-  if (qr) {
-    fs.writeFileSync(`./qrs/bot_${userId}.png`, qr);
-    console.log(`QR guardado en ./qrs/bot_${userId}.png`);
-  }
-  
-  if (connection === "close") {
-    // Check if lastDisconnect exists and if it has an error with output
-    if (connection === "close") {
-      const error = lastDisconnect?.error as { output?: { statusCode: number } }; // Type assertion
-      if (error?.output?.statusCode !== undefined) {
-        const shouldReconnect = error.output.statusCode !== DisconnectReason.loggedOut;
-        if (shouldReconnect) initializeUserBot(userId);
-        else deleteUserBot(userId);
-      } else {
-        console.error("Error: Disconnect reason does not contain output or statusCode.");
-      }
-    }
-  }
-});
+      sock.ev.on("connection.update", async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        if (qr) {
+          const qrImage = await qrcode.toDataURL(qr);
+          userBots.set(userId, { sock, port: userPort, qrData: qrImage });
+        }
+
+        if (connection === "close") {
+          const error = lastDisconnect?.error;
+          const shouldReconnect = error instanceof Boom && error.output?.statusCode !== DisconnectReason.loggedOut;
+          if (shouldReconnect) initializeUserBot(userId);
+          else deleteUserBot(userId);
+        }
+      });
 
       userBots.set(userId, { sock, port: userPort });
       console.log(`Bot iniciado para usuario: ${userId}`);
@@ -75,21 +74,21 @@ app.get("/get-qr/:userId", (req, res) => {
   const userId = req.params.userId;
   const userBot = getUserBot(userId);
   if (userBot && userBot.qrData) {
-    res.status(200).send(userBot.qrData);  // Send the QR as base64 to the browser
+    res.status(200).json({ qr: userBot.qrData });
   } else {
-    res.status(404).send("QR no disponible o usuario no encontrado.");
+    res.status(404).json({ error: "QR no disponible o usuario no encontrado." });
   }
 });
 
 app.post("/start-bot/:userId", async (req, res) => {
   const { userId } = req.params;
   await initializeUserBot(userId);
-  res.status(200).send(`Bot iniciado para usuario: ${userId}`);
+  res.status(200).json({ message: `Bot iniciado para usuario: ${userId}` });
 });
 
 app.delete("/delete-bot/:userId", (req, res) => {
   deleteUserBot(req.params.userId);
-  res.status(200).send(`Bot eliminado para usuario: ${req.params.userId}`);
+  res.status(200).json({ message: `Bot eliminado para usuario: ${req.params.userId}` });
 });
 
 const apiPort = process.env.API_PORT || 3000;
