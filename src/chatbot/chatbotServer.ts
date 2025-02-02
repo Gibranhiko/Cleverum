@@ -8,7 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
-const PORT = process.env.BOT_PORT || 4000;
+const PORT = process.env.BOT_PORT;
 const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-3.5-turbo");
 
 const __filename = fileURLToPath(import.meta.url);

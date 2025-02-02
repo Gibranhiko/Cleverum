@@ -24,7 +24,7 @@ const main = async () => {
     console.log("Connected to MongoDB");
 
     // Handle Next.js app router requests
-    app.all(URL, (req, res) => {
+    app.all("*", (req, res) => {
       return handle(req, res);
     });
 

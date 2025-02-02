@@ -85,8 +85,8 @@ export default function Navbar() {
     <nav className="bg-gray-900 text-white p-4 flex items-center justify-between relative">
       <div className="flex items-center space-x-8">
         <Link href="/" onClick={handleHomeClick}>
-          <Image
-            src="/images/cleverum-brain.png"
+          <img
+            src="https://cleverum.nyc3.digitaloceanspaces.com/public/cleverum-brain.png"
             alt="Cleverum Logo"
             width={40}
             height={40}

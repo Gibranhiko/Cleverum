@@ -51,8 +51,8 @@ export default function RegisterPage() {
 
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-cyan-900">
-      <Image
-        src="/images/cleverum-logo.png"
+      <img
+        src="https://cleverum.nyc3.digitaloceanspaces.com/public/cleverum-logo.png"
         alt="Cleverum Logo"
         width={200}
         height={200}
