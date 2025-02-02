@@ -23,6 +23,7 @@ interface AppState {
     instagramLink: string;
     logoUrl: string;
   };
+  loading: boolean;
 }
 
 interface AppContextType {
@@ -50,6 +51,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       instagramLink: "",
       logoUrl: "",
     },
+    loading: true, // Nuevo estado para manejar carga inicial
   });
 
   const [loaders, setLoaders] = useState<{ [key: string]: boolean }>({});
@@ -58,93 +60,59 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setLoaders((prev) => ({ ...prev, [key]: state }));
   };
 
-  // Check user authentication
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthStatus = async () => {
       try {
-        const res = await fetch("/api/auth/check-auth");
-        const result = await res.json();
-        if (result.isAuthenticated) {
-          setState((prevState) => ({ ...prevState, isAuthenticated: true }));
+        const res = await fetch("/", { method: "HEAD" }); // Fetch headers only
+        const isAuthenticated = res.headers.get("X-Authenticated") === "true";
+  
+        if (!isAuthenticated) {
+          setState((prev) => ({ ...prev, isAuthenticated: false, loading: false }));
+          return;
         }
-      } catch (error) {
-        console.error("Error checking auth:", error);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  // Fetch orders when authenticated
-  useEffect(() => {
-    const fetchOrders = async () => {
-      if (!state.isAuthenticated) return;
-
-      try {
-        const res = await fetch(`api/orders`, {
-          cache: "no-store",
-        });
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch orders");
-        }
-
-        const fetchedOrders: IOrder[] = await res.json();
-        setState((prevState) => ({
-          ...prevState,
-          orders: fetchedOrders,
-        }));
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-      }
-    };
-
-    fetchOrders();
-  }, [state.isAuthenticated]);
-
-  // Fetch profile data when authenticated
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!state.isAuthenticated) return;
-
-      try {
-        const res = await fetch("/api/profile", { cache: "no-store" });
-        if (!res.ok) throw new Error("Failed to fetch profile data");
-
-        const profileData = await res.json();
-        setState((prevState) => ({
-          ...prevState,
+  
+        // Now fetch the necessary data
+        const [ordersRes, profileRes] = await Promise.all([
+          fetch("/api/orders", { cache: "no-store" }),
+          fetch("/api/profile", { cache: "no-store" }),
+        ]);
+  
+        if (!ordersRes.ok || !profileRes.ok) throw new Error("Error fetching data");
+  
+        const [orders, profileData] = await Promise.all([ordersRes.json(), profileRes.json()]);
+  
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: true,
+          orders,
           profileData,
+          loading: false,
         }));
       } catch (error) {
-        console.error("Error fetching profile data:", error);
+        console.error("Error fetching initial data:", error);
+        setState((prev) => ({ ...prev, loading: false }));
       }
     };
+  
+    checkAuthStatus();
+  }, []);  
 
-    fetchProfile();
-  }, [state.isAuthenticated]);
-
-  // Handle WebSocket connection for real-time orders when authenticated
+  // Conectar WebSocket cuando el usuario esté autenticado
   useEffect(() => {
-    let socket: Socket;
-    if (state.isAuthenticated) {
-      socket = io(process.env.WEB_PUBLIC_URL, {
-        transports: ["websocket"],
-      });
+    if (!state.isAuthenticated) return;
 
-      socket.on("new-order", (order: IOrder) => {
-        setState((prevState) => ({
-          ...prevState,
-          notifications: [...prevState.notifications, order],
-          orders: [...prevState.orders, order],
-        }));
-      });
-    }
+    const socket: Socket = io(process.env.WEB_PUBLIC_URL!, { transports: ["websocket"] });
+
+    socket.on("new-order", (order: IOrder) => {
+      setState((prevState) => ({
+        ...prevState,
+        notifications: [...prevState.notifications, order],
+        orders: [...prevState.orders, order],
+      }));
+    });
 
     return () => {
-      if (socket) {
-        socket.disconnect();
-      }
+      socket.disconnect();
     };
   }, [state.isAuthenticated]);
 

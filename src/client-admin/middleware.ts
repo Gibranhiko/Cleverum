@@ -1,46 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function middleware(req: NextRequest) {
-  // Exclude token validation for the /login page
-  if (req.nextUrl.pathname === '/login') {
+  const { pathname } = req.nextUrl;
+  const isApiRoute = pathname.startsWith('/api');
+  const isAuthApiRoute = pathname.startsWith('/api/auth');
+  const isLoginPage = pathname === '/login';
+
+  if (isLoginPage || isAuthApiRoute) {
     return NextResponse.next();
   }
 
-  // Get the token from cookies
-  const tokenCookie = req.cookies.get('token');
-  const token = tokenCookie ? tokenCookie.value : null;
+  const token = req.cookies.get('token')?.value;
 
   if (!token) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    const response = isApiRoute
+      ? NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      : NextResponse.redirect(new URL('/login', req.url));
+
+    response.headers.set('X-Authenticated', 'false');
+    return response;
   }
 
   try {
-    // Call the validate-token API to check the token, and pass the token in the Authorization header
-    const res = await fetch(`${process.env.WEB_PUBLIC_URL}api/auth/validate-token`, {
+    const res = await fetch(`${req.nextUrl.origin}/api/auth/validate-token`, {
       method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!res.ok) {
-      throw new Error('Token validation failed');
-    }
+    if (!res.ok) throw new Error('Token validation failed');
 
     const { user } = await res.json();
+    const response = NextResponse.next();
 
-    // Attach the decoded data to the req object (optional for further use)
-    (req as NextRequest & { user: typeof user }).user = user;
+    response.headers.set('X-User-Data', JSON.stringify(user));
+    response.headers.set('X-Authenticated', 'true');
 
-    return NextResponse.next();
+    return response;
   } catch (error) {
-    console.log('Invalid token, redirecting user to login:', error);
-    return NextResponse.redirect(new URL('/login', req.url));
+    console.log('Token inválido, redirigiendo:', error);
+    const response = isApiRoute
+      ? NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
+      : NextResponse.redirect(new URL('/login', req.url));
+
+    response.headers.set('X-Authenticated', 'false');
+    return response;
   }
 }
 
-// Routes config
 export const config = {
-  matcher: ['/', '/home', '/pedidos', '/productos', '/promociones', '/chatbot', '/perfil'],
+  matcher: [
+    '/', 
+    '/home', 
+    '/pedidos', 
+    '/productos', 
+    '/promociones', 
+    '/chatbot', 
+    '/perfil',
+    '/api/:path*',
+  ],
 };
