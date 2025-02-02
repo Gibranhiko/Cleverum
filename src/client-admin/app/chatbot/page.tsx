@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/navbar";
 import Image from "next/image";
-import { BOT_PUBLIC_URL } from "../utils/constants";
 
 export default function ChatBotPage() {
   const [qrCodeSrc, setQrCodeSrc] = useState("");
