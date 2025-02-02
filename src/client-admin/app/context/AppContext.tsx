@@ -71,31 +71,43 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
   
-        // Now fetch the necessary data
-        const [ordersRes, profileRes] = await Promise.all([
-          fetch("/api/orders", { cache: "no-store" }),
-          fetch("/api/profile", { cache: "no-store" }),
-        ]);
-  
-        if (!ordersRes.ok || !profileRes.ok) throw new Error("Error fetching data");
-  
-        const [orders, profileData] = await Promise.all([ordersRes.json(), profileRes.json()]);
-  
-        setState((prev) => ({
-          ...prev,
-          isAuthenticated: true,
-          orders,
-          profileData,
-          loading: false,
-        }));
+        // If authenticated, set isAuthenticated to true
+        setState((prev) => ({ ...prev, isAuthenticated: true, loading: false }));
       } catch (error) {
-        console.error("Error fetching initial data:", error);
+        console.error("Error checking auth status:", error);
         setState((prev) => ({ ...prev, loading: false }));
       }
     };
   
     checkAuthStatus();
-  }, []);  
+  }, []);
+
+  useEffect(() => {
+    if (state.isAuthenticated) {
+      const fetchData = async () => {
+        try {
+          const [ordersRes, profileRes] = await Promise.all([
+            fetch("/api/orders", { cache: "no-store" }),
+            fetch("/api/profile", { cache: "no-store" }),
+          ]);
+  
+          if (!ordersRes.ok || !profileRes.ok) throw new Error("Error fetching data");
+  
+          const [orders, profileData] = await Promise.all([ordersRes.json(), profileRes.json()]);
+  
+          setState((prev) => ({
+            ...prev,
+            orders,
+            profileData,
+          }));
+        } catch (error) {
+          console.error("Error fetching data after authentication:", error);
+        }
+      };
+  
+      fetchData();
+    }
+  }, [state.isAuthenticated]);
 
   // Conectar WebSocket cuando el usuario esté autenticado
   useEffect(() => {

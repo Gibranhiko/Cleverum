@@ -120,13 +120,19 @@ export default function Navbar() {
 
         <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
           <img
-            src={profileData.logoUrl}
+            src={
+              profileData.logoUrl
+                ? profileData.logoUrl
+                : "https://cleverum.nyc3.digitaloceanspaces.com/public/logo-company.png"
+            }
             alt="Store Logo"
             width={40}
             height={40}
           />
         </div>
-        <span className="font-bold">{profileData.companyName}</span>
+        <span className="font-bold">
+          {profileData.companyName ? profileData.companyName : "Company Name"}
+        </span>
         <button
           onClick={toggleDropdown}
           className="focus:outline-none flex items-center"
