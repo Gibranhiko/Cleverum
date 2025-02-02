@@ -18,3 +18,6 @@ export const productFields = [
   { title: "Incluye", field: "includes" },
   { title: "Acciones", field: "actions" }
 ];
+
+export const WEB_PUBLIC_URL= "http://localhost:3000"
+export const BOT_PUBLIC_URL= "http://localhost:4000"

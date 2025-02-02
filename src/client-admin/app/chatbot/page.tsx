@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/navbar";
 import Image from "next/image";
+import { BOT_PUBLIC_URL } from "../utils/constants";
 
 export default function ChatBotPage() {
   const [qrCodeSrc, setQrCodeSrc] = useState("");
 
   const fetchQRCode = async () => {
     try {
-      const response = await fetch("/getqr");
+      const response = await fetch(`${BOT_PUBLIC_URL}/getqr`);
       if (!response.ok) {
         throw new Error(`Failed to fetch QR code: ${response.statusText}`);
       }
