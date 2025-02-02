@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "jsx": "preserve",
     "target": "ES2022",
-    "module": "esnext",
+    "module": "ES2022",
     "declaration": false,
+    "declarationMap": false,
     "moduleResolution": "node",
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -12,11 +12,12 @@
     "sourceMap": false,
     "outDir": "./dist",
     "baseUrl": "./",
-    "rootDir": "./src",
+    "rootDir": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "noEmit": false
+    "paths": {
+      "~/*": ["./src/chatbot/*"]
+    }
   },
-  "include": ["src/**/*", "tailwind.config.js", "postcss.config.js", "next.config.js"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["./**/*.ts"]
 }
