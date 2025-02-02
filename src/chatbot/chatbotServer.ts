@@ -33,7 +33,7 @@ const main = async () => {
 
     // Serve QR code image
     app.get("/getqr", (_, res) => {
-      const qrImagePath = path.join(__dirname, "../bot.qr.png");
+      const qrImagePath = path.join(__dirname, "../../bot.qr.png");
       fs.readFile(qrImagePath, (err, data) => {
         if (err) {
           console.log("Error reading the QR code image:", err);
