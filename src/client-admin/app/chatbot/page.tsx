@@ -9,7 +9,7 @@ export default function ChatBotPage() {
 
   const fetchQRCode = async () => {
     try {
-      const response = await fetch(`/getqr`);
+      const response = await fetch(`api/chatbot`);
       if (!response.ok) {
         throw new Error(`Failed to fetch QR code: ${response.statusText}`);
       }

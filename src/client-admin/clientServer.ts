@@ -4,18 +4,12 @@ import next from "next";
 import { createServer } from "http";
 import connectToDatabase from "./app/api/utils/mongoose";
 import { Server } from "socket.io";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from "fs";
 
 const PORT = process.env.WEB_PORT;
 const URL = process.env.WEB_PUBLIC_URL;
 const dev = process.env.NODE_ENV !== "production";
 const clientAdminApp = next({ dev, dir: "./src/client-admin" });
 const handle = clientAdminApp.getRequestHandler();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const main = async () => {
   try {
@@ -24,20 +18,6 @@ const main = async () => {
 
     // Create an HTTP server instance from Express
     const httpWebServer = createServer(app);
-
-    // Serve QR code image
-    app.get("/getqr", (_, res) => {
-      console.log("GET QR code image");
-      const qrImagePath = path.join(__dirname, "../../bot.qr.png");
-      fs.readFile(qrImagePath, (err, data) => {
-        if (err) {
-          console.log("Error reading the QR code image:", err);
-          return res.status(500).send("Error reading the QR code image");
-        }
-        res.contentType("image/png");
-        res.send(data);
-      });
-    });
 
     // Connect to MongoDB
     await connectToDatabase("orders");  

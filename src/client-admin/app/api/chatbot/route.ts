@@ -1,40 +1,23 @@
-import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+export async function GET(req) {
+  const qrCodeUrl = process.env.BOT_PUBLIC_URL;
 
-// Helper to resolve file paths
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Handle GET request
-export async function GET() {
   try {
-    const qrImagePath = path.join(process.cwd(), "bot.qr.png");
-
-    // Check if the file exists
-    if (!fs.existsSync(qrImagePath)) {
-      return NextResponse.json(
-        { message: "QR code image not found" },
-        { status: 404 }
-      );
+    // Fetch the QR code image from the chatbot server
+    const response = await fetch(`${qrCodeUrl}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch QR code');
     }
 
-    // Read the file
-    const qrImage = fs.readFileSync(qrImagePath);
-
-    // Return the image as a response
-    return new NextResponse(qrImage, {
+    // Set the appropriate content type for the image
+    const imageBuffer = await response.arrayBuffer();
+    return new Response(imageBuffer, {
       status: 200,
       headers: {
-        "Content-Type": "image/png",
+        'Content-Type': 'image/png',
       },
     });
   } catch (error) {
-    console.error("Error fetching QR code image:", error);
-    return NextResponse.json(
-      { message: "Failed to fetch QR code image" },
-      { status: 500 }
-    );
+    console.error('Error fetching QR code:', error);
+    return new Response('Error fetching QR code', { status: 500 });
   }
 }
