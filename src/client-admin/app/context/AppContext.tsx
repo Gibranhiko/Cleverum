@@ -22,6 +22,7 @@ interface AppState {
     facebookLink: string;
     instagramLink: string;
     logoUrl: string;
+    useAi: boolean;
   };
   loading: boolean;
 }
@@ -50,6 +51,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       facebookLink: "",
       instagramLink: "",
       logoUrl: "",
+      useAi: false,
     },
     loading: true, // Nuevo estado para manejar carga inicial
   });

@@ -9,7 +9,6 @@ import { useAppContext } from "../context/AppContext";
 export default function ProfilePage() {
   const { state, setState } = useAppContext();
   const { profileData } = state;
-
   const [isEditModalOpen, setEditModalOpen] = useState(false);
 
   const updateProfile = async (updatedData: typeof profileData) => {
@@ -90,6 +89,10 @@ export default function ProfilePage() {
             >
               {profileData.instagramLink || "No especificado"}
             </a>
+          </p>
+          <p>
+            <strong>Flujo con IA:</strong>{" "}
+            {profileData.useAi ? "Activado" : "Desactivado"}
           </p>
           <h2 className="text-lg font-bold mt-4">Logo</h2>
           {profileData.logoUrl ? (

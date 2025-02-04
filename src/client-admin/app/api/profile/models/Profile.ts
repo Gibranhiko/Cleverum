@@ -10,6 +10,7 @@ const ProfileSchema = new mongoose.Schema(
     facebookLink: String,
     instagramLink: String,
     logoUrl: String,
+    useAi: Boolean
   },
   { timestamps: true }
 );

@@ -13,6 +13,7 @@ interface ProfileFormProps {
     facebookLink: string;
     instagramLink: string;
     logoUrl: string;
+    useAi: boolean;
   };
   onSave: (data: any) => void;
   onClose: () => void;
@@ -35,7 +36,7 @@ export default function ProfileForm({
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { loaders, setLoader, setState } = useAppContext();
+  const { loaders, setLoader } = useAppContext();
 
   useEffect(() => {
     if (profileData.logoUrl) {
@@ -53,61 +54,57 @@ export default function ProfileForm({
 
   const onSubmit = async (data: any) => {
     setLoader("upload", true);
-    if (selectedFile) {
-      if (selectedFile.type !== "image/png") {
-        setErrorMessage("Only PNG files are allowed.");
-        return;
-      }
-      if (selectedFile.size > 500 * 1024) {
-        setErrorMessage("File size must not exceed 500KB.");
-        return;
-      }
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-
-      try {
+  
+    try {
+      // Si hay un archivo seleccionado, subirlo y asignar la URL
+      if (selectedFile) {
+        if (selectedFile.type !== "image/png") {
+          setErrorMessage("Only PNG files are allowed.");
+          throw new Error("Invalid file type");
+        }
+        if (selectedFile.size > 500 * 1024) {
+          setErrorMessage("File size must not exceed 500KB.");
+          throw new Error("File too large");
+        }
+  
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+  
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
+  
         if (!res.ok) throw new Error("Error uploading file");
+  
         const { fileUrl } = await res.json();
-
-        data.logoUrl = fileUrl; // Add uploaded file URL to data
-      } catch (error) {
-        console.error("Error uploading file:", error);
-        return;
-      } finally {
-        setLoader("upload", false);
+        data.logoUrl = fileUrl; // Agregar URL del archivo subido
+      } else {
+        // Si no hay archivo nuevo, mantener el logo existente
+        data.logoUrl = data.logoUrl ?? null; 
       }
-    } else {
-      // If no file is selected, set logoUrl to null
-      data.logoUrl = null;
-    }
-
-    // Save profile data via PUT request
-    try {
+  
+      // Guardar los datos del perfil
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
+  
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "An error occurred");
       }
-
+  
       const updatedProfile = await res.json();
       onSave(updatedProfile);
     } catch (error: any) {
-      // Display error message
-      console.error("Error saving profile:", error.message);
+      console.error("Error:", error.message);
       setErrorMessage(error.message);
     } finally {
       setLoader("upload", false);
     }
-  };
+  };  
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -214,6 +211,17 @@ export default function ProfileForm({
         )}
       </div>
       <div className="mb-4">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            {...register("useAi")}
+            id="useAiMenu"
+            className="mr-2"
+          />
+          <label htmlFor="useAiMenu">Usar flujo con IA</label>
+        </div>
+      </div>
+      <div className="mb-4">
         <label>Logo de la Empresa</label>
         {logoPreview && (
           <div className="mb-2">
@@ -235,9 +243,7 @@ export default function ProfileForm({
           <span className="text-red-500">{String(errors.logoUrl.message)}</span>
         )}
         {errorMessage && (
-          <span className="text-red-500">
-            Selecciona otra imagen
-          </span>
+          <span className="text-red-500">Selecciona otra imagen</span>
         )}
       </div>
       <div className="mt-4">
