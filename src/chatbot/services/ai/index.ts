@@ -92,10 +92,6 @@ class AIClass {
                                     description: "The detected user intent.",
                                     enum: [
                                         "hacer_pedido",
-                                        "preguntar_ubicacion",
-                                        "consultar_horarios",
-                                        "ver_menu",
-                                        "saludar",
                                         "hablar"
                                     ]
                                 }

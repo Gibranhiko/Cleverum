@@ -1,12 +1,10 @@
 import { BotContext, BotMethods } from "@builderbot/bot/dist/types";
 import { getHistoryParse } from "../utils/handleHistory";
 import AIClass from "../services/ai";
-import { flowSeller } from "../flows/unused/seller.flow";
 import * as path from "path";
 import fs from "fs";
-import { flowService } from "../flows/unused/service.flow";
-import { flowHello } from "../flows/unused/hello.flow";
-import { flowTalker } from "../flows/unused/talker.flow";
+import { flowTalker } from "../flows/ia/talker.flow";
+import { flowSeller } from "../flows/ia/seller.flow";
 
 const discriminatorDataPath = path.join("src/chatbot/prompts", "/prompt-discriminator.txt");
 const discriminatorData = fs.readFileSync(discriminatorDataPath, "utf-8");
@@ -36,8 +34,5 @@ export default async (
   console.log(intent + '** IA intent');
 
   if (intent.includes('hacer_pedido')) return gotoFlow(flowSeller);
-  if (intent.includes('consultar_horarios')) return gotoFlow(flowService);
-  if (intent.includes('saludar')) return gotoFlow(flowHello);
-  if (intent.includes('hablar')) return gotoFlow(flowTalker);
-  
+  if (intent.includes('hablar')) return gotoFlow(flowTalker);  
 };

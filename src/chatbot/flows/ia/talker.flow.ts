@@ -2,7 +2,7 @@ import { addKeyword, EVENTS } from "@builderbot/bot";
 import { generateTimer } from "../../utils/generateTimer";
 import { getHistoryParse, handleHistory } from "../../utils/handleHistory";
 import AIClass from "../../services/ai";
-import { getFullCurrentDate } from "src/chatbot/utils/currentDate";
+import { getFullCurrentDate } from "../../utils/currentDate";
 import * as path from "path";
 import fs from "fs";
 

@@ -60,9 +60,7 @@ export default function LoginPage() {
     } catch (error) {
       setErrorMessage("Error al iniciar sesión: " + error);
       setSuccessMessage(null);
-    } finally {
-      setLoader("login", false);
-    }
+    } 
   };
 
   return (
