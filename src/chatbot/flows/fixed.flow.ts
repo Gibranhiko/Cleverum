@@ -30,7 +30,7 @@ const fixed = addKeyword(EVENTS.ACTION)
     }
     try {
       const { companyName } = state.get("currentProfile");
-      const welcomeMessage = `Bienvenido a ${companyName}! \n\n¿Qué te gustaría ordenar hoy?`;
+      const welcomeMessage = `Hola, bienvenido a ${companyName}! \n\n¿Qué te gustaría ordenar hoy?`;
       await flowDynamic(welcomeMessage);
 
       const products = await fetchProducts();

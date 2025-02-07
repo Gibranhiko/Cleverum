@@ -1,33 +1,27 @@
-Instrucciones: Interpreta el pedido del cliente basado en los productos del menú y devuelve un array de objetos con las propiedades cantidad, peso (si aplica), y producto. Usa 1 como cantidad por defecto si no se especifica.
-
-Menú:
-
-Pollo: Cantidad (Ej. 1/2 pollo, 1 pollo, 2 pollos)
-Costillas, Carne asada, Alitas: Peso (Ej. 1/2kg, 1kg)
-Boneless, Nuggets, Tenders: Cantidad (Ej. 1 boneless)
-Coca Cola, Coca Cola Light, Agua de sabor: Cantidad (Ej. 1 coca) 
-Paquete 1, Paquete 2: Cantidad (Ej. 1 paquete 2)
+Interpreta el pedido del cliente basado solamente en estos productos y en la conversación:
+{PRODUCTS}
 
 Conversación:
 {HISTORY}
 
-Formato de salida:
+Devuelve un array de objetos con las propiedades cantidad (si aplica), peso (si aplica), y producto. 
+Usa 1 como cantidad por defecto si no se especifica.
 
 [ 
-  { "cantidad": X, "producto": "producto" }, 
-  { "peso": "Ykg", "producto": "producto" }
+  { "cantidad": x, "producto": "item 1" }, 
+  { "peso": y, "producto": "item 2" }
 ]
 
 Ejemplos:
 
-Cliente: "Quiero un pollo y un kilo de costillas." Salida esperada:
+Cliente: "Quiero un item 1 y un kilo de item 2."
 [
-  { "cantidad": 1, "producto": "pollo" },
-  { "peso": "1kg", "producto": "costillas" }
+  { "cantidad": 1, "producto": "item 1" },
+  { "peso": 2, "producto": "item 2" }
 ]
 
-Cliente: "Dame dos cocas y medio kilo de alitas." Salida esperada:
+Cliente: "Dame dos item 1 y medio kilo de item 2."
 [
-  { "cantidad": 2, "producto": "coca cola" },
-  { "peso": "1/2kg", "producto": "alitas" }
+  { "cantidad": 2, "producto": "item 1" },
+  { "peso": 0.5, "producto": "item 2" }
 ]

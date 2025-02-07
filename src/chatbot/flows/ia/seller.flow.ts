@@ -15,24 +15,12 @@ const sellerData = fs.readFileSync(sellerDataPath, "utf-8");
 
 const PROMPT_SELLER = sellerData;
 
-export const generatePromptSeller = (history) => {
-  return PROMPT_SELLER.replace("{HISTORY}", history);
+export const generatePromptSeller = (history, productsData) => {
+  return PROMPT_SELLER.replace("{HISTORY}", history).replace(
+    "{PRODUCTS}",
+    productsData
+  );
 };
-
-const validProducts = [
-  "pollo",
-  "costillas",
-  "carne asada",
-  "alitas",
-  "boneless",
-  "nuggets",
-  "tenders",
-  "coca cola",
-  "coca cola light",
-  "agua de sabor",
-  "paquete 1",
-  "paquete 2",
-];
 
 const flowSeller = addKeyword(EVENTS.ACTION)
   .addAction(async (_, { extensions, state, flowDynamic, endFlow }) => {
@@ -41,7 +29,11 @@ const flowSeller = addKeyword(EVENTS.ACTION)
     await handleHistory({ content: assiMsgOrder, role: "assistant" }, state);
     const ai = extensions.ai as AIClass;
     const history = getHistoryParse(state);
-    const promptInfo = generatePromptSeller(history);
+    const productsData = state
+      .get("currentProducts")
+      .map((product) => product.name.toLowerCase());
+
+    const promptInfo = generatePromptSeller(history, productsData);
 
     const { order } = await ai.determineOrderFn(
       [
@@ -55,15 +47,15 @@ const flowSeller = addKeyword(EVENTS.ACTION)
 
     console.log(order);
 
-    if (!validateOrder(order, validProducts)) {
+    if (!validateOrder(order, productsData)) {
       const notGetOrderMsg =
-        "Te sugiero los siguientes productos: pollo, costillas, carne asada, alitas, boneless, nuggets, tenders, coca cola, coca cola light, agua de sabor, paquete 1, paquete 2";
+        `Te sugiero los siguientes productos: ${productsData.join(', ')}`;
       await flowDynamic(notGetOrderMsg);
       await clearHistory(state);
       return endFlow();
-    } else if (validateOrder(order, validProducts) === "missing-quantity") {
+    } else if (validateOrder(order, productsData) === "missing-quantity") {
       const notGetOrderMsg =
-        "Una disculpa no pude entender tu orden, si quieres ver el menú, solo dime *menú*";
+        "Una disculpa no pude entender tu orden.";
       await flowDynamic(notGetOrderMsg);
       await clearHistory(state);
       return endFlow();
@@ -75,9 +67,10 @@ const flowSeller = addKeyword(EVENTS.ACTION)
 
     if (previousOrder.length > 0) {
       newOrder = order.filter(
-        (newItem) => !previousOrder.some(
-          (prevItem) => prevItem.producto === newItem.producto
-        )
+        (newItem) =>
+          !previousOrder.some(
+            (prevItem) => prevItem.producto === newItem.producto
+          )
       );
     } else {
       newOrder = order;

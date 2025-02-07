@@ -33,6 +33,6 @@ export default async (
 
   console.log(intent + '** IA intent');
 
-  if (intent.includes('hacer_pedido')) return gotoFlow(flowSeller);
-  if (intent.includes('hablar')) return gotoFlow(flowTalker);  
+  if (intent.includes('hacer_pedido')) gotoFlow(flowSeller);
+  if (intent.includes('hablar')) gotoFlow(flowTalker);  
 };

@@ -6,27 +6,27 @@ import { getFullCurrentDate } from "../../utils/currentDate";
 import * as path from "path";
 import fs from "fs";
 
-const businessDataPath = path.join("src/chatbot/prompts", "/base-data.txt");
-const businessData = fs.readFileSync(businessDataPath, "utf-8");
-
 const talkerDataPath = path.join("src/chatbot/prompts", "/prompt-talker.txt");
 const talkerData = fs.readFileSync(talkerDataPath, "utf-8");
-
 const PROMPT_TALKER = talkerData;
 
-export const generatePromptSeller = (history: string, businessdata: string) => {
+export const generatePromptSeller = (history, businessdata) => {
   const nowDate = getFullCurrentDate();
   return PROMPT_TALKER.replace("{HISTORY}", history)
     .replace("{CURRENT_DAY}", nowDate)
-    .replace("{BUSINESSDATA}", businessdata);
+    .replace("{BUSINESSDATA.companyName}", businessdata.companyName)
+    .replace("{BUSINESSDATA.companyAddress}", businessdata.companyAddress)
+    .replace("{BUSINESSDATA.companyEmail}", businessdata.companyEmail)
+    .replace("{BUSINESSDATA.facebookLink}", businessdata.facebookLink)
+    .replace("{BUSINESSDATA.instagramLink}", businessdata.instagramLink)
 };
 
 const flowTalker = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic, extensions }) => {
     try {
       const ai = extensions.ai as AIClass;
+      const businessData= state.get("currentProfile");
       const history = getHistoryParse(state);
-
       const promptInfo = generatePromptSeller(history, businessData);
 
       const response = await ai.createChat(
