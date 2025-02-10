@@ -1,6 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { IProduct } from "../api/products/models/Product";
+import ImageUpload from "./image-upload";
+import { useFileUpload } from "../hooks/useFileUpload";
+import { useAppContext } from "../context/AppContext";
+import InlineLoader from "./inline-loader";
+import { obtainIdFromUrl } from "../utils/format-data";
 
 interface AddProductFormProps {
   addProduct: (product: IProduct) => void;
@@ -30,6 +35,7 @@ export default function AddProductForm({
       type: editingProduct?.type || "",
       options: editingProduct?.options || [{ min: 0, max: 0, price: 0 }],
       includes: editingProduct?.includes || "",
+      imageUrl: editingProduct?.imageUrl || "", // Add imageUrl to default values
     },
   });
 
@@ -38,24 +44,83 @@ export default function AddProductForm({
     name: "options",
   });
 
-  const onSubmit = (data: IProduct) => {
-    const transformedData = {
-      ...data,
-      options: data.options.map((option) => ({
-        min: Number(option.min),
-        max: option.max ? Number(option.max) : undefined,
-        price: Number(option.price),
-      })),
-    };
+  const {
+    selectedFile,
+    imagePreview,
+    uploadErrorMessage,
+    handleFileSelection,
+    setImagePreview,
+    validateImage,
+  } = useFileUpload(editingProduct?.imageUrl || "");
 
-    if (editingProduct) {
-      onSave(transformedData);
-    } else {
-      addProduct(transformedData);
+  const { loaders, setLoader } = useAppContext();
+
+  // Handle form submission
+  const onSubmit = async (data: IProduct) => {
+    if (!validateImage()) {
+      return; // Stop submission if the image is invalid
     }
-
-    onClose();
-    reset();
+  
+    setLoader("upload", true);
+  
+    try {
+      let imageUrl = data.imageUrl;
+  
+      // If a new file is selected, upload it and assign the URL
+      if (selectedFile) {
+        // Extract the productId from the existing imageUrl (if it exists)
+        const existingImageUrl = editingProduct?.imageUrl;
+        let productId: string | null = null;
+  
+        if (existingImageUrl) {
+          // Extract the productId from the imageUrl
+          productId = obtainIdFromUrl(existingImageUrl)
+        }
+  
+        // Upload the new image
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+        if (productId) formData.append("productId", productId);
+        formData.append("isProductForm", "true");
+  
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+  
+        if (!res.ok) throw new Error("Error uploading file");
+  
+        const { fileUrl } = await res.json();
+        imageUrl = fileUrl; // Update the imageUrl with the new URL
+      } else {
+        // If no new file, keep the existing image
+        imageUrl = data.imageUrl ?? null;
+      }
+  
+      // Update the product data with the new imageUrl
+      const transformedData = {
+        ...data,
+        imageUrl,
+        options: data.options.map((option) => ({
+          min: Number(option.min),
+          max: option.max ? Number(option.max) : undefined,
+          price: Number(option.price),
+        })),
+      };
+  
+      if (editingProduct) {
+        onSave(transformedData); // Calls editProduct
+      } else {
+        addProduct(transformedData);
+      }
+  
+      onClose();
+      reset();
+    } catch (error: any) {
+      console.error("Error:", error.message);
+    } finally {
+      setLoader("upload", false);
+    }
   };
 
   return (
@@ -63,6 +128,8 @@ export default function AddProductForm({
       <h1 className="text-xl font-semibold mb-2">
         {editingProduct ? "Editar Producto" : "Agregar Producto"}
       </h1>
+
+      {/* Product Name */}
       <div>
         <label>Nombre del Producto</label>
         <input
@@ -73,6 +140,8 @@ export default function AddProductForm({
           <span className="text-red-500">{String(errors.name.message)}</span>
         )}
       </div>
+
+      {/* Category */}
       <div>
         <label>Categoría</label>
         <input
@@ -85,6 +154,8 @@ export default function AddProductForm({
           </span>
         )}
       </div>
+
+      {/* Description */}
       <div>
         <label>Descripción</label>
         <textarea
@@ -99,6 +170,8 @@ export default function AddProductForm({
           </span>
         )}
       </div>
+
+      {/* Type */}
       <div>
         <label>Tipo</label>
         <select
@@ -114,6 +187,7 @@ export default function AddProductForm({
         )}
       </div>
 
+      {/* Price Options */}
       <div className="mt-6">
         <label>Opciones de Precio</label>
         {fields.map((field, index) => (
@@ -160,7 +234,6 @@ export default function AddProductForm({
                     const allValues = getValues();
                     const min = Number(allValues.options[index]?.min);
                     if (value && min > value) {
-                      console.log("error");
                       return `El valor máximo (${value}) debe ser mayor o igual al valor mínimo (${min}) o no contener nada.`;
                     }
                     return true;
@@ -224,6 +297,7 @@ export default function AddProductForm({
         ))}
       </div>
 
+      {/* Add Price Option Button */}
       <div className="mt-6">
         <button
           type="button"
@@ -233,6 +307,8 @@ export default function AddProductForm({
           Añadir Opción
         </button>
       </div>
+
+      {/* Includes */}
       <div className="mt-6">
         <label>Incluye</label>
         <textarea
@@ -247,12 +323,38 @@ export default function AddProductForm({
           </span>
         )}
       </div>
+
+      {/* Image Upload */}
+      <div className="mb-4 mt-2">
+        <ImageUpload
+          label="Imagen del producto"
+          imagePreview={imagePreview}
+          register={register}
+          errors={errors}
+          uploadErrorMessage={uploadErrorMessage}
+          handleFileSelection={handleFileSelection}
+        />
+      </div>
+
+      {/* Form Buttons */}
       <div className="mt-4 flex justify-end">
         <button
           type="submit"
-          className="bg-blue-500 text-white py-2 px-4 rounded"
+          className={`bg-blue-500 text-white py-2 px-4 rounded ${
+            loaders.upload ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          disabled={loaders.upload}
         >
-          {editingProduct ? "Actualizar Producto" : "Agregar Producto"}
+          {loaders.upload ? (
+            <>
+              <InlineLoader margin="mr-2" />
+              {editingProduct ? "Actualizando..." : "Guardando..."}
+            </>
+          ) : editingProduct ? (
+            "Actualizar Producto"
+          ) : (
+            "Agregar Producto"
+          )}
         </button>
         <button
           type="button"

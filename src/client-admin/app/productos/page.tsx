@@ -10,6 +10,7 @@ import { productFields } from "../utils/constants";
 import { IProduct } from "../api/products/models/Product";
 import { useAppContext } from "../context/AppContext";
 import InlineLoader from "../components/inline-loader";
+import { obtainIdFromUrl } from "../utils/format-data";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<IProduct[]>([]);
@@ -56,30 +57,58 @@ export default function ProductsPage() {
 
   const editProduct = async (updatedProduct: IProduct) => {
     if (!editingProduct) return;
+  
+    setLoader("upload", true);
+  
     try {
+      // Send the updated product data to the backend
       const res = await fetch(`/api/products/${editingProduct._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedProduct),
       });
+  
       if (!res.ok) throw new Error("Error updating product");
+  
       const updated = await res.json();
       setProducts((prev) =>
         prev.map((prod) => (prod._id === updated._id ? updated : prod))
       );
+  
+      setAddEditModalOpen(false);
     } catch (error) {
       console.error("Error updating product:", error);
+    } finally {
+      setLoader("upload", false);
     }
   };
 
-  const deleteProduct = async (productId: string) => {
+  const deleteProduct = async (productId, imageUrl: string) => {
     setLoader("deleteProduct", true);
+    const imageId = obtainIdFromUrl(imageUrl);
     try {
-      const res = await fetch(`/api/products/${productId}`, {
+      // Step 1: Delete the image from S3
+      const deleteImageRes = await fetch(`/api/upload/${imageId}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Error deleting product");
+  
+      if (!deleteImageRes.ok) {
+        throw new Error("Error deleting image");
+      }
+  
+      // Step 2: Delete the product from the database
+      const deleteProductRes = await fetch(`/api/products/${productId}`, {
+        method: "DELETE",
+      });
+  
+      if (!deleteProductRes.ok) {
+        throw new Error("Error deleting product");
+      }
+  
+      // Step 3: Update the local state to remove the deleted product
       setProducts((prev) => prev.filter((prod) => prod._id !== productId));
+  
+      // Step 4: Close the delete modal
       setDeleteModalOpen(false);
     } catch (error) {
       console.error("Error deleting product:", error);
@@ -151,7 +180,7 @@ export default function ProductsPage() {
               Cancelar
             </button>
             <button
-              onClick={() => deleteProduct(productToDelete!._id)}
+              onClick={() => deleteProduct(productToDelete!._id, productToDelete!.imageUrl)}
               className="bg-red-500 text-white py-2 px-4 rounded"
               disabled={loaders.deleteProduct}
             >

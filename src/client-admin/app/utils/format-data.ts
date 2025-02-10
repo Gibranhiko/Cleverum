@@ -39,3 +39,10 @@ export const formatDate = (date: Date | string): string => {
     hour12: true,
   });
 };
+
+export const obtainIdFromUrl = (url: string): string => {
+  const currentUrl = new URL(url);
+  const pathParts = currentUrl.pathname.split("/");
+  const fileName = pathParts[pathParts.length - 1];
+  return fileName.replace("product-", "").replace(".png", "");
+};

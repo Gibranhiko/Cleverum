@@ -21,7 +21,7 @@ interface AppState {
     whatsappPhone: string;
     facebookLink: string;
     instagramLink: string;
-    logoUrl: string;
+    imageUrl: string;
     useAi: boolean;
   };
   loading: boolean;
@@ -50,7 +50,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       whatsappPhone: "",
       facebookLink: "",
       instagramLink: "",
-      logoUrl: "",
+      imageUrl: "",
       useAi: false,
     },
     loading: true, // Nuevo estado para manejar carga inicial

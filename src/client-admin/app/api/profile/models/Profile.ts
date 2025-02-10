@@ -9,7 +9,7 @@ const ProfileSchema = new mongoose.Schema(
     whatsappPhone: String,
     facebookLink: String,
     instagramLink: String,
-    logoUrl: String,
+    imageUrl: String,
     useAi: Boolean
   },
   { timestamps: true }

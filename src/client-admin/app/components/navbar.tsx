@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useAppContext } from "../context/AppContext";
 import NotificationBell from "./notification-bell";
@@ -16,7 +15,6 @@ interface Menu {
 const navMenu = [
   { title: "Pedidos", link: "/pedidos" },
   { title: "Productos", link: "/productos" },
-  { title: "Promociones", link: "/promociones" },
   { title: "Chatbot", link: "/chatbot" },
 ];
 
@@ -121,8 +119,8 @@ export default function Navbar() {
         <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
           <img
             src={
-              profileData.logoUrl
-                ? profileData.logoUrl
+              profileData.imageUrl
+                ? profileData.imageUrl
                 : "https://cleverum.nyc3.digitaloceanspaces.com/public/logo-company.png"
             }
             alt="Store Logo"

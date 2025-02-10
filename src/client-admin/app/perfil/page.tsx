@@ -95,9 +95,9 @@ export default function ProfilePage() {
             {profileData.useAi ? "Activado" : "Desactivado"}
           </p>
           <h2 className="text-lg font-bold mt-4">Logo</h2>
-          {profileData.logoUrl ? (
+          {profileData.imageUrl ? (
             <img
-              src={profileData.logoUrl}
+              src={profileData.imageUrl}
               alt="Logo de la empresa"
               className="h-16 w-16 object-contain"
             />

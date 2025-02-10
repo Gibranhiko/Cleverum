@@ -28,6 +28,9 @@ const ProductTable: React.FC<ProductTableProps> = ({
     });
 
     row["Precio"] = formatPrice(product.options);
+    row["Imagen"] = (
+      <img src={product.imageUrl} alt="Imagen del producto" className="h-20 w-auto" />
+    );
 
     row["Acciones"] = (
       <div className="flex space-x-2">

@@ -16,6 +16,7 @@ export const productFields = [
   { title: "Producto", field: "name" },
   { title: "Precio", field: "price" },
   { title: "Incluye", field: "includes" },
+  { title: "Imagen", field: "imageUrl" },
   { title: "Acciones", field: "actions" }
 ];
 

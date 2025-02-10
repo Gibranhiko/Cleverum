@@ -32,7 +32,7 @@ export async function PUT(request: Request) {
       "companyAddress",
       "facebookLink",
       "instagramLink",
-      "logoUrl",
+      "imageUrl",
     ];
 
     // Validate required fields
@@ -49,10 +49,10 @@ export async function PUT(request: Request) {
     }
 
     if (
-      typeof updatedProfileData.logoUrl !== "string" &&
-      updatedProfileData.logoUrl !== null
+      typeof updatedProfileData.imageUrl !== "string" &&
+      updatedProfileData.imageUrl !== null
     ) {
-      updatedProfileData.logoUrl = null;
+      updatedProfileData.imageUrl = null;
     }
 
     // Perform the database update

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAppContext } from "../context/AppContext";
 import InlineLoader from "./inline-loader";
+import ImageUpload from "./image-upload";
+import { useFileUpload } from "../hooks/useFileUpload";
 
 interface ProfileFormProps {
   profileData: {
@@ -12,7 +14,7 @@ interface ProfileFormProps {
     whatsappPhone: string;
     facebookLink: string;
     instagramLink: string;
-    logoUrl: string;
+    imageUrl: string;
     useAi: boolean;
   };
   onSave: (data: any) => void;
@@ -32,79 +34,70 @@ export default function ProfileForm({
     defaultValues: profileData,
   });
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const { loaders, setLoader } = useAppContext();
 
-  useEffect(() => {
-    if (profileData.logoUrl) {
-      setLogoPreview(profileData.logoUrl);
-    }
-  }, [profileData.logoUrl]);
+  const {
+    selectedFile,
+    imagePreview,
+    uploadErrorMessage,
+    handleFileSelection,
+    setImagePreview,
+    validateImage,
+  } = useFileUpload(profileData.imageUrl, true);
 
-  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setLogoPreview(URL.createObjectURL(file));
+  useEffect(() => {
+    if (profileData.imageUrl) {
+      setImagePreview(profileData.imageUrl);
     }
-  };
+  }, [profileData.imageUrl, setImagePreview]);
 
   const onSubmit = async (data: any) => {
+    if (!validateImage()) {
+      return;
+    }
     setLoader("upload", true);
-  
+
     try {
       // Si hay un archivo seleccionado, subirlo y asignar la URL
       if (selectedFile) {
-        if (selectedFile.type !== "image/png") {
-          setErrorMessage("Only PNG files are allowed.");
-          throw new Error("Invalid file type");
-        }
-        if (selectedFile.size > 500 * 1024) {
-          setErrorMessage("File size must not exceed 500KB.");
-          throw new Error("File too large");
-        }
-  
         const formData = new FormData();
         formData.append("file", selectedFile);
-  
+        formData.append("isProfileForm", "true");
+
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
-  
+
         if (!res.ok) throw new Error("Error uploading file");
-  
+
         const { fileUrl } = await res.json();
-        data.logoUrl = fileUrl; // Agregar URL del archivo subido
+        data.imageUrl = fileUrl; // Agregar URL del archivo subido
       } else {
         // Si no hay archivo nuevo, mantener el logo existente
-        data.logoUrl = data.logoUrl ?? null; 
+        data.imageUrl = data.imageUrl ?? null;
       }
-  
+
       // Guardar los datos del perfil
       const res = await fetch("/api/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-  
+
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "An error occurred");
       }
-  
+
       const updatedProfile = await res.json();
       onSave(updatedProfile);
     } catch (error: any) {
       console.error("Error:", error.message);
-      setErrorMessage(error.message);
     } finally {
       setLoader("upload", false);
     }
-  };  
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -222,29 +215,14 @@ export default function ProfileForm({
         </div>
       </div>
       <div className="mb-4">
-        <label>Logo de la Empresa</label>
-        {logoPreview && (
-          <div className="mb-2">
-            <img
-              src={logoPreview}
-              alt="Vista previa del logo"
-              className="h-20 w-auto object-contain border rounded"
-            />
-          </div>
-        )}
-        <input
-          type="file"
-          accept="image/png"
-          {...register("logoUrl")}
-          onChange={handleFileSelection}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        <ImageUpload
+          label="Logo de la Empresa"
+          imagePreview={imagePreview}
+          register={register}
+          errors={errors}
+          uploadErrorMessage={uploadErrorMessage}
+          handleFileSelection={handleFileSelection}
         />
-        {errors.logoUrl && (
-          <span className="text-red-500">{String(errors.logoUrl.message)}</span>
-        )}
-        {errorMessage && (
-          <span className="text-red-500">Selecciona otra imagen</span>
-        )}
       </div>
       <div className="mt-4">
         <button

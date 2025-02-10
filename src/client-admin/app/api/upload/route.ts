@@ -1,73 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import busboy from "busboy";
-import { Readable } from "stream";
-import AWS from "aws-sdk";
-
-// Convert a Web ReadableStream to a Node.js Readable stream
-function readableStreamToNodeStream(stream: ReadableStream): Readable {
-  const reader = stream.getReader();
-  return new Readable({
-    async read() {
-      const { done, value } = await reader.read();
-      if (done) {
-        this.push(null);
-      } else {
-        this.push(value);
-      }
-    },
-  });
-}
-
-// Helper function to parse the form
-async function parseForm(req: NextRequest): Promise<{ fields: any; file: Buffer; }> {
-  return new Promise((resolve, reject) => {
-    const bb = busboy({ headers: Object.fromEntries(req.headers) });
-    const fields: any = {};
-    let fileBuffer: Buffer | null = null;
-
-    bb.on("file", (_, file, info) => {
-      const chunks: Buffer[] = [];
-      file.on("data", (chunk) => chunks.push(chunk));
-      file.on("end", () => (fileBuffer = Buffer.concat(chunks)));
-    });
-
-    bb.on("field", (name, value) => {
-      fields[name] = value;
-    });
-
-    bb.on("finish", () => {
-      if (!fileBuffer) {
-        reject(new Error("No file uploaded"));
-      } else {
-        resolve({ fields, file: fileBuffer });
-      }
-    });
-
-    bb.on("error", (err: any) => reject(err));
-
-    // Convert Web Streams API ReadableStream to Node.js Readable and pipe it
-    readableStreamToNodeStream(req.body as ReadableStream).pipe(bb);
-  });
-}
+import { parseForm, fileExists, generateRandomId, s3, bucketName } from "./utils";
 
 export async function POST(req: NextRequest) {
   try {
     const { fields, file } = await parseForm(req);
 
-    const spacesEndpoint = new AWS.Endpoint(process.env.DO_ENDPOINT);
-    const s3 = new AWS.S3({
-      endpoint: spacesEndpoint,
-      accessKeyId: process.env.DO_ACCESS_KEY_ID,
-      secretAccessKey: process.env.DO_SECRET_ACCESS_KEY,
-    });
+    let fileName: string;
+    let folder: string;
 
-    const bucketName = process.env.DO_BUCKET_NAME;
+    if (fields.isProfileForm === "true") {
+      // Always use a fixed name for profile pictures
+      folder = "uploads";
+      fileName = "company-logo.png";
+    } else if (fields.isProductForm === "true") {
+      folder = "products";
+      const providedProductId = fields.productId && fields.productId !== "null" ? fields.productId : null;
+
+      if (providedProductId) {
+        // Use the provided product ID
+        fileName = `product-${providedProductId}.png`;
+      } else {
+        // Generate a unique product ID if none is provided
+        let productId: string;
+        let isUnique = false;
+
+        while (!isUnique) {
+          productId = generateRandomId();
+          const key = `products/product-${productId}.png`;
+          isUnique = !(await fileExists(key));
+        }
+
+        fileName = `product-${productId}.png`;
+      }
+    } else {
+      return NextResponse.json({ message: "Invalid request: Missing form type" }, { status: 400 });
+    }
 
     // Upload the file
     const uploadResult = await s3
       .upload({
         Bucket: bucketName,
-        Key: `uploads/${fields.fileName || "logo-company.png"}`,
+        Key: `${folder}/${fileName}`,
         Body: file,
         ACL: "public-read",
         ContentType: "image/png",
