@@ -2,7 +2,6 @@ import { addKeyword, EVENTS } from "@builderbot/bot";
 import { generateTimer } from "../../utils/generateTimer";
 import { getHistoryParse, handleHistory } from "../../utils/handleHistory";
 import AIClass from "../../services/ai";
-import { getFullCurrentDate } from "../../utils/currentDate";
 import * as path from "path";
 import fs from "fs";
 
@@ -10,24 +9,25 @@ const talkerDataPath = path.join("src/chatbot/prompts", "/prompt-talker.txt");
 const talkerData = fs.readFileSync(talkerDataPath, "utf-8");
 const PROMPT_TALKER = talkerData;
 
-export const generatePromptSeller = (history, businessdata) => {
-  const nowDate = getFullCurrentDate();
+export const generatePromptSeller = (history, businessdata, currentProducts) => {
   return PROMPT_TALKER.replace("{HISTORY}", history)
-    .replace("{CURRENT_DAY}", nowDate)
     .replace("{BUSINESSDATA.companyName}", businessdata.companyName)
     .replace("{BUSINESSDATA.companyAddress}", businessdata.companyAddress)
     .replace("{BUSINESSDATA.companyEmail}", businessdata.companyEmail)
     .replace("{BUSINESSDATA.facebookLink}", businessdata.facebookLink)
     .replace("{BUSINESSDATA.instagramLink}", businessdata.instagramLink)
+    .replace("{PRODUCTS}", currentProducts)
 };
 
 const flowTalker = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic, extensions }) => {
     try {
       const ai = extensions.ai as AIClass;
-      const businessData= state.get("currentProfile");
+      const businessData = state.get("currentProfile");
+      const currentProducts = state.get("currentProducts");
+      const formattedProducts = currentProducts.map(p => `${p.name}: ${p.description}, ${p.includes}, costo: ${p.price}\n`);
       const history = getHistoryParse(state);
-      const promptInfo = generatePromptSeller(history, businessData);
+      const promptInfo = generatePromptSeller(history, businessData, formattedProducts);
 
       const response = await ai.createChat(
         [

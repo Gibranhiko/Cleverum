@@ -14,6 +14,7 @@ export const orderFields = [
 export const productFields = [
   { title: "Categoría", field: "category" },
   { title: "Producto", field: "name" },
+  { title: "Descripción", field: "description" },
   { title: "Precio", field: "price" },
   { title: "Incluye", field: "includes" },
   { title: "Imagen", field: "imageUrl" },
