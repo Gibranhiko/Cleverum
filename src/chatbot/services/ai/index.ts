@@ -72,13 +72,13 @@ class AIClass {
 
     determineIntentFn = async (
         messages: ChatCompletionMessageParam[],
-        model?: string,
+        model: string = "gpt-3.5-turbo",
         temperature = 0
     ): Promise<{ intent: string }> => {
         try {
             const completion = await this.openai.chat.completions.create({
                 model,
-                temperature: temperature,
+                temperature,
                 messages,
                 functions: [
                     {
@@ -90,32 +90,36 @@ class AIClass {
                                 intent: {
                                     type: "string",
                                     description: "The detected user intent.",
-                                    enum: [
-                                        "hacer_pedido",
-                                        "hablar"
-                                    ]
+                                    enum: ["hacer_pedido", "hablar"]
                                 }
                             },
                             required: ["intent"]
                         }
                     }
                 ],
-                function_call: {
-                    name: "fn_get_intent",
-                }
+                function_call: { name: "fn_get_intent" }
             });
     
-            // Convert json to object
-            const response = JSON.parse(completion.choices[0].message.function_call.arguments);
+            // Ensure a valid response exists
+            const functionCall = completion.choices?.[0]?.message?.function_call;
+            if (!functionCall || !functionCall.arguments) {
+                throw new Error("No function call response received from AI.");
+            }
+    
+            // Parse JSON safely
+            let response;
+            try {
+                response = JSON.parse(functionCall.arguments);
+            } catch (jsonError) {
+                throw new Error(`Failed to parse function_call arguments: ${jsonError}`);
+            }
     
             return response;
         } catch (err) {
-            console.error(err);
-            return {
-                intent: 'otros',
-            }
+            console.error("Error determining intent:", err);
+            return { intent: "otros" };
         }
-    };
+    };    
 
     determineOrderFn = async (
         messages: ChatCompletionMessageParam[],

@@ -28,7 +28,7 @@ export default async (
         content: prompt.replace("{HISTORY}", history),
       },
     ],
-    "gpt-4-turbo"
+    "gpt-3.5-turbo"
   );
 
   console.log(intent + '** IA intent');

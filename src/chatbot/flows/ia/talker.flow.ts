@@ -4,19 +4,24 @@ import { getHistoryParse, handleHistory } from "../../utils/handleHistory";
 import AIClass from "../../services/ai";
 import * as path from "path";
 import fs from "fs";
+import { formatPrice } from "../../utils/order";
 
 const talkerDataPath = path.join("src/chatbot/prompts", "/prompt-talker.txt");
 const talkerData = fs.readFileSync(talkerDataPath, "utf-8");
 const PROMPT_TALKER = talkerData;
 
-export const generatePromptSeller = (history, businessdata, currentProducts) => {
+export const generatePromptSeller = (
+  history,
+  businessdata,
+  currentProducts
+) => {
   return PROMPT_TALKER.replace("{HISTORY}", history)
     .replace("{BUSINESSDATA.companyName}", businessdata.companyName)
     .replace("{BUSINESSDATA.companyAddress}", businessdata.companyAddress)
     .replace("{BUSINESSDATA.companyEmail}", businessdata.companyEmail)
     .replace("{BUSINESSDATA.facebookLink}", businessdata.facebookLink)
     .replace("{BUSINESSDATA.instagramLink}", businessdata.instagramLink)
-    .replace("{PRODUCTS}", currentProducts)
+    .replace("{PRODUCTS}", currentProducts);
 };
 
 const flowTalker = addKeyword(EVENTS.ACTION).addAction(
@@ -25,9 +30,18 @@ const flowTalker = addKeyword(EVENTS.ACTION).addAction(
       const ai = extensions.ai as AIClass;
       const businessData = state.get("currentProfile");
       const currentProducts = state.get("currentProducts");
-      const formattedProducts = currentProducts.map(p => `${p.name}: ${p.description}, ${p.includes}, costo: ${p.price}\n`);
+      const formattedProducts = currentProducts.map(
+        (p) =>
+          `${p.name}: ${p.description}, incluye: ${
+            p.includes
+          }, costo: ${formatPrice(p.options)}\n`
+      );
       const history = getHistoryParse(state);
-      const promptInfo = generatePromptSeller(history, businessData, formattedProducts);
+      const promptInfo = generatePromptSeller(
+        history,
+        businessData,
+        formattedProducts
+      );
 
       const response = await ai.createChat(
         [
@@ -36,7 +50,7 @@ const flowTalker = addKeyword(EVENTS.ACTION).addAction(
             content: promptInfo,
           },
         ],
-        "gpt-3.5-turbo"
+        "gpt-4-turbo"
       );
 
       await handleHistory({ content: response, role: "assistant" }, state);
