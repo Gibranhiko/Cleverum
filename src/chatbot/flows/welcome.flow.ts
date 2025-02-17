@@ -3,18 +3,36 @@ import { fetchProducts, fetchProfile } from "../utils/api";
 import { aiFlow } from "./ai.flow";
 import { fixed } from "./fixed.flow";
 
+const CACHE_EXPIRY_TIME = 10 * 60 * 1000;
+
 const welcome = addKeyword(EVENTS.WELCOME).addAnswer(
   "🤖...",
   null,
   async (_, { state, gotoFlow }) => {
     try {
-      const profile = await fetchProfile();
-      const products = await fetchProducts();
+      let profile = state.get("currentProfile");
+      let products = state.get("currentProducts");
+      let lastFetch = state.get("lastFetchTime");
 
-      await state.update({ currentProfile: profile });
-      await state.update({ currentProducts: products });
+      const now = Date.now();
+      const isCacheExpired = !lastFetch || now - lastFetch > CACHE_EXPIRY_TIME;
 
-      const { useAi } = state.get("currentProfile");
+      if (!profile || !products || isCacheExpired) {
+        profile = await fetchProfile();
+        products = await fetchProducts();
+
+        console.log(profile, products, 'Fetched from API');
+
+        await state.update({ 
+          currentProfile: profile, 
+          currentProducts: products,
+          lastFetchTime: now 
+        });
+      } else {
+        console.log('Using cached profile and products');
+      }
+
+      const { useAi } = profile;
 
       if (useAi) {
         gotoFlow(aiFlow);

@@ -4,9 +4,14 @@ import AIClass from "../services/ai";
 import * as path from "path";
 import fs from "fs";
 import { flowTalker } from "../flows/ia/talker.flow";
-import { flowSeller } from "../flows/ia/seller.flow";
+import { appointment } from "../flows/ia/appointment.flow";
+import { project } from "../flows/ia/project.flow";
+import { products } from "../flows/ia/products.flow";
 
-const discriminatorDataPath = path.join("src/chatbot/prompts", "/prompt-discriminator.txt");
+const discriminatorDataPath = path.join(
+  "src/chatbot/prompts",
+  "/prompt-discriminator.txt"
+);
 const discriminatorData = fs.readFileSync(discriminatorDataPath, "utf-8");
 
 const PROMPT_DISCRIMINATOR = discriminatorData;
@@ -28,11 +33,13 @@ export default async (
         content: prompt.replace("{HISTORY}", history),
       },
     ],
-    "gpt-3.5-turbo"
+    "gpt-4-turbo"
   );
 
-  console.log(intent + '** IA intent');
+  console.log(intent + "** IA intent");
 
-  if (intent.includes('hacer_pedido')) gotoFlow(flowSeller);
-  if (intent.includes('hablar')) gotoFlow(flowTalker);  
+  if (intent.includes("proporcionar_detalles_proyecto")) gotoFlow(project);
+  if (intent.includes("agendar_cita")) gotoFlow(appointment);
+  if (intent.includes("hablar")) gotoFlow(flowTalker);
+  if (intent.includes("consultar_servicios")) gotoFlow(products);  
 };

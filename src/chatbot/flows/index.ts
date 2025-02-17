@@ -7,6 +7,9 @@ import { flowSeller } from "./ia/seller.flow";
 import { fixed } from "./fixed.flow";
 import { aiFlow } from "./ai.flow";
 import { flowConfirm } from "./ia/confirm.flow";
+import { project } from "./ia/project.flow";
+import { appointment } from "./ia/appointment.flow";
+import { products } from "./ia/products.flow";
 
 export default createFlow([
   welcome,
@@ -16,6 +19,9 @@ export default createFlow([
   flowSeller,
   fixed,
   aiFlow,
-  flowConfirm
+  flowConfirm,
+  project,
+  appointment,
+  products
 ]);
 

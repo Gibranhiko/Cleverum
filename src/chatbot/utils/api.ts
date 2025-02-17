@@ -16,7 +16,7 @@ export const sendOrder = async (orderData) => {
       `${WEB_PUBLIC_URL}api/orders`,
       orderData
     );
-    console.log("Order API response:", response.data);
+    //console.log("Order API response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error sending order to API:", error);
@@ -27,7 +27,7 @@ export const sendOrder = async (orderData) => {
 export const fetchProducts = async () => {
   try {
     const response = await axiosInstance.get(`${WEB_PUBLIC_URL}api/products`);
-    console.log("Fetched products:", response.data);
+    //console.log("Fetched products:", response.data);
     return response.data;
   } catch (error) {
     console.error(
@@ -41,7 +41,7 @@ export const fetchProducts = async () => {
 export const fetchProfile = async () => {
   try {
     const response = await axiosInstance.get(`${WEB_PUBLIC_URL}api/profile`);
-    console.log("Fetched profile:", response.data);
+    //console.log("Fetched profile:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error fetching profile from API:", error);
