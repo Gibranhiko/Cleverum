@@ -10,7 +10,7 @@ import { addKeyword, EVENTS } from "@builderbot/bot";
 import { flowConfirm } from "./confirm.flow";
 import { validateOrder } from "../../utils/order";
 
-const sellerDataPath = path.join("src/chatbot/prompts", "/prompt-seller.txt");
+const sellerDataPath = path.join("prompts", "/prompt-seller.txt");
 const sellerData = fs.readFileSync(sellerDataPath, "utf-8");
 
 const PROMPT_SELLER = sellerData;

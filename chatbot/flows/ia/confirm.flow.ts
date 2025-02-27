@@ -1,7 +1,6 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
 import { clearHistory } from "../../utils/handleHistory";
 import { format } from "date-fns";
-import axios from "axios";
 
 const flowConfirm = addKeyword(EVENTS.ACTION)
   .addAction(async (_, { flowDynamic }) => {
@@ -35,7 +34,17 @@ const flowConfirm = addKeyword(EVENTS.ACTION)
     console.log("Order data:", orderData);
 
     try {
-      await axios.post(`${process.env.WEB_PUBLIC_URL}api/orders`, orderData);
+      const response = await fetch(`${process.env.WEB_PUBLIC_URL}api/orders`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       await flowDynamic(
         "Listo! tu orden esta en proceso, te contactaremos para confirmar el tiempo de entrega"
       );

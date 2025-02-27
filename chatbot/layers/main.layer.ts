@@ -9,7 +9,7 @@ import { project } from "../flows/ia/project.flow";
 import { products } from "../flows/ia/products.flow";
 
 const discriminatorDataPath = path.join(
-  "src/chatbot/prompts",
+  "prompts",
   "/prompt-discriminator.txt"
 );
 const discriminatorData = fs.readFileSync(discriminatorDataPath, "utf-8");

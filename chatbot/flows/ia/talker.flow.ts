@@ -4,40 +4,32 @@ import { getHistoryParse, handleHistory } from "../../utils/handleHistory";
 import AIClass from "../../services/ai";
 import * as path from "path";
 import fs from "fs";
-import { formatPrice } from "../../utils/order";
 
-const talkerDataPath = path.join("src/chatbot/prompts", "/prompt-products.txt");
+const talkerDataPath = path.join("prompts", "/prompt-talker.txt");
 const talkerData = fs.readFileSync(talkerDataPath, "utf-8");
 const PROMPT_TALKER = talkerData;
 
 export const generatePromptSeller = (
   history,
   businessdata,
-  currentProducts
 ) => {
   return PROMPT_TALKER.replace("{HISTORY}", history)
     .replace("{BUSINESSDATA.companyName}", businessdata.companyName)
-    .replace("{PRODUCTS}", currentProducts);
+    .replace("{BUSINESSDATA.companyAddress}", businessdata.companyAddress)
+    .replace("{BUSINESSDATA.companyEmail}", businessdata.companyEmail)
+    .replace("{BUSINESSDATA.facebookLink}", businessdata.facebookLink)
+    .replace("{BUSINESSDATA.instagramLink}", businessdata.instagramLink)
 };
 
-const products = addKeyword(EVENTS.ACTION).addAction(
+const flowTalker = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic, extensions }) => {
     try {
       const ai = extensions.ai as AIClass;
       const businessData = state.get("currentProfile");
-      const currentProducts = state.get("currentProducts");
-      const formattedProducts = currentProducts.map(
-        (p) =>
-          `${p.name}: ${p.description}, incluye: ${
-            p.includes
-          }, costo: ${formatPrice(p.options)}, url: ${p.imageUrl}`
-      );
-
       const history = getHistoryParse(state);
       const promptInfo = generatePromptSeller(
         history,
         businessData,
-        formattedProducts
       );
 
       const response = await ai.createChat(
@@ -51,24 +43,11 @@ const products = addKeyword(EVENTS.ACTION).addAction(
       );
 
       await handleHistory({ content: response, role: "assistant" }, state);
-
-      const imageMatch = response.match(/IMAGEN_SOLICITADA:\s*(.+)/);
-      const requestedProductName = imageMatch ? imageMatch[1].trim() : null;
-
-      const cleanResponse = response.replace(/IMAGEN_SOLICITADA:.*/, "").trim();
-      const chunks = cleanResponse.split(/(?<!\d)\.\s+/g);
+      const chunks = response.split(/(?<!\d)\.\s+/g);
       for (const chunk of chunks) {
         await flowDynamic([
           { body: chunk.trim(), delay: generateTimer(150, 250) },
         ]);
-      }
-      if (requestedProductName) {
-        const product = currentProducts.find(
-          (p) => p.name.toLowerCase() === requestedProductName.toLowerCase()
-        );
-        if (product && product.imageUrl) {
-          await flowDynamic([{ media: product.imageUrl }]);
-        }
       }
     } catch (err) {
       console.log(`[ERROR]:`, err);
@@ -77,4 +56,4 @@ const products = addKeyword(EVENTS.ACTION).addAction(
   }
 );
 
-export { products };
+export { flowTalker };

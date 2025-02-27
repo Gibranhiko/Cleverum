@@ -16,7 +16,7 @@
     "incremental": true,
     "skipLibCheck": true,
     "paths": {
-      "~/*": ["./src/chatbot/*"]
+      "~/*": ["./*"]
     }
   },
   "include": ["./**/*.ts"]
