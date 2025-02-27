@@ -1,5 +1,4 @@
 import "dotenv/config";
-import express from "express";
 import next from "next";
 import { createServer } from "http";
 import connectToDatabase from "./app/api/utils/mongoose";
@@ -14,19 +13,13 @@ const handle = clientAdminApp.getRequestHandler();
 const main = async () => {
   try {
     await clientAdminApp.prepare();
-    const app = express();
-
-    // Create an HTTP server instance from Express
-    const httpWebServer = createServer(app);
-
-    // Connect to MongoDB
-    await connectToDatabase("orders");  
-    console.log("Connected to MongoDB");
-
-    // Handle Next.js app router requests
-    app.all("*", (req, res) => {
+    const httpWebServer = createServer((req, res) => {
       return handle(req, res);
     });
+
+    // Connect to MongoDB
+    await connectToDatabase("orders");
+    console.log("Connected to MongoDB");
 
     // Initialize Socket.IO
     const io = new Server(httpWebServer, {
