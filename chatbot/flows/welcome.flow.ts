@@ -21,7 +21,6 @@ const welcome = addKeyword(EVENTS.WELCOME).addAnswer(
         profile = await fetchProfile();
         products = await fetchProducts();
 
-        console.log(profile, products, 'Fetched from API');
 
         await state.update({ 
           currentProfile: profile, 
