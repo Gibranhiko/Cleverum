@@ -4,7 +4,7 @@ import Product from "../models/Product";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
-    await connectToDatabase("orders");
+    await connectToDatabase(process.env.DB_NAME);
     const product = await Product.findById(params.id);
 
     if (!product) {
@@ -29,7 +29,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectToDatabase("orders");
+    await connectToDatabase(process.env.DB_NAME);
     const updatedProduct = await request.json();
 
     const product = await Product.findByIdAndUpdate(params.id, updatedProduct, {
@@ -58,7 +58,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await connectToDatabase("orders");
+    await connectToDatabase(process.env.DB_NAME);
     const deletedProduct = await Product.findByIdAndDelete(params.id);
 
     if (!deletedProduct) {
