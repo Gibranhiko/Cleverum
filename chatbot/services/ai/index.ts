@@ -2,6 +2,23 @@ import { OpenAI } from "openai";
 import fs from "fs";
 import { ChatCompletionMessageParam } from "openai/resources/chat";
 
+interface Order {
+  name: string;
+  order: string;
+  phone: string;
+  date: string;
+  address?: string;
+  location?: string;
+  paymentMethod?: string;
+  clientPayment?: number;
+  total: number;
+  status: string;
+}
+
+interface OrderResponse {
+  order: Order;
+}
+
 class AIClass {
   private openai: OpenAI;
   private model: string;
@@ -126,57 +143,72 @@ class AIClass {
 
   determineOrderFn = async (
     messages: ChatCompletionMessageParam[],
-    model?: string,
-    temperature = 0
-  ): Promise<{
-    order: Array<{ cantidad?: number; peso?: string; producto: string }>;
-  }> => {
+    model: string = "gpt-4-turbo",
+    temperature: number = 0
+  ): Promise<OrderResponse> => {
     try {
       const completion = await this.openai.chat.completions.create({
         model,
-        temperature: temperature,
+        temperature,
         messages,
         functions: [
           {
             name: "fn_create_order",
-            description: "Create an order based on the user's request",
+            description: "Extracts order details from the user's request.",
             parameters: {
               type: "object",
               properties: {
                 order: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      cantidad: {
-                        type: "number",
-                        description: "The quantity of the product ordered.",
-                      },
-                      peso: {
-                        type: "string",
-                        description: "The weight of the product ordered.",
-                      },
-                      producto: {
-                        type: "string",
-                        description: "The name of the product ordered.",
-                        enum: [
-                          "pollo",
-                          "costillas",
-                          "carne asada",
-                          "alitas",
-                          "boneless",
-                          "nuggets",
-                          "tenders",
-                          "coca cola",
-                          "coca cola light",
-                          "agua de sabor",
-                          "paquete 1",
-                          "paquete 2",
-                        ],
-                      },
+                  type: "object",
+                  properties: {
+                    name: { type: "string", description: "Customer's name." },
+                    order: {
+                      type: "string",
+                      description: "Description of the order.",
                     },
-                    required: ["producto", "cantidad", "peso"],
+                    phone: {
+                      type: "string",
+                      description: "Customer's phone number.",
+                    },
+                    date: {
+                      type: "string",
+                      format: "date-time",
+                      description: "Order date and time.",
+                    },
+                    address: {
+                      type: "string",
+                      description: "Delivery address.",
+                    },
+                    location: {
+                      type: "string",
+                      description: "Geographical location if applicable.",
+                    },
+                    paymentMethod: {
+                      type: "string",
+                      description: "Payment method used by the customer.",
+                    },
+                    clientPayment: {
+                      type: "number",
+                      description: "Amount paid by the customer.",
+                    },
+                    total: {
+                      type: "number",
+                      description: "Total order amount.",
+                    },
+                    status: {
+                      type: "string",
+                      description:
+                        "Current order status (e.g., pending, completed, canceled).",
+                    },
                   },
+                  required: [
+                    "name",
+                    "order",
+                    "phone",
+                    "date",
+                    "total",
+                    "status",
+                  ],
                 },
               },
               required: ["order"],
@@ -188,17 +220,15 @@ class AIClass {
         },
       });
 
-      // Convert json to object
-      const response = JSON.parse(
+      // Convert JSON response to a strongly-typed object
+      const response: OrderResponse = JSON.parse(
         completion.choices[0].message.function_call.arguments
       );
 
       return response;
     } catch (err) {
-      console.error(err);
-      return {
-        order: [],
-      };
+      console.error("Error processing order:", err);
+      return { order: {} as Order }; // Ensuring correct type
     }
   };
 

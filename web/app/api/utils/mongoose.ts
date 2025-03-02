@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const MONGODB_URI = process.env.MONGODB_URI || '';
+const DB_NAME = process.env.DB_NAME || '';
 
 if (!MONGODB_URI) {
   throw new Error(
@@ -14,7 +15,7 @@ if (!cached) {
   cached = (global).mongoose = { conn: null, promise: null };
 }
 
-async function connectToDatabase(db: string) {
+async function connectToDatabase() {
   if (cached.conn) {
     return cached.conn;
   }
@@ -24,7 +25,7 @@ async function connectToDatabase(db: string) {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI+db, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI+DB_NAME, opts).then((mongoose) => {
       return mongoose;
     });
   }

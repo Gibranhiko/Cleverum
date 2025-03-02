@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   const { username, password } = await req.json();
 
   // Connect to the database
-  await connectToDatabase("users");
+  await connectToDatabase();
 
   try {
     // Check if the user already exists

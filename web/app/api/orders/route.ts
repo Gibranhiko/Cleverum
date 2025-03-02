@@ -5,7 +5,7 @@ import Order, { IOrder } from "./models/Order";
 // Fetch all orders
 export async function GET() {
   try {
-    await connectToDatabase(process.env.DB_NAME);
+    await connectToDatabase();
     const orders: IOrder[] = await Order.find({});
     return NextResponse.json(orders, { status: 200 });
   } catch (error) {
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       );
     }
 
-    await connectToDatabase(process.env.DB_NAME);
+    await connectToDatabase();
 
     const newOrder: IOrder = new Order({
       name,

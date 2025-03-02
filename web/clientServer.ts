@@ -18,7 +18,7 @@ const main = async () => {
     });
 
     // Connect to MongoDB
-    await connectToDatabase(process.env.DB_NAME);
+    await connectToDatabase();
     console.log("Connected to MongoDB");
 
     // Initialize Socket.IO

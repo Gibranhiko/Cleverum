@@ -5,7 +5,7 @@ import Profile from "./models/Profile";
 // GET: Fetch profile data
 export async function GET(_: Request) {
   try {
-    await connectToDatabase("profiles");
+    await connectToDatabase();
     const profile = await Profile.findOne();
 
     return NextResponse.json(profile || {}, { status: 200 });
@@ -21,7 +21,7 @@ export async function GET(_: Request) {
 // PUT: Update profile data
 export async function PUT(request: Request) {
   try {
-    await connectToDatabase("profiles");
+    await connectToDatabase();
     const updatedProfileData = await request.json();
 
     const requiredFields = [
@@ -75,7 +75,7 @@ export async function PUT(request: Request) {
 // DELETE: Delete profile data (optional)
 export async function DELETE(_: Request) {
   try {
-    await connectToDatabase("profiles");
+    await connectToDatabase();
     const deletedProfile = await Profile.findOneAndDelete();
 
     if (!deletedProfile) {

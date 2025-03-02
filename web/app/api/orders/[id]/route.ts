@@ -5,7 +5,7 @@ import Order from "../models/Order";
 // Fetch an order by ID
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
-    await connectToDatabase(process.env.DB_NAME);
+    await connectToDatabase();
     const order = await Order.findById(params.id);
 
     if (!order) {
@@ -34,7 +34,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       );
     }
 
-    await connectToDatabase(process.env.DB_NAME);
+    await connectToDatabase();
 
     const updatedOrder = await Order.findByIdAndUpdate(
       params.id,
@@ -59,7 +59,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 // Delete an order by ID
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
   try {
-    await connectToDatabase(process.env.DB_NAME);
+    await connectToDatabase();
     const deletedOrder = await Order.findByIdAndDelete(params.id);
 
     if (!deletedOrder) {

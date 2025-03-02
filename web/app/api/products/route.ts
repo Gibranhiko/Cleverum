@@ -4,7 +4,7 @@ import Product from "./models/Product";
 
 export async function GET() {
   try {
-    await connectToDatabase(process.env.DB_NAME);
+    await connectToDatabase();
     const products = await Product.find({});
     return NextResponse.json(products, { status: 200 });
   } catch (error) {
@@ -15,7 +15,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectToDatabase(process.env.DB_NAME);
+    await connectToDatabase();
     const newProduct = await request.json();
 
     const requiredFields = ["category", "name", "description", "type", "options", "includes"];
