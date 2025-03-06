@@ -154,70 +154,30 @@ class AIClass {
         functions: [
           {
             name: "fn_create_order",
-            description: "Extracts order details from the user's request.",
+            description: "Extracts the necessary information to create a service request.",
             parameters: {
               type: "object",
               properties: {
                 order: {
                   type: "object",
                   properties: {
-                    name: { type: "string", description: "Customer's name." },
-                    order: {
-                      type: "string",
-                      description: "Description of the order.",
-                    },
-                    phone: {
-                      type: "string",
-                      description: "Customer's phone number.",
-                    },
-                    date: {
-                      type: "string",
-                      format: "date-time",
-                      description: "Order date and time.",
-                    },
-                    address: {
-                      type: "string",
-                      description: "Delivery address.",
-                    },
-                    location: {
-                      type: "string",
-                      description: "Geographical location if applicable.",
-                    },
-                    paymentMethod: {
-                      type: "string",
-                      description: "Payment method used by the customer.",
-                    },
-                    clientPayment: {
-                      type: "number",
-                      description: "Amount paid by the customer.",
-                    },
-                    total: {
-                      type: "number",
-                      description: "Total order amount.",
-                    },
-                    status: {
-                      type: "string",
-                      description:
-                        "Current order status (e.g., pending, completed, canceled).",
-                    },
+                    name: { type: "string", description: "Customer's full name." },
+                    phone: { type: "string", description: "Customer's phone number." },
+                    projectDescription: { type: "string", description: "Brief description of the project the customer wants to develop." },
+                    plannedDate: { 
+                      type: "string", 
+                      format: "date-time", 
+                      description: "Planned start or delivery date, if provided by the customer." 
+                    }
                   },
-                  required: [
-                    "name",
-                    "order",
-                    "phone",
-                    "date",
-                    "total",
-                    "status",
-                  ],
-                },
+                  required: ["name", "phone", "projectDescription"]
+                }
               },
-              required: ["order"],
-            },
-          },
+              required: ["order"]
+            }
+          }
         ],
-        function_call: {
-          name: "fn_create_order",
-        },
+        function_call: { name: "fn_create_order" }
       });
 
       // Convert JSON response to a strongly-typed object
@@ -231,6 +191,7 @@ class AIClass {
       return { order: {} as Order }; // Ensuring correct type
     }
   };
+
 
   /**
    * experimental 🟠

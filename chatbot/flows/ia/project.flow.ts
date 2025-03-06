@@ -8,36 +8,40 @@ const orderPromptPath = path.join("prompts", "/prompt-order.txt");
 const orderPromptData = fs.readFileSync(orderPromptPath, "utf-8");
 const PROMPT_ORDER = orderPromptData;
 
-export const generatePromptOrder = (history: string, businessData: { companyName: string }) => {
+export const generatePromptOrder = (
+  history: string, 
+  businessData: { companyName: string }, 
+  products: string
+) => {
   return PROMPT_ORDER.replace("{HISTORY}", history)
-    .replace("{BUSINESSDATA.companyName}", businessData.companyName);
+    .replace("{BUSINESSDATA.companyName}", businessData.companyName)
+    .replace("{PRODUCTS}", products);
 };
 
 const project = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic, extensions }) => {
     try {
-      // Get AI instance from extensions (Assuming ai is directly available)
       const ai = extensions.ai;
-
       const businessData = state.get("currentProfile");
       const history = getHistoryParse(state);
 
-      // Generate prompt for AI
-      const promptInfo = generatePromptOrder(history, businessData);
-      
-      // AI Chat completion request (returns a string)
+      // Obtener lista de productos de la empresa
+      const products = state.get("currentProducts");
+
+      // Generar prompt para la IA
+      const promptInfo = generatePromptOrder(history, businessData, products);
+
+      // Solicitud a la IA
       const response = await ai.createChat(
         [{ role: "system", content: promptInfo }],
         "gpt-4-turbo"
       );
 
-      // Store AI response in history
+      // Guardar respuesta en el historial
       await handleHistory({ content: response, role: "assistant" }, state);
 
-      // Split response into chunks by sentences
-      const chunks = response.split(/(?<!\d)\.\s+/g); // Split on periods, ignoring numerical values
-
-      // Send each chunk with delay
+      // Enviar la respuesta en partes con delay
+      const chunks = response.split(/(?<!\d)\.\s+/g);
       for (const chunk of chunks) {
         await flowDynamic([
           { body: chunk.trim(), delay: generateTimer(150, 250) },
