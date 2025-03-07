@@ -5,7 +5,7 @@ import AIClass from "./services/ai/index";
 import flow from "./flows";
 
 const PORT = process.env.BOT_PORT;
-const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-3.5-turbo");
+const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-4");
 
 const main = async () => {
   try {

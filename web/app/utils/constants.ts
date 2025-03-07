@@ -1,5 +1,6 @@
 export const orderFields = [
   { title: "Nombre", field: "name" },
+  { title: "Descripción", field: "description" },
   { title: "Orden", field: "order" },
   { title: "Teléfono", field: "phone" },
   { title: "Fecha", field: "date" },

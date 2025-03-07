@@ -36,7 +36,7 @@ const project = addKeyword(EVENTS.ACTION).addAction(
       // Request to the AI
       const response = await ai.createChat(
         [{ role: "system", content: promptInfo }],
-        "gpt-4-turbo"
+        "gpt-4"
       );
 
       // Save response to the history
@@ -49,7 +49,7 @@ const project = addKeyword(EVENTS.ACTION).addAction(
 
         const { order } = await ai.determineOrderFn(
           [{ role: "system", content: promptInfoDetermine }],
-          "gpt-4-turbo"
+          "gpt-4"
         );
 
         // Prepare the order data

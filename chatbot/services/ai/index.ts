@@ -89,7 +89,7 @@ class AIClass {
 
   determineIntentFn = async (
     messages: ChatCompletionMessageParam[],
-    model: string = "gpt-3.5-turbo",
+    model: string = "gpt-4",
     temperature = 0
   ): Promise<{ intent: string }> => {
     try {
@@ -145,7 +145,7 @@ class AIClass {
 
   determineOrderFn = async (
     messages: ChatCompletionMessageParam[],
-    model: string = "gpt-4-turbo",
+    model: string = "gpt-4",
     temperature: number = 0
   ): Promise<OrderResponse> => {
     try {
