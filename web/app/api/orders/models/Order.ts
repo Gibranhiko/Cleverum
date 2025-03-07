@@ -19,11 +19,13 @@ interface IOrderItem {
 export interface IOrder extends Document {
   _id: string;
   name: string;
-  order: IOrderItem[];
+  order?: IOrderItem[];
+  description?: string;
   phone: string;
   date: Date;
-  deliveryType: string;
-  total: number;
+  plannedDate?: Date | null;
+  deliveryType?: string;
+  total?: number;
   status: boolean;
   address?: string | null;
   location?: string | null;
@@ -54,11 +56,13 @@ const OrderItemSchema = new Schema<IOrderItem>(
 
 const OrderSchema = new Schema<IOrder>({
   name: { type: String, required: true },
-  order: { type: [OrderItemSchema], required: true },
+  description: { type: String, default: null },
+  order: { type: [OrderItemSchema], default: null},
   phone: { type: String, required: true },
   date: { type: Date, required: true },
-  deliveryType: { type: String, required: true },
-  total: { type: Number, required: true },
+  plannedDate: { type: Date, default: null },
+  deliveryType: { type: String, default: null },
+  total: { type: Number, default: null },
   status: { type: Boolean, required: true },
   address: { type: String, default: null },
   location: { type: String, default: null },

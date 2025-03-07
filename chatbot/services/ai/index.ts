@@ -4,15 +4,17 @@ import { ChatCompletionMessageParam } from "openai/resources/chat";
 
 interface Order {
   name: string;
-  order: string;
+  order?: string;
+  description: string;
   phone: string;
   date: string;
+  plannedDate?: string;
   address?: string;
   location?: string;
   paymentMethod?: string;
   clientPayment?: number;
-  total: number;
-  status: string;
+  total?: number;
+  status: boolean;
 }
 
 interface OrderResponse {
@@ -163,14 +165,14 @@ class AIClass {
                   properties: {
                     name: { type: "string", description: "Customer's full name." },
                     phone: { type: "string", description: "Customer's phone number." },
-                    projectDescription: { type: "string", description: "Brief description of the project the customer wants to develop." },
+                    description: { type: "string", description: "Brief description of the project the customer wants to develop." },
                     plannedDate: { 
                       type: "string", 
                       format: "date-time", 
                       description: "Planned start or delivery date, if provided by the customer." 
                     }
                   },
-                  required: ["name", "phone", "projectDescription"]
+                  required: ["name", "phone", "description"]
                 }
               },
               required: ["order"]
@@ -179,20 +181,34 @@ class AIClass {
         ],
         function_call: { name: "fn_create_order" }
       });
-
-      // Convert JSON response to a strongly-typed object
-      const response: OrderResponse = JSON.parse(
-        completion.choices[0].message.function_call.arguments
-      );
-
+  
+      // Validar si la respuesta tiene datos
+      const choice = completion.choices?.[0];
+      if (!choice?.message?.function_call?.arguments) {
+        throw new Error("No se recibió una respuesta válida de la IA.");
+      }
+  
+      // Convertir JSON response a objeto
+      const response: OrderResponse = JSON.parse(choice.message.function_call.arguments);
+  
       return response;
     } catch (err) {
       console.error("Error processing order:", err);
-      return { order: {} as Order }; // Ensuring correct type
+      
+      // Retornar un objeto vacío bien definido en caso de error
+      return { 
+        order: {
+          date: "",
+          status: false,
+          name: "",
+          phone: "",
+          description: "",
+          plannedDate: ""
+        } 
+      };
     }
   };
-
-
+  
   /**
    * experimental 🟠
    * @param messages

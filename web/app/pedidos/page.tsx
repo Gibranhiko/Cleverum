@@ -24,6 +24,9 @@ export default function OrdersPage() {
   const pickupOrders = currentOrders.filter(
     (order) => order.deliveryType === "recoger"
   );
+  const digitalOrders = currentOrders.filter(
+    (order) => !order.deliveryType || (order.deliveryType !== "domicilio" && order.deliveryType !== "recoger")
+  );
 
   useEffect(() => {
     setColumnsConfig(orderFields);
@@ -79,23 +82,38 @@ export default function OrdersPage() {
       <div className="container mx-auto px-4 mt-2">
         <h1 className="text-2xl font-bold mb-4">Pedidos</h1>
 
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">Envios a Domicilio</h2>
-          <OrdersTable
-            orders={deliveryOrders}
-            onStatusClick={handleStatusClick}
-            columnsConfig={columnsConfig}
-          />
-        </div>
+        {deliveryOrders.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-2">Envios a Domicilio</h2>
+            <OrdersTable
+              orders={deliveryOrders}
+              onStatusClick={handleStatusClick}
+              columnsConfig={columnsConfig}
+            />
+          </div>
+        )}
 
-        <div>
-          <h2 className="text-xl font-semibold mb-2">Recoger en Tienda</h2>
-          <OrdersTable
-            orders={pickupOrders}
-            onStatusClick={handleStatusClick}
-            columnsConfig={columnsConfig}
-          />
-        </div>
+        {pickupOrders.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Recoger en Tienda</h2>
+            <OrdersTable
+              orders={pickupOrders}
+              onStatusClick={handleStatusClick}
+              columnsConfig={columnsConfig}
+            />
+          </div>
+        )}
+
+        {digitalOrders.length > 0 && (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Ordenes digitales</h2>
+            <OrdersTable
+              orders={digitalOrders}
+              onStatusClick={handleStatusClick}
+              columnsConfig={columnsConfig}
+            />
+          </div>
+        )}
       </div>
 
       <Modal isOpen={isModalOpen} onClose={handleCancel}>

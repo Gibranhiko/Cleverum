@@ -13,12 +13,14 @@ export const sendOrder = async (orderData) => {
       headers,
       body: JSON.stringify(orderData),
     });
+
+    // Check if response is not OK (covers all non-2xx responses)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const data = await response.json();
-    //console.log("Order API response:", data);
-    return data;
+
+    // Just return the parsed JSON response
+    return await response.json();
   } catch (error) {
     console.error("Error sending order to API:", error);
     throw error;

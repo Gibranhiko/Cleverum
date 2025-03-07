@@ -3,17 +3,19 @@ import { getHistoryParse, handleHistory } from "../../utils/handleHistory";
 import * as path from "path";
 import fs from "fs";
 import { generateTimer } from "../../utils/generateTimer";
+import { format } from "date-fns";  // Make sure you have date-fns for formatting the date
+import { sendOrder } from "~/utils/api";
 
-const orderPromptPath = path.join("prompts", "/prompt-order.txt");
-const orderPromptData = fs.readFileSync(orderPromptPath, "utf-8");
-const PROMPT_ORDER = orderPromptData;
+// Read the prompt templates once
+const promptOrderPath = path.join("prompts", "/prompt-order.txt");
+const promptOrderData = fs.readFileSync(promptOrderPath, "utf-8");
 
-export const generatePromptOrder = (
-  history: string, 
-  businessData: { companyName: string }, 
-  products: string
-) => {
-  return PROMPT_ORDER.replace("{HISTORY}", history)
+const promptDetermineOrderPath = path.join("prompts", "/prompt-determine-order.txt");
+const promptDetermineOrderData = fs.readFileSync(promptDetermineOrderPath, "utf-8");
+
+// Unified function for generating prompts based on template type
+const generatePrompt = (template: string, history: string, businessData: { companyName: string }, products: string) => {
+  return template.replace("{HISTORY}", history)
     .replace("{BUSINESSDATA.companyName}", businessData.companyName)
     .replace("{PRODUCTS}", products);
 };
@@ -28,24 +30,55 @@ const project = addKeyword(EVENTS.ACTION).addAction(
       // Obtener lista de productos de la empresa
       const products = state.get("currentProducts");
 
-      // Generar prompt para la IA
-      const promptInfo = generatePromptOrder(history, businessData, products);
+      // Generate the prompt for the order processing
+      const promptInfo = generatePrompt(promptOrderData, history, businessData, products);
 
-      // Solicitud a la IA
+      // Request to the AI
       const response = await ai.createChat(
         [{ role: "system", content: promptInfo }],
         "gpt-4-turbo"
       );
 
-      // Guardar respuesta en el historial
+      // Save response to the history
       await handleHistory({ content: response, role: "assistant" }, state);
 
-      // Enviar la respuesta en partes con delay
-      const chunks = response.split(/(?<!\d)\.\s+/g);
-      for (const chunk of chunks) {
-        await flowDynamic([
-          { body: chunk.trim(), delay: generateTimer(150, 250) },
-        ]);
+      // Check if the response includes the {ORDER_COMPLETE} marker
+      if (response.includes("{ORDER_COMPLETE}")) {
+        // Generate prompt for order details
+        const promptInfoDetermine = generatePrompt(promptDetermineOrderData, history, businessData, products);
+
+        const { order } = await ai.determineOrderFn(
+          [{ role: "system", content: promptInfoDetermine }],
+          "gpt-4-turbo"
+        );
+
+        // Prepare the order data
+        const orderData = {
+          name: order.name,
+          description: order.description,
+          phone: order.phone,
+          date: format(new Date(), "yyyy-MM-dd HH:mm"), // Current date and time
+          plannedDate: order.plannedDate,
+          status: false,
+        };
+
+        // Send order data to the API
+        try {
+          await sendOrder(orderData);
+          await flowDynamic("Tu orden ha sido enviada, nos pondremos en contacto muy pronto.");
+        
+        } catch (error) {
+          console.error("Error sending order data:", error.message);
+          await flowDynamic("Hubo un problema al procesar tu orden. Inténtalo de nuevo.");
+        }
+      } else {
+        // If the order is not complete, continue asking for more information
+        const chunks = response.split(/(?<!\d)\.\s+/g);
+        for (const chunk of chunks) {
+          await flowDynamic([
+            { body: chunk.trim(), delay: generateTimer(150, 250) },
+          ]);
+        }
       }
     } catch (err) {
       console.error("[ERROR]:", err);

@@ -23,8 +23,10 @@ export async function POST(req: Request) {
     const {
       name,
       order,
+      description,
       phone,
       date,
+      plannedDate,
       deliveryType,
       total,
       status,
@@ -34,7 +36,7 @@ export async function POST(req: Request) {
       clientPayment,
     } = await req.json();
 
-    if (!name || !order || !phone || !date || !deliveryType || !total) {
+    if (!name || !phone || !date) {
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
@@ -53,7 +55,9 @@ export async function POST(req: Request) {
     const newOrder: IOrder = new Order({
       name,
       order,
+      description,
       phone,
+      plannedDate,
       date,
       deliveryType,
       total,

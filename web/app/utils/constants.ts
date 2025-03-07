@@ -3,6 +3,7 @@ export const orderFields = [
   { title: "Orden", field: "order" },
   { title: "Teléfono", field: "phone" },
   { title: "Fecha", field: "date" },
+  { title: "Fecha Planeada", field: "plannedDate" },
   { title: "Dirección", field: "address" },
   { title: "Ubicación", field: "location" },
   { title: "Método de Pago", field: "paymentMethod" },

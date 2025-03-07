@@ -30,6 +30,8 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
       if (order[col.field] !== null && order[col.field] !== undefined) {
         if (col.field === "date") {
           row[col.title] = new Date(order.date).toLocaleString();
+        }  else if (col.field === "plannedDate") {
+          row[col.title] = new Date(order.plannedDate).toLocaleString();
         } else if (col.field === "status") {
           row[col.title] = (
             <button
