@@ -46,8 +46,7 @@ const products = addKeyword(EVENTS.ACTION).addAction(
             role: "system",
             content: promptInfo,
           },
-        ],
-        "gpt-4"
+        ]
       );
 
       await handleHistory({ content: response, role: "assistant" }, state);

@@ -41,8 +41,7 @@ const flowSeller = addKeyword(EVENTS.ACTION)
           role: "system",
           content: promptInfo,
         },
-      ],
-      "gpt-4"
+      ]
     );
 
     console.log(order);

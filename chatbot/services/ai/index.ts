@@ -89,12 +89,12 @@ class AIClass {
 
   determineIntentFn = async (
     messages: ChatCompletionMessageParam[],
-    model: string = "gpt-4",
+    model?: string,
     temperature = 0
   ): Promise<{ intent: string }> => {
     try {
       const completion = await this.openai.chat.completions.create({
-        model,
+        model: model ?? this.model,
         temperature,
         messages,
         functions: [
@@ -145,12 +145,12 @@ class AIClass {
 
   determineOrderFn = async (
     messages: ChatCompletionMessageParam[],
-    model: string = "gpt-4",
+    model?: string,
     temperature: number = 0
   ): Promise<OrderResponse> => {
     try {
       const completion = await this.openai.chat.completions.create({
-        model,
+        model: model ?? this.model,
         temperature,
         messages,
         functions: [

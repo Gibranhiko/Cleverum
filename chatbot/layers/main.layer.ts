@@ -32,8 +32,7 @@ export default async (
         role: "system",
         content: prompt.replace("{HISTORY}", history),
       },
-    ],
-    "gpt-4"
+    ]
   );
 
   console.log(intent + "** IA intent");

@@ -35,8 +35,7 @@ const project = addKeyword(EVENTS.ACTION).addAction(
 
       // Request to the AI
       const response = await ai.createChat(
-        [{ role: "system", content: promptInfo }],
-        "gpt-4"
+        [{ role: "system", content: promptInfo }]
       );
 
       // Save response to the history
@@ -48,8 +47,7 @@ const project = addKeyword(EVENTS.ACTION).addAction(
         const promptInfoDetermine = generatePrompt(promptDetermineOrderData, history, businessData, products);
 
         const { order } = await ai.determineOrderFn(
-          [{ role: "system", content: promptInfoDetermine }],
-          "gpt-4"
+          [{ role: "system", content: promptInfoDetermine }]
         );
 
         // Prepare the order data
