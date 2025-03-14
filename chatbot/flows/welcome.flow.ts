@@ -1,7 +1,7 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
 import { fetchProducts, fetchProfile } from "../utils/api";
 import { aiFlow } from "./ai.flow";
-import { fixed } from "./fixed.flow";
+import { fixed } from "./fixed/fixed.flow";
 
 const CACHE_EXPIRY_TIME = 10 * 60 * 1000;
 

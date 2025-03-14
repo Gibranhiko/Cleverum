@@ -1,6 +1,6 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
-import { formatOrder, paymentConfirmation } from "../utils/order";
-import { sendOrder } from "../utils/api";
+import { formatOrder, paymentConfirmation } from "../../utils/order";
+import { sendOrder } from "../../utils/api";
 
 export const confirmation = addKeyword(EVENTS.ACTION)
   .addAnswer(

@@ -3,7 +3,7 @@ import { getHistoryParse, handleHistory } from "../../utils/handleHistory";
 import * as path from "path";
 import fs from "fs";
 import { generateTimer } from "../../utils/generateTimer";
-import { format } from "date-fns";  // Make sure you have date-fns for formatting the date
+import { format } from "date-fns";
 import { sendOrder } from "~/utils/api";
 
 // Read the prompt templates once

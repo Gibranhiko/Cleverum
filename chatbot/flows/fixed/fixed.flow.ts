@@ -1,7 +1,7 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
-import { fetchProducts } from "../utils/api";
+import { fetchProducts } from "../../utils/api";
 import { selection } from "./selection.flow";
-import { welcome } from "./welcome.flow";
+import { welcome } from "../welcome.flow";
 
 const generateMenuOptions = (products) => {
   if (products.length === 0) {

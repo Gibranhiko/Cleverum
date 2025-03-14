@@ -1,7 +1,7 @@
 import { addKeyword, EVENTS } from "@builderbot/bot";
-import { formatOrder, formatProducts } from "../utils/order";
+import { formatOrder, formatProducts } from "../../utils/order";
 import { confirmation } from "./confirmation.flow";
-import { welcome } from "./welcome.flow";
+import { welcome } from "../welcome.flow";
 
 const selection = addKeyword(EVENTS.ACTION)
   .addAnswer(

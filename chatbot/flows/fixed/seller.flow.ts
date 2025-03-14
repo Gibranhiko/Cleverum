@@ -1,5 +1,5 @@
 import {
-  clearHistory,
+  // clearHistory,
   getHistoryParse,
   handleHistory,
 } from "../../utils/handleHistory";
@@ -8,7 +8,7 @@ import * as path from "path";
 import fs from "fs";
 import { addKeyword, EVENTS } from "@builderbot/bot";
 import { flowConfirm } from "./confirm.flow";
-import { validateOrder } from "../../utils/order";
+// import { validateOrder } from "../../utils/order";
 
 const sellerDataPath = path.join("prompts", "/prompt-seller.txt");
 const sellerData = fs.readFileSync(sellerDataPath, "utf-8");
@@ -23,7 +23,7 @@ export const generatePromptSeller = (history, productsData) => {
 };
 
 const flowSeller = addKeyword(EVENTS.ACTION)
-  .addAction(async (_, { extensions, state, flowDynamic, endFlow }) => {
+  .addAction(async (_, { extensions, state, flowDynamic }) => {
     const assiMsgOrder = "Claro, vamos a tomar tu pedido...";
     await flowDynamic(assiMsgOrder);
     await handleHistory({ content: assiMsgOrder, role: "assistant" }, state);
@@ -46,34 +46,34 @@ const flowSeller = addKeyword(EVENTS.ACTION)
 
     console.log(order);
 
-    if (!validateOrder(order, productsData)) {
-      const notGetOrderMsg =
-        `Te sugiero los siguientes productos: ${productsData.join(', ')}`;
-      await flowDynamic(notGetOrderMsg);
-      await clearHistory(state);
-      return endFlow();
-    } else if (validateOrder(order, productsData) === "missing-quantity") {
-      const notGetOrderMsg =
-        "Una disculpa no pude entender tu orden.";
-      await flowDynamic(notGetOrderMsg);
-      await clearHistory(state);
-      return endFlow();
-    }
+    // if (!validateOrder(order, productsData)) {
+    //   const notGetOrderMsg =
+    //     `Te sugiero los siguientes productos: ${productsData.join(', ')}`;
+    //   await flowDynamic(notGetOrderMsg);
+    //   await clearHistory(state);
+    //   return endFlow();
+    // } else if (validateOrder(order, productsData) === "missing-quantity") {
+    //   const notGetOrderMsg =
+    //     "Una disculpa no pude entender tu orden.";
+    //   await flowDynamic(notGetOrderMsg);
+    //   await clearHistory(state);
+    //   return endFlow();
+    // }
 
     const previousOrder = state.get("orderData") || [];
 
     let newOrder;
 
-    if (previousOrder.length > 0) {
-      newOrder = order.filter(
-        (newItem) =>
-          !previousOrder.some(
-            (prevItem) => prevItem.producto === newItem.producto
-          )
-      );
-    } else {
-      newOrder = order;
-    }
+    // if (previousOrder.length > 0) {
+    //   newOrder = order.filter(
+    //     (newItem) =>
+    //       !previousOrder.some(
+    //         (prevItem) => prevItem.producto === newItem.producto
+    //       )
+    //   );
+    // } else {
+    //   newOrder = order;
+    // }
 
     const updatedOrder = previousOrder.concat(newOrder);
     await state.update({ orderData: updatedOrder });
