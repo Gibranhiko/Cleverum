@@ -1,6 +1,6 @@
 **Cleverum Application**
 
-This is a combined chatbot and client admin application built with Express, Next.js, Socket.IO, and a custom AI bot powered by OpenAI's GPT-3.5-turbo. 
+This is a combined chatbot and client admin application built with Express, Next.js, Socket.IO, and a custom AI bot powered by OpenAI's gpt-4o-mini. 
 It connects to a MongoDB database to manage orders and includes QR code generation for restaurant use.
 
 **Features**

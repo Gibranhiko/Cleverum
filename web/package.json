@@ -1,0 +1,39 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.1.5",
+    "aws-sdk": "^2.1692.0",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.2",
+    "express": "^4.19.2",
+    "jose": "^5.9.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.6.0",
+    "next": "^14.2.7",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.53.0",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "tailwindcss": "^3.4.10"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.10",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.11.1",
+    "nodemon": "^3.1.0",
+    "postcss": "^8.4.41",
+    "tsx": "^4.7.1",
+    "typescript": "^5.5.4"
+  },
+  "license": "ISC"
+}

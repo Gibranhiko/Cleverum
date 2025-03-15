@@ -1,0 +1,27 @@
+Interpreta el pedido del cliente basado solamente en estos productos y en la conversación:
+{PRODUCTS}
+
+Conversación:
+{HISTORY}
+
+Devuelve un array de objetos con las propiedades cantidad (si aplica), peso (si aplica), y producto. 
+Usa 1 como cantidad por defecto si no se especifica.
+
+[ 
+  { "cantidad": x, "producto": "item 1" }, 
+  { "peso": y, "producto": "item 2" }
+]
+
+Ejemplos:
+
+Cliente: "Quiero un item 1 y un kilo de item 2."
+[
+  { "cantidad": 1, "producto": "item 1" },
+  { "peso": 2, "producto": "item 2" }
+]
+
+Cliente: "Dame dos item 1 y medio kilo de item 2."
+[
+  { "cantidad": 2, "producto": "item 1" },
+  { "peso": 0.5, "producto": "item 2" }
+]

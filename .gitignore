@@ -5,8 +5,9 @@ node_modules
 bot.qr.png
 *_sessions
 dist
-src/client-admin/.next
+web/.next
 .rollup.cache
 tsconfig.tsbuildinfo
 package-lock.json
 *.png
+*.lock
