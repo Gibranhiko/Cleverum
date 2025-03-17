@@ -14,10 +14,11 @@ const promptDetermineOrderPath = path.join("prompts", "/prompt-determine-order.t
 const promptDetermineOrderData = fs.readFileSync(promptDetermineOrderPath, "utf-8");
 
 // Unified function for generating prompts based on template type
-const generatePrompt = (template: string, history: string, businessData: { companyName: string }, products: string) => {
+const generatePrompt = (template: string, history: string, businessData: { companyName: string }, products: string, todayIs: string) => {
   return template.replace("{HISTORY}", history)
     .replace("{BUSINESSDATA.companyName}", businessData.companyName)
-    .replace("{PRODUCTS}", products);
+    .replace("{PRODUCTS}", products)
+    .replace("{CURRENTDAY}", todayIs);
 };
 
 const project = addKeyword(EVENTS.ACTION).addAction(
@@ -30,8 +31,10 @@ const project = addKeyword(EVENTS.ACTION).addAction(
       // Obtener lista de productos de la empresa
       const products = state.get("currentProducts");
 
+      const todayIs = format(new Date(), "yyyy-MM-dd");
+
       // Generate the prompt for the order processing
-      const promptInfo = generatePrompt(promptOrderData, history, businessData, products);
+      const promptInfo = generatePrompt(promptOrderData, history, businessData, products, todayIs);
 
       // Request to the AI
       const response = await ai.createChat(
@@ -44,7 +47,7 @@ const project = addKeyword(EVENTS.ACTION).addAction(
       // Check if the response includes the {ORDER_COMPLETE} marker
       if (response.includes("{ORDER_COMPLETE}")) {
         // Generate prompt for order details
-        const promptInfoDetermine = generatePrompt(promptDetermineOrderData, history, businessData, products);
+        const promptInfoDetermine = generatePrompt(promptDetermineOrderData, history, businessData, products, todayIs);
 
         const { order } = await ai.determineOrderFn(
           [{ role: "system", content: promptInfoDetermine }]
@@ -63,8 +66,12 @@ const project = addKeyword(EVENTS.ACTION).addAction(
         // Send order data to the API
         try {
           await sendOrder(orderData);
+          
+          // Send socket notification
+          const socket = extensions.socket;
+          socket.emit("new-order", orderData);
+          
           await flowDynamic("Tu orden ha sido enviada, nos pondremos en contacto muy pronto.");
-        
         } catch (error) {
           console.error("Error sending order data:", error.message);
           await flowDynamic("Hubo un problema al procesar tu orden. Inténtalo de nuevo.");

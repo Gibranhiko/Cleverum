@@ -7,7 +7,7 @@ import { Server } from "socket.io";
 const PORT = process.env.WEB_PORT;
 const URL = process.env.WEB_PUBLIC_URL;
 const dev = process.env.NODE_ENV !== "production";
-const clientAdminApp = next({ dev, dir: "./src/client-admin" });
+const clientAdminApp = next({ dev, dir: "./" });
 const handle = clientAdminApp.getRequestHandler();
 
 const main = async () => {
