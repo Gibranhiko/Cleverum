@@ -15,8 +15,16 @@ COPY ./chatbot ./chatbot
 # Copy the web source code
 COPY ./web ./web
 
-# Copy rollup tsconfig tailwind config
-COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
+# Copy Rollup config (chatbot)
+COPY ./chatbot/rollup.config.js ./chatbot/rollup.config.js
+
+# Copy TypeScript config files (chatbot and web)
+COPY ./chatbot/tsconfig.json ./chatbot/tsconfig.json
+COPY ./web/tsconfig.json ./web/tsconfig.json
+
+# Copy Tailwind and PostCSS config (web)
+COPY ./web/tailwind.config.js ./web/tailwind.config.js
+COPY ./web/postcss.config.js ./web/postcss.config.js
 
 # Set Node.js memory limit for the build process (e.g., 4GB)
 ENV NODE_OPTIONS="--max-old-space-size=2048"
