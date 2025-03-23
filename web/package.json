@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "npx tsx clientServer.ts",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.5",
