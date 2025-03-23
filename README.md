@@ -61,6 +61,11 @@ Install dependencies:
 npm install
 ```
 
+Install the `sharp` library for the chatbot:
+```sh
+npm install --cpu=wasm32 sharp
+```
+
 Set up environment variables:
 Create the `.env` files in the appropriate directories and add the required variables.
 
