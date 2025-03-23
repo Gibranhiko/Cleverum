@@ -5,9 +5,9 @@ WORKDIR /app
 # Define build arguments for sensitive information
 ARG MONGODB_URI
 
-# Install dependencies
+# Install dependencies (use npm install instead of npm ci)
 COPY package*.json ./ 
-RUN npm ci
+RUN npm install
 
 # Copy the entire source code (including web and chatbot)
 COPY ./src ./src
