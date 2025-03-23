@@ -5,14 +5,16 @@ WORKDIR /app
 # Define build arguments for sensitive information
 ARG MONGODB_URI
 
-# Install dependencies
-COPY package*.json ./ 
+# Copy the root package.json and the workspace package.json files
+COPY package*.json ./
+COPY ./chatbot/package*.json ./chatbot/
+COPY ./web/package*.json ./web/
+
+# Install dependencies for the root project, which includes chatbot and web workspaces
 RUN npm install
 
-# Copy the chatbot source code
+# Copy the source code for both chatbot and web
 COPY ./chatbot ./chatbot
-
-# Copy the web source code
 COPY ./web ./web
 
 # Copy Rollup config (chatbot)
