@@ -9,7 +9,7 @@ ARG MONGODB_URI
 COPY package*.json ./ 
 RUN npm ci
 
-# Copy the entire source code (including client-admin and chatbot)
+# Copy the entire source code (including web and chatbot)
 COPY ./src ./src
 
 # Copy rollup tsconfig tailwind config
@@ -18,11 +18,11 @@ COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./
 # Set Node.js memory limit for the build process (e.g., 4GB)
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
-# Step 1: Build the server (Rollup)
-RUN npm run build:server
+# Step 1: Build the web server (Next.js app)
+RUN npm run build:web
 
-# Step 2: Build the client-admin (Next.js app)
-RUN npm run build:client-admin
+# Step 2: Build the chatbot server (Rollup)
+RUN npm run build:bot
 
 
 # Production stage
@@ -33,10 +33,10 @@ WORKDIR /app
 ARG MONGODB_URI
 ENV MONGODB_URI=$MONGODB_URI
 
-# Copy Next.js built files (client-admin)
-COPY --from=builder /app/src/client-admin/.next ./src/client-admin/.next
+# Copy Next.js built files (web)
+COPY --from=builder /app/src/web/.next ./src/web/.next
 
-# Copy backend build files (dist)
+# Copy backend build files (chatbot)
 COPY --from=builder /app/dist ./dist
 
 # Copy production dependencies
@@ -47,10 +47,10 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/src/chatbot/prompts ./src/chatbot/prompts
 
 # Copy the public directory for static assets (images, etc.)
-COPY --from=builder /app/src/client-admin/public ./src/client-admin/public
+COPY --from=builder /app/src/web/public ./src/web/public
 
-# Expose the port your app runs on
-EXPOSE 3000
+# Expose the ports for both servers
+EXPOSE 3000 4000
 
-# Start the application (backend)
-CMD ["npm", "start"]
+# Run the web server first
+CMD npm run start:web && npm run start:bot
