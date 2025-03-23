@@ -10,14 +10,28 @@ import { sendOrder } from "~/utils/api";
 const promptOrderPath = path.join("prompts", "/prompt-order.txt");
 const promptOrderData = fs.readFileSync(promptOrderPath, "utf-8");
 
-const promptDetermineOrderPath = path.join("prompts", "/prompt-determine-order.txt");
-const promptDetermineOrderData = fs.readFileSync(promptDetermineOrderPath, "utf-8");
+const promptDetermineOrderPath = path.join(
+  "prompts",
+  "/prompt-determine-order.txt"
+);
+const promptDetermineOrderData = fs.readFileSync(
+  promptDetermineOrderPath,
+  "utf-8"
+);
 
 // Unified function for generating prompts based on template type
-const generatePrompt = (template: string, history: string, businessData: { companyName: string }, products: string) => {
-  return template.replace("{HISTORY}", history)
+const generatePrompt = (
+  template: string,
+  history: string,
+  businessData: { companyName: string },
+  products: string,
+  todayIs: string
+) => {
+  return template
+    .replace("{HISTORY}", history)
     .replace("{BUSINESSDATA.companyName}", businessData.companyName)
-    .replace("{PRODUCTS}", products);
+    .replace("{PRODUCTS}", products)
+    .replace("{CURRENTDAY}", todayIs);
 };
 
 const project = addKeyword(EVENTS.ACTION).addAction(
@@ -30,13 +44,21 @@ const project = addKeyword(EVENTS.ACTION).addAction(
       // Obtener lista de productos de la empresa
       const products = state.get("currentProducts");
 
+      const todayIs = format(new Date(), "yyyy-MM-dd");
+
       // Generate the prompt for the order processing
-      const promptInfo = generatePrompt(promptOrderData, history, businessData, products);
+      const promptInfo = generatePrompt(
+        promptOrderData,
+        history,
+        businessData,
+        products,
+        todayIs
+      );
 
       // Request to the AI
-      const response = await ai.createChat(
-        [{ role: "system", content: promptInfo }]
-      );
+      const response = await ai.createChat([
+        { role: "system", content: promptInfo },
+      ]);
 
       // Save response to the history
       await handleHistory({ content: response, role: "assistant" }, state);
@@ -44,11 +66,17 @@ const project = addKeyword(EVENTS.ACTION).addAction(
       // Check if the response includes the {ORDER_COMPLETE} marker
       if (response.includes("{ORDER_COMPLETE}")) {
         // Generate prompt for order details
-        const promptInfoDetermine = generatePrompt(promptDetermineOrderData, history, businessData, products);
-
-        const { order } = await ai.determineOrderFn(
-          [{ role: "system", content: promptInfoDetermine }]
+        const promptInfoDetermine = generatePrompt(
+          promptDetermineOrderData,
+          history,
+          businessData,
+          products,
+          todayIs
         );
+
+        const { order } = await ai.determineOrderFn([
+          { role: "system", content: promptInfoDetermine },
+        ]);
 
         // Prepare the order data
         const orderData = {
@@ -63,11 +91,23 @@ const project = addKeyword(EVENTS.ACTION).addAction(
         // Send order data to the API
         try {
           await sendOrder(orderData);
-          await flowDynamic("Tu orden ha sido enviada, nos pondremos en contacto muy pronto.");
-        
+
+          const socket = extensions.socket;
+          if (socket) {
+            console.log("Emitting new order via WebSocket:", orderData);
+            socket.emit("new-order", orderData);
+          } else {
+            console.error("Socket not available in extensions");
+          }
+
+          await flowDynamic(
+            "Tu orden ha sido enviada, nos pondremos en contacto muy pronto."
+          );
         } catch (error) {
           console.error("Error sending order data:", error.message);
-          await flowDynamic("Hubo un problema al procesar tu orden. Inténtalo de nuevo.");
+          await flowDynamic(
+            "Hubo un problema al procesar tu orden. Inténtalo de nuevo."
+          );
         }
       } else {
         // If the order is not complete, continue asking for more information
@@ -80,7 +120,9 @@ const project = addKeyword(EVENTS.ACTION).addAction(
       }
     } catch (err) {
       console.error("[ERROR]:", err);
-      await flowDynamic("Hubo un problema procesando tu orden. Inténtalo de nuevo.");
+      await flowDynamic(
+        "Hubo un problema procesando tu orden. Inténtalo de nuevo."
+      );
     }
   }
 );

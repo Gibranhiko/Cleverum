@@ -208,6 +208,66 @@ class AIClass {
       };
     }
   };
+
+  determineAppointmentFn = async (
+    messages,
+    model = "gpt-4-turbo",
+    temperature = 0
+) => {
+    try {
+        const completion = await this.openai.chat.completions.create({
+            model,
+            temperature,
+            messages,
+            functions: [
+                {
+                    name: "fn_create_appointment",
+                    description: "Extracts necessary information to schedule an appointment.",
+                    parameters: {
+                        type: "object",
+                        properties: {
+                            appointment: {
+                                type: "object",
+                                properties: {
+                                    name: { type: "string", description: "Customer's full name." },
+                                    phone: { type: "string", description: "Customer's phone number." },
+                                    service: { type: "string", description: "Service the customer wants to book." },
+                                    date: { 
+                                        type: "string", 
+                                        format: "date-time", 
+                                        description: "Scheduled date and time for the appointment."
+                                    }
+                                },
+                                required: ["name", "phone", "service", "date"]
+                            }
+                        },
+                        required: ["appointment"]
+                    }
+                }
+            ],
+            function_call: { name: "fn_create_appointment" }
+        });
+
+        const choice = completion.choices?.[0];
+        if (!choice?.message?.function_call?.arguments) {
+            throw new Error("No valid response received from AI.");
+        }
+
+        const response = JSON.parse(choice.message.function_call.arguments);
+        return response;
+    } catch (err) {
+        console.error("Error processing appointment:", err);
+        return { 
+            appointment: {
+                name: "",
+                phone: "",
+                service: "",
+                date: ""
+            } 
+        };
+    }
+};
+
   
   /**
    * experimental 🟠
