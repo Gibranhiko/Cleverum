@@ -5,12 +5,15 @@ WORKDIR /app
 # Define build arguments for sensitive information
 ARG MONGODB_URI
 
-# Install dependencies (use npm install instead of npm ci)
+# Install dependencies
 COPY package*.json ./ 
 RUN npm install
 
-# Copy the entire source code (including web and chatbot)
-COPY ./src ./src
+# Copy the chatbot source code
+COPY ./chatbot ./chatbot
+
+# Copy the web source code
+COPY ./web ./web
 
 # Copy rollup tsconfig tailwind config
 COPY rollup.config.js tsconfig.json tailwind.config.js postcss.config.js ./ 
@@ -34,20 +37,20 @@ ARG MONGODB_URI
 ENV MONGODB_URI=$MONGODB_URI
 
 # Copy Next.js built files (web)
-COPY --from=builder /app/src/web/.next ./src/web/.next
+COPY --from=builder /app/web/.next ./web/.next
 
 # Copy backend build files (chatbot)
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/chatbot/dist ./chatbot/dist
 
 # Copy production dependencies
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./ 
 
 # Copy environment files
-COPY --from=builder /app/src/chatbot/prompts ./src/chatbot/prompts
+COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
 # Copy the public directory for static assets (images, etc.)
-COPY --from=builder /app/src/web/public ./src/web/public
+COPY --from=builder /app/web/public ./web/public
 
 # Expose the ports for both servers
 EXPOSE 3000 4000
