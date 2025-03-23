@@ -1,74 +1,156 @@
 **Cleverum Application**
 
-This is a combined chatbot and client admin application built with Express, Next.js, Socket.IO, and a custom AI bot powered by OpenAI's gpt-4o-mini. 
-It connects to a MongoDB database to manage orders and includes QR code generation for restaurant use.
+This is a combined chatbot and client admin application built with Next.js, WebSockets, and a custom AI chatbot powered by OpenAI's GPT-4o-mini. It connects to a MongoDB database to manage interactions and includes AI-driven responses for customer engagement.
+
+---
 
 **Features**
 
-Chatbot: Built using @builderbot/bot with a custom AI implementation, handling restaurant interactions.
-Admin Client: A Next.js app for managing restaurant orders.
-WebSocket: Real-time updates for new orders via Socket.IO.
-QR Code Service: Serves a QR code image for restaurant customers.
-MongoDB Integration: Manages orders using MongoDB.
+- **Chatbot**: Built using `@builderbot/bot` with a custom AI implementation to handle customer interactions.
+- **Admin Client**: A Next.js app for managing customer interactions and chatbot analytics.
+- **WebSocket**: Real-time updates via `socket.io`.
+- **Secure Authentication**: Uses JSON Web Tokens (JWT) for authentication.
+- **MongoDB Integration**: Manages customer interactions and chatbot learning data.
+- **Role-Based File Processing**: Uploads and processes role-based files with AI matching.
+- **QR Code Service**: Generates QR codes for dynamic AI service access.
+- **Cloud Storage**: Stores images and assets on Digital Ocean Spaces.
+
+---
 
 **Prerequisites**
 
-Node.js v14 or above
-MongoDB
-OpenAI API Key
-A .env file containing the following:
-PORT=3000
-NODE_ENV=development
-OPEN_API_KEY=your-openai-api-key
-MONGO_URI=your-mongodb-connection-string
+- Node.js v18 or above
+- MongoDB
+- OpenAI API Key
+- Two `.env` files, one for the chatbot and one for the web client, containing:
+  
+  **Chatbot `.env` file:**
+  - `NODE_ENV`
+  - `BOT_PORT`
+  - `OPEN_API_KEY`
+  - `CHATBOT_SECRET_KEY`
+  - `WEB_PUBLIC_URL`
+  - `BOT_PUBLIC_URL`
+  
+  **Web Client `.env` file:**
+  - `NODE_ENV`
+  - `WEB_PORT`
+  - `MONGODB_URI`
+  - `DB_NAME`
+  - `JWT_SECRET_KEY`
+  - `CHATBOT_SECRET_KEY`
+  - `BOT_PUBLIC_URL`
+  - `WEB_PUBLIC_URL`
+  - `DO_ENDPOINT`
+  - `DO_ACCESS_KEY_ID`
+  - `DO_SECRET_ACCESS_KEY`
+  - `DO_BUCKET_NAME`
+
+---
 
 **Installation**
 
 Clone the repository:
-git clone https://github.com/your-repo/cleverum-restaurant.git
-cd cleverum-restaurant
+```sh
+git clone https://github.com/your-repo/cleverum.git
+cd cleverum
+```
 
-**Install dependencies:**
-
+Install dependencies:
+```sh
 npm install
+```
 
-**Set up environment variables:**
+Set up environment variables:
+Create the `.env` files in the appropriate directories and add the required variables.
 
-Create a .env file in the root directory and add the required variables.
+---
 
 **Running the Application**
 
 To start the application in development mode:
-
+```sh
 npm run dev
-This will start both the Next.js admin client and the Express server with WebSocket and bot integration.
+```
+This will start both the Next.js admin client and the chatbot service with WebSocket integration.
+
+---
 
 **Production**
 
-For a production environment, make sure to set NODE_ENV=production in your .env file, then run:
+For a production environment, set `NODE_ENV=production` in your `.env` files, then run:
+```sh
 npm run build
 npm start
+```
+
+---
+
+**Deploying with Docker**
+
+To deploy the application using Docker:
+
+1. Build the Docker images:
+   ```sh
+   docker-compose build
+   ```
+
+2. Start the containers:
+   ```sh
+   docker-compose up -d
+   ```
+
+3. To check logs:
+   ```sh
+   docker-compose logs -f
+   ```
+
+4. To stop the containers:
+   ```sh
+   docker-compose down
+   ```
+
+Make sure to update the `.env` files with your production credentials before deploying.
+
+---
 
 **Application Structure**
 
-/src/chatbot: Contains the chatbot logic, including flows and service integration with OpenAI.
-/src/client-admin: The Next.js admin client that manages orders and restaurant data.
-/src/server.js: The main Express server that integrates with the chatbot, serves the client admin app, and handles WebSocket connections.
-/client-admin/app/api/utils/mongoose.js: Contains MongoDB connection logic.
+```
+/web                 # Next.js client admin interface
+/chatbot             # AI chatbot service
+  ├── chatbotServer.ts   # Main chatbot server
+  ├── intents/          # Chatbot intent handling
+  ├── services/        # API service integrations
+  ├── models/         # AI response models
+/server              # Express-like API handling (if needed)
+.env                 # Environment variables
+package.json         # Project dependencies
+```
+
+---
 
 **API Endpoints**
 
-/getqr: Serves the QR code image for restaurant usage.
-WebSocket: Real-time order updates through Socket.IO.
+- `/api/getqr` → Serves dynamically generated QR codes.
+- WebSocket: Real-time customer interactions via `socket.io`.
+
+---
 
 **Technologies Used**
 
-Express: Web framework for handling HTTP requests.
-Next.js: React framework for the client admin interface.
-Socket.IO: Real-time communication for order updates.
-MongoDB: Database for storing order information.
-OpenAI: AI integration for chatbot interactions.
+- **Next.js**: Client admin interface.
+- **Socket.IO**: Real-time communication.
+- **MongoDB**: Database for storing AI interactions.
+- **OpenAI GPT-4o-mini**: AI chatbot engine.
+- **BuilderBot**: Custom chatbot framework.
+- **JWT Authentication**: Secure access control.
+- **Digital Ocean Spaces**: Cloud storage for images and assets.
+- **Docker**: Containerized deployment.
+
+---
 
 **License**
+
 This project is licensed under the MIT License.
 
