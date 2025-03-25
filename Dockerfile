@@ -2,6 +2,9 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
+# Install Git for fetching dependencies
+RUN apk add --no-cache git
+
 # Define build arguments for sensitive information
 ARG MONGODB_URI
 
@@ -28,17 +31,17 @@ COPY ./web/tsconfig.json ./web/tsconfig.json
 COPY ./web/tailwind.config.js ./web/tailwind.config.js
 COPY ./web/postcss.config.js ./web/postcss.config.js
 
-# Set Node.js memory limit for the build process (e.g., 4GB)
+# Set Node.js memory limit for the build process (e.g., 2GB)
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
-# Step 1: Build the web server (Next.js app)
+# Build the web server (Next.js app) first
 RUN npm run build:web
 
-# Step 2: Build the chatbot server (Rollup)
+# Build the chatbot server (Rollup) after web is done
 RUN npm run build:bot
 
 
-# Production stage
+# Production stage (cleaner image without Git)
 FROM node:18-alpine AS production
 WORKDIR /app
 
@@ -65,5 +68,5 @@ COPY --from=builder /app/web/public ./web/public
 # Expose the ports for both servers
 EXPOSE 3000 4000
 
-# Run the web server first
+# Run one after the other: first web, then bot
 CMD npm run start:web && npm run start:bot
