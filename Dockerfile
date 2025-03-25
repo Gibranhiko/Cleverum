@@ -31,8 +31,8 @@ COPY ./web/tsconfig.json ./web/tsconfig.json
 COPY ./web/tailwind.config.js ./web/tailwind.config.js
 COPY ./web/postcss.config.js ./web/postcss.config.js
 
-# Set Node.js memory limit for the build process (e.g., 2GB)
-ENV NODE_OPTIONS="--max-old-space-size=2048"
+# Set Node.js memory limit for the build process
+ENV NODE_OPTIONS="--max-old-space-size=512"
 
 # Build the web server (Next.js app) first
 RUN npm run build:web
@@ -69,4 +69,4 @@ COPY --from=builder /app/web/public ./web/public
 EXPOSE 3000 4000
 
 # Run one after the other: first web, then bot
-CMD npm run start:web && npm run start:bot
+CMD npm run start:web && sleep 5 && npm run start:bot
