@@ -32,7 +32,7 @@ COPY ./web/tailwind.config.js ./web/tailwind.config.js
 COPY ./web/postcss.config.js ./web/postcss.config.js
 
 # Set Node.js memory limit for the build process
-ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # Build the web server (Next.js app) first
 RUN npm run build:web
