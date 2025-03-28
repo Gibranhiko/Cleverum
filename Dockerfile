@@ -63,7 +63,6 @@ COPY --from=builder /app/package*.json ./
 
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
-COPY --from=builder /app/web/public ./web/public
 
 # Expose ports
 EXPOSE 3000 4000
