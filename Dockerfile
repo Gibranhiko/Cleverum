@@ -42,9 +42,17 @@ RUN npm run build:bot
 FROM node:18-alpine AS production
 WORKDIR /app
 
-# Set environment variable
-ARG MONGODB_URI
-ENV MONGODB_URI=$MONGODB_URI
+# Build arguments
+ARG DO_ENDPOINT
+ARG DO_ACCESS_KEY_ID
+ARG DO_SECRET_ACCESS_KEY
+ARG DO_BUCKET_NAME
+
+# Set them as environment variables
+ENV DO_ENDPOINT=$DO_ENDPOINT
+ENV DO_ACCESS_KEY_ID=$DO_ACCESS_KEY_ID
+ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
+ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
 # Copy built files from builder stage
 COPY --from=builder /app/web/.next ./web/.next
