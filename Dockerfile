@@ -7,6 +7,17 @@ RUN apk add --no-cache git
 
 # Define build arguments for sensitive information
 ARG MONGODB_URI
+ARG DO_ENDPOINT
+ARG DO_ACCESS_KEY_ID
+ARG DO_SECRET_ACCESS_KEY
+ARG DO_BUCKET_NAME
+
+# Set them as environment variables
+ENV MONGODB_URI=$MONGODB_URI
+ENV DO_ENDPOINT=$DO_ENDPOINT
+ENV DO_ACCESS_KEY_ID=$DO_ACCESS_KEY_ID
+ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
+ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
 # Copy package.json and lockfiles
 COPY package*.json ./
@@ -41,20 +52,6 @@ RUN npm run build:bot
 # Production stage (cleaner image)
 FROM node:18-alpine AS production
 WORKDIR /app
-
-# Build arguments
-ARG MONGODB_URI
-ARG DO_ENDPOINT
-ARG DO_ACCESS_KEY_ID
-ARG DO_SECRET_ACCESS_KEY
-ARG DO_BUCKET_NAME
-
-# Set them as environment variables
-ENV MONGODB_URI=$MONGODB_URI
-ENV DO_ENDPOINT=$DO_ENDPOINT
-ENV DO_ACCESS_KEY_ID=$DO_ACCESS_KEY_ID
-ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
-ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
 # Copy built files from builder stage
 COPY --from=builder /app/web/.next ./web/.next
