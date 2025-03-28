@@ -8,65 +8,58 @@ RUN apk add --no-cache git
 # Define build arguments for sensitive information
 ARG MONGODB_URI
 
-# Copy the root package.json and the workspace package.json files
+# Copy package.json and lockfiles
 COPY package*.json ./
 COPY ./chatbot/package*.json ./chatbot/
 COPY ./web/package*.json ./web/
 
-# Install dependencies for the root project, which includes chatbot and web workspaces
-RUN npm install
+# Install dependencies efficiently (for low RAM)
+RUN npm ci --prefer-offline --no-audit --no-fund \
+    && npm cache clean --force
 
-# Copy the source code for both chatbot and web
+# Copy source code
 COPY ./chatbot ./chatbot
 COPY ./web ./web
 
-# Copy Rollup config (chatbot)
+# Copy configuration files
 COPY ./chatbot/rollup.config.js ./chatbot/rollup.config.js
-
-# Copy TypeScript config files (chatbot and web)
 COPY ./chatbot/tsconfig.json ./chatbot/tsconfig.json
 COPY ./web/tsconfig.json ./web/tsconfig.json
-
-# Copy Tailwind and PostCSS config (web)
 COPY ./web/tailwind.config.js ./web/tailwind.config.js
 COPY ./web/postcss.config.js ./web/postcss.config.js
 
-# Set Node.js memory limit for the build process
-ENV NODE_OPTIONS="--max-old-space-size=2048"
+# Set Node.js memory limit for build
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 
-# Build the web server (Next.js app) first
+# Build Next.js web app
 RUN npm run build:web
 
-# Build the chatbot server (Rollup) after web is done
+# Build chatbot
 RUN npm run build:bot
 
 
-# Production stage (cleaner image without Git)
+# Production stage (cleaner image)
 FROM node:18-alpine AS production
 WORKDIR /app
 
-# Set environment variable from ARG
+# Set environment variable
 ARG MONGODB_URI
 ENV MONGODB_URI=$MONGODB_URI
 
-# Copy Next.js built files (web)
+# Copy built files from builder stage
 COPY --from=builder /app/web/.next ./web/.next
-
-# Copy backend build files (chatbot)
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
 
 # Copy production dependencies
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./ 
+COPY --from=builder /app/package*.json ./
 
-# Copy environment files
+# Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
-
-# Copy the public directory for static assets (images, etc.)
 COPY --from=builder /app/web/public ./web/public
 
-# Expose the ports for both servers
+# Expose ports
 EXPOSE 3000 4000
 
-# Run one after the other: first web, then bot
-CMD npm run start:web && sleep 5 && npm run start:bot
+# Start both services in parallel
+CMD npm run start:web & npm run start:bot
