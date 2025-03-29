@@ -25,7 +25,7 @@ COPY ./chatbot/package*.json ./chatbot/
 COPY ./web/package*.json ./web/
 
 # Install dependencies
-RUN npm install --prefer-offline --no-audit --no-fund && npm cache clean --force
+RUN npm install --workspaces --prefer-offline --no-audit --no-fund && npm cache clean --force
 
 # Copy the rest of the application code
 COPY . .
@@ -56,6 +56,9 @@ COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
 # Expose application ports
 EXPOSE 3000 4000
+
+# Ensure workspaces exist in production
+RUN npm install --omit=dev --workspaces --prefer-offline --no-audit --no-fund
 
 # Start both services in parallel
 CMD npm run start:web & npm run start:bot
