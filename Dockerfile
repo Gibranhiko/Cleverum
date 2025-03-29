@@ -20,7 +20,7 @@ ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
 ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
 # Copy package.json and lockfiles before installing dependencies
-COPY package.json ./
+COPY package.json ./ 
 COPY chatbot/package.json chatbot/
 COPY web/package.json web/
 
@@ -51,8 +51,8 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/chatbot/package.json ./chatbot/
 COPY --from=builder /app/web/package.json ./web/
 
-# Install only production dependencies
-RUN npm install --omit=dev --prefer-offline --no-audit --no-fund
+# Copy node_modules from builder stage to production stage
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built files from the builder stage
 COPY --from=builder /app/web/.next ./web/.next
