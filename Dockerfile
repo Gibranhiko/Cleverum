@@ -1,4 +1,4 @@
-# Builder stage
+# Use a lightweight Node.js image
 FROM node:18-alpine AS builder
 WORKDIR /app
 
@@ -19,51 +19,42 @@ ENV DO_ACCESS_KEY_ID=$DO_ACCESS_KEY_ID
 ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
 ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
-# Copy package.json and lockfiles
-COPY package*.json ./         
-COPY ./chatbot/package*.json ./chatbot/  
-COPY ./web/package*.json ./web/  
+# Copy package.json and lockfiles before installing dependencies
+COPY package*.json ./
+COPY ./chatbot/package*.json ./chatbot/
+COPY ./web/package*.json ./web/
 
-# Install dependencies using npm i instead of npm ci
+# Install dependencies
 RUN npm install --prefer-offline --no-audit --no-fund && npm cache clean --force
 
-# Copy source code
-COPY ./chatbot ./chatbot
-COPY ./web ./web
-
-# Copy configuration files
-COPY ./chatbot/rollup.config.js ./chatbot/rollup.config.js
-COPY ./chatbot/tsconfig.json ./chatbot/tsconfig.json
-COPY ./web/tsconfig.json ./web/tsconfig.json
-COPY ./web/tailwind.config.js ./web/tailwind.config.js
-COPY ./web/postcss.config.js ./web/postcss.config.js
+# Copy the rest of the application code
+COPY . .
 
 # Set Node.js memory limit for build
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
-# Build Next.js web app
+# Build Next.js web app separately to avoid high memory usage
 RUN npm run build:web
 
-# Build chatbot
+# Build chatbot separately to avoid high memory usage
 RUN npm run build:bot
 
-
-# Production stage (cleaner image)
+# Production stage
 FROM node:18-alpine AS production
 WORKDIR /app
 
-# Copy built files from builder stage
+# Copy built files from the builder stage
 COPY --from=builder /app/web/.next ./web/.next
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
 
-# Copy production dependencies
+# Copy only necessary production files
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
 
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
-# Expose ports
+# Expose application ports
 EXPOSE 3000 4000
 
 # Start both services in parallel
