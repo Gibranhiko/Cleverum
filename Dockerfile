@@ -20,12 +20,12 @@ ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
 ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
 # Copy package.json and lockfiles before installing dependencies
-COPY package*.json ./
-COPY ./chatbot/package*.json ./chatbot/
-COPY ./web/package*.json ./web/
+COPY package.json package-lock.json ./
+COPY chatbot/package.json chatbot/
+COPY web/package.json web/
 
-# Install dependencies
-RUN npm install --workspaces --prefer-offline --no-audit --no-fund && npm cache clean --force
+# Ensure package.json includes workspaces before running npm install
+RUN npm install --prefer-offline --no-audit --no-fund && npm cache clean --force
 
 # Copy the rest of the application code
 COPY . .
@@ -43,22 +43,23 @@ RUN npm run build:bot
 FROM node:18-alpine AS production
 WORKDIR /app
 
+# Copy only necessary production files
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/chatbot/package.json ./chatbot/
+COPY --from=builder /app/web/package.json ./web/
+
+# Install only production dependencies
+RUN npm install --omit=dev --prefer-offline --no-audit --no-fund
+
 # Copy built files from the builder stage
 COPY --from=builder /app/web/.next ./web/.next
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
-
-# Copy only necessary production files
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
 
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
 # Expose application ports
 EXPOSE 3000 4000
-
-# Ensure workspaces exist in production
-RUN npm install --omit=dev --workspaces --prefer-offline --no-audit --no-fund
 
 # Start both services in parallel
 CMD npm run start:web & npm run start:bot
