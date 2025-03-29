@@ -20,13 +20,12 @@ ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
 ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
 # Copy package.json and lockfiles
-COPY package*.json ./
-COPY ./chatbot/package*.json ./chatbot/
-COPY ./web/package*.json ./web/
+COPY package*.json ./         
+COPY ./chatbot/package*.json ./chatbot/  
+COPY ./web/package*.json ./web/  
 
-# Install dependencies efficiently (for low RAM)
-RUN cd /app/chatbot && npm ci --prefer-offline --no-audit --no-fund && npm cache clean --force
-RUN cd /app/web && npm ci --prefer-offline --no-audit --no-fund && npm cache clean --force
+# Install dependencies using npm i instead of npm ci
+RUN npm install --prefer-offline --no-audit --no-fund && npm cache clean --force
 
 # Copy source code
 COPY ./chatbot ./chatbot
