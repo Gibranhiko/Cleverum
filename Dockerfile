@@ -20,7 +20,7 @@ ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
 ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
 # Copy package.json and lockfiles before installing dependencies
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY chatbot/package.json chatbot/
 COPY web/package.json web/
 
