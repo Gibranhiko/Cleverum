@@ -44,7 +44,7 @@ FROM node:18-alpine AS production
 WORKDIR /app
 
 # Copy only necessary production files
-COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/package.json ./
 COPY --from=builder /app/chatbot/package.json ./chatbot/
 COPY --from=builder /app/web/package.json ./web/
 
