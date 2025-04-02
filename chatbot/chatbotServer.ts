@@ -6,14 +6,14 @@ import AIClass from "./services/ai/index";
 import flow from "./flows";
 
 const PORT = process.env.BOT_PORT;
-const WEB_PUBLIC_URL = process.env.WEB_PUBLIC_URL;
+const WEB_SOCKET_URL = process.env.WEB_SOCKET_URL;
 const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-4o");
 
 // Log the WebSocket URL and Port to make sure they are correct
-console.log("WebSocket URL: ", WEB_PUBLIC_URL);
+console.log("WebSocket URL: ", WEB_SOCKET_URL);
 console.log("Bot Server Port: ", PORT);
 
-const socket = io(WEB_PUBLIC_URL, {
+const socket = io(WEB_SOCKET_URL, {
   transports: ["websocket"],
   reconnection: true,
   reconnectionAttempts: 10,
