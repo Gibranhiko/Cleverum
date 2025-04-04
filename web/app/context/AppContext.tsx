@@ -115,7 +115,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!state.isAuthenticated) return;
 
-    const socket: Socket = io(process.env.WEB_PUBLIC_URL!, { transports: ["websocket"] });
+    const socket: Socket = io(`${process.env.WEB_SOCKET_URL}:${process.env.WEB_SOCKET_PORT}`, { transports: ["websocket"] });
 
     socket.on("new-order", (order: IOrder) => {
       setState((prevState) => ({

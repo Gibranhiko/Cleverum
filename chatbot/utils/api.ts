@@ -1,4 +1,5 @@
-const WEB_PUBLIC_URL = process.env.WEB_PUBLIC_URL;
+const PUBLIC_URL = process.env.PUBLIC_URL;
+const WEB_PORT = process.env.WEB_PORT;
 const CHATBOT_SECRET_KEY = process.env.CHATBOT_SECRET_KEY;
 
 const headers = {
@@ -8,7 +9,7 @@ const headers = {
 
 export const sendOrder = async (orderData) => {
   try {
-    const response = await fetch(`${WEB_PUBLIC_URL}api/orders`, {
+    const response = await fetch(`${PUBLIC_URL}:${WEB_PORT}/api/orders`, {
       method: "POST",
       headers,
       body: JSON.stringify(orderData),
@@ -29,7 +30,7 @@ export const sendOrder = async (orderData) => {
 
 export const fetchProducts = async () => {
   try {
-    const response = await fetch(`${WEB_PUBLIC_URL}api/products`, {
+    const response = await fetch(`${PUBLIC_URL}:${WEB_PORT}/api/products`, {
       method: "GET",
       headers,
     });
@@ -50,7 +51,7 @@ export const fetchProducts = async () => {
 
 export const fetchProfile = async () => {
   try {
-    const response = await fetch(`${WEB_PUBLIC_URL}api/profile`, {
+    const response = await fetch(`${PUBLIC_URL}:${WEB_PORT}/api/profile`, {
       method: "GET",
       headers,
     });

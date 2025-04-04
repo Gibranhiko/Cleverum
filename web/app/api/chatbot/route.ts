@@ -1,9 +1,11 @@
 export async function GET(req: Request) {
-  const qrCodeUrl = process.env.BOT_PUBLIC_URL;
+  const PUBLIC_URL = process.env.PUBLIC_URL;
+  const BOT_PORT = process.env.BOT_PORT;
+
 
   try {
     // Fetch the QR code image from the chatbot server
-    const response = await fetch(`${qrCodeUrl}`, { cache: "no-store" });
+    const response = await fetch(`${PUBLIC_URL}:${BOT_PORT}`, { cache: "no-store" });
     if (!response.ok) {
       throw new Error("Failed to fetch QR code");
     }

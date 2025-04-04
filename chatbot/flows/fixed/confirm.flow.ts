@@ -34,7 +34,7 @@ const flowConfirm = addKeyword(EVENTS.ACTION)
     console.log("Order data:", orderData);
 
     try {
-      const response = await fetch(`${process.env.WEB_PUBLIC_URL}api/orders`, {
+      const response = await fetch(`${process.env.PUBLIC_URL}:${process.env.WEB_PORT}/api/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

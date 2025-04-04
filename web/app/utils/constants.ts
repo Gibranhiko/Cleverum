@@ -22,6 +22,3 @@ export const productFields = [
   { title: "Imagen", field: "imageUrl" },
   { title: "Acciones", field: "actions" }
 ];
-
-export const WEB_PUBLIC_URL= "http://localhost:3000"
-export const BOT_PUBLIC_URL= "http://localhost:4000"

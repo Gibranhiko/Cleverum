@@ -5,15 +5,13 @@ import { BaileysProvider as Provider } from "@builderbot/provider-baileys";
 import AIClass from "./services/ai/index";
 import flow from "./flows";
 
-const PORT = process.env.BOT_PORT;
+const BOT_PORT = process.env.BOT_PORT;
+const WEB_SOCKET_PORT = process.env.WEB_SOCKET_PORT;
 const WEB_SOCKET_URL = process.env.WEB_SOCKET_URL;
 const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-4o");
 
-// Log the WebSocket URL and Port to make sure they are correct
-console.log("WebSocket URL: ", WEB_SOCKET_URL);
-console.log("Bot Server Port: ", PORT);
 
-const socket = io(WEB_SOCKET_URL, {
+const socket = io(`${WEB_SOCKET_URL}:${WEB_SOCKET_PORT}/`, {
   transports: ["websocket"],
   reconnection: true,
   reconnectionAttempts: 10,
@@ -56,10 +54,10 @@ const main = async () => {
       { extensions: { ai } }
     );
 
-    console.log("Bot server started, listening on port:", PORT);
+    console.log("Bot server started, listening on port:", BOT_PORT);
 
     // Start the HTTP server
-    httpServer(Number(PORT));
+    httpServer(Number(BOT_PORT));
   } catch (err) {
     // Log any errors that occur during initialization
     console.error("App could not start: " + err);

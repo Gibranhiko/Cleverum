@@ -4,10 +4,10 @@ import { createServer } from "http";
 import connectToDatabase from "./app/api/utils/mongoose";
 import { Server } from "socket.io";
 
-const PORT = process.env.WEB_PORT || 3000;
-const WS_PORT = process.env.WEB_SOCKET_PORT || 5000;
-const WEB_PUBLIC_URL = process.env.WEB_PUBLIC_URL;
-const BOT_PUBLIC_URL = process.env.BOT_PUBLIC_URL;
+const WEB_PORT = process.env.WEB_PORT;
+const BOT_PORT = process.env.BOT_PORT;
+const WEB_SOCKET_PORT = process.env.WEB_SOCKET_PORT;
+const PUBLIC_URL = process.env.PUBLIC_URL;
 
 const dev = process.env.NODE_ENV !== "production";
 const clientAdminApp = next({ dev, dir: "./" });
@@ -19,15 +19,15 @@ const main = async () => {
 
     // Start Next.js HTTP Server
     const httpWebServer = createServer((req, res) => handle(req, res));
-    httpWebServer.listen(PORT, () => {
-      console.log(`Web server running on ${WEB_PUBLIC_URL}`);
+    httpWebServer.listen(WEB_PORT, () => {
+      console.log(`Web server running on port ${WEB_PORT}`);
     });
 
     // Start WebSocket Server on a separate port
     const httpWebSocketServer = createServer();
     const io = new Server(httpWebSocketServer, {
       cors: {
-        origin: [WEB_PUBLIC_URL, BOT_PUBLIC_URL],
+        origin: [`${PUBLIC_URL}:${WEB_PORT}/`, `${PUBLIC_URL}:${BOT_PORT}/`],
         methods: ["GET", "POST"],
       },
     });
@@ -45,8 +45,8 @@ const main = async () => {
       });
     });
 
-    httpWebSocketServer.listen(WS_PORT, () => {
-      console.log(`WebSocket server running on ws://localhost:${WS_PORT}`);
+    httpWebSocketServer.listen(WEB_SOCKET_PORT, () => {
+      console.log(`WebSocket server running on port ${WEB_SOCKET_PORT}`);
     });
 
     // Connect to MongoDB
