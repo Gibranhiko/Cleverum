@@ -27,7 +27,7 @@ const main = async () => {
     const httpWebSocketServer = createServer();
     const io = new Server(httpWebSocketServer, {
       cors: {
-        origin: [`${PUBLIC_URL}:${WEB_PORT}/`, `${PUBLIC_URL}:${BOT_PORT}/`],
+        origin: [`${PUBLIC_URL}:${WEB_PORT}`, `${PUBLIC_URL}:${BOT_PORT}`],
         methods: ["GET", "POST"],
       },
     });
