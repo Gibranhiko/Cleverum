@@ -1,4 +1,4 @@
-# Use a lightweight Node.js image
+# Use a lightweight Node.js image for building
 FROM node:18-alpine AS builder
 WORKDIR /app
 
@@ -19,10 +19,11 @@ ENV DO_ACCESS_KEY_ID=$DO_ACCESS_KEY_ID
 ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
 ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 
-# Copy package.json and lockfiles before installing dependencies
+# Copy root package.json and lockfiles before installing dependencies
 COPY package.json ./ 
-COPY chatbot/package.json chatbot/
-COPY web/package.json web/
+COPY chatbot/package.json ./chatbot/
+COPY web/package.json ./web/
+COPY ws/package.json ./ws/
 
 # Ensure package.json includes workspaces before running npm install
 RUN npm install --prefer-offline --no-audit --no-fund && npm cache clean --force
@@ -47,9 +48,10 @@ WORKDIR /app
 RUN apk add --no-cache git
 
 # Copy only necessary production files
-COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package.json ./ 
 COPY --from=builder /app/chatbot/package.json ./chatbot/
 COPY --from=builder /app/web/package.json ./web/
+COPY --from=builder /app/ws/package.json ./ws/
 
 # Copy node_modules from builder stage to production stage
 COPY --from=builder /app/node_modules ./node_modules
@@ -61,8 +63,8 @@ COPY --from=builder /app/chatbot/dist ./chatbot/dist
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
-# Expose application ports
-EXPOSE 3000 4000
+# Expose application ports (if WebSocket server and Next.js app are running on separate ports)
+EXPOSE 3000 4000 5000
 
-# Start both services in parallel
-CMD npm run start:web & npm run start:bot
+# Start both services in parallel (Web app and chatbot)
+CMD npm run start:ws && npm run start:web & npm run start:bot
