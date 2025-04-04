@@ -18,6 +18,8 @@ const socket = io(`${WEB_SOCKET_URL}:${WEB_SOCKET_PORT}/`, {
   reconnectionDelay: 5000,
 });
 
+console.log(`Connecting to WebSocket server at: ${WEB_SOCKET_URL}:${WEB_SOCKET_PORT}`);
+
 socket.on("connect", () => { 
   console.log("Connected to WebSocket server");
 });
