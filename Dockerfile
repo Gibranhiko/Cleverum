@@ -62,6 +62,7 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy built files from the builder stage
 COPY --from=builder /app/web/.next ./web/.next
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
+COPY --from=builder /app/ws/dist ./ws/dist
 
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
