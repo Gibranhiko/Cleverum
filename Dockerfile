@@ -34,6 +34,9 @@ COPY . .
 # Set Node.js memory limit for build
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
+# Build ws (WebSocket server) first to avoid high memory usage
+RUN npm run build:ws
+
 # Build Next.js web app separately to avoid high memory usage
 RUN npm run build:web
 

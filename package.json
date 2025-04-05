@@ -9,13 +9,14 @@
   ],
   "scripts": {
     "dev": "npm-run-all --parallel dev:ws dev:web dev:bot",
-    "build": "npm-run-all --parallel build:web build:bot",
+    "build": "npm-run-all --parallel build:ws build:web build:bot",
     "start": "npm-run-all --parallel start:ws start:web start:bot",
     "dev:web": "npm --workspace=web run dev",
     "dev:bot": "npm --workspace=chatbot run dev",
     "dev:ws": "npm --workspace=ws run dev",
     "build:web": "npm --workspace=web run build",
     "build:bot": "npm --workspace=chatbot run build",
+    "build:ws": "npm --workspace=ws run build",
     "start:web": "npm --workspace=web run start",
     "start:bot": "npm --workspace=chatbot run start",
     "start:ws": "npm --workspace=ws run start"
