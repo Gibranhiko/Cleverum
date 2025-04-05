@@ -23,7 +23,7 @@ ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 COPY package.json ./ 
 COPY chatbot/package.json ./chatbot/
 COPY web/package.json ./web/
-COPY ws/package.json ./ws/
+COPY websocket-server/package.json ./ws/
 
 # Ensure package.json includes workspaces before running npm install
 RUN npm install --prefer-offline --no-audit --no-fund && npm cache clean --force
@@ -54,7 +54,7 @@ RUN apk add --no-cache git
 COPY --from=builder /app/package.json ./ 
 COPY --from=builder /app/chatbot/package.json ./chatbot/
 COPY --from=builder /app/web/package.json ./web/
-COPY --from=builder /app/ws/package.json ./ws/
+COPY --from=builder /app/websocket-server/package.json ./websocket-server/
 
 # Copy node_modules from builder stage to production stage
 COPY --from=builder /app/node_modules ./node_modules
@@ -62,7 +62,7 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy built files from the builder stage
 COPY --from=builder /app/web/.next ./web/.next
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
-COPY --from=builder /app/ws/dist ./ws/dist
+COPY --from=builder /app/websocket-server/dist ./websocket-server/dist
 
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
