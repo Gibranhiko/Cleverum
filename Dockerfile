@@ -54,7 +54,7 @@ RUN apk add --no-cache git
 COPY --from=builder /app/package.json ./ 
 COPY --from=builder /app/chatbot/package.json ./chatbot/
 COPY --from=builder /app/web/package.json ./web/
-COPY --from=builder /app/websocket-server/package.json ./websocket-server/
+# COPY --from=builder /app/websocket-server/package.json ./websocket-server/
 
 # Copy node_modules from builder stage to production stage
 COPY --from=builder /app/node_modules ./node_modules
