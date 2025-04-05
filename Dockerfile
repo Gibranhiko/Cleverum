@@ -23,7 +23,7 @@ ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 COPY package.json ./ 
 COPY chatbot/package.json ./chatbot/
 COPY web/package.json ./web/
-COPY websocket-server/package.json ./ws/
+COPY websocket-server/package.json ./websocket-server/
 
 # Ensure package.json includes workspaces before running npm install
 RUN npm install --prefer-offline --no-audit --no-fund && npm cache clean --force
