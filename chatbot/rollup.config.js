@@ -23,6 +23,6 @@ export default {
     }),
   ],
   external: [
-    'fs', 'path', 'http', 'url', 'dotenv/config', 'openai', '@builderbot/bot', '@builderbot/provider-baileys', 'date-fns'
+    'fs', 'path', 'http', 'url', 'dotenv/config', '@builderbot/bot', '@builderbot/provider-baileys', 'date-fns'
   ]
 };
