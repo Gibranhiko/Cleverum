@@ -23,7 +23,7 @@ ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
 COPY package.json ./ 
 COPY chatbot/package.json ./chatbot/
 COPY web/package.json ./web/
-COPY websocket-server/package.json ./websocket-server/
+# COPY websocket-server/package.json ./websocket-server/
 
 # Ensure package.json includes workspaces before running npm install
 RUN npm install --prefer-offline --no-audit --no-fund && npm cache clean --force
@@ -35,7 +35,7 @@ COPY . .
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
 # Build ws (WebSocket server) first to avoid high memory usage
-RUN npm run build:ws
+# RUN npm run build:ws
 
 # Build Next.js web app separately to avoid high memory usage
 RUN npm run build:web
@@ -62,13 +62,13 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy built files from the builder stage
 COPY --from=builder /app/web/.next ./web/.next
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
-COPY --from=builder /app/websocket-server/dist ./websocket-server/dist
+# COPY --from=builder /app/websocket-server/dist ./websocket-server/dist
 
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
 # Expose application ports (if WebSocket server and Next.js app are running on separate ports)
-EXPOSE 3000 4000 5000
+EXPOSE 3000 4000
 
 # Start both services in parallel (Web app and chatbot)
-CMD npm run start:ws && npm run start:web & npm run start:bot
+CMD npm run start:web & npm run start:bot
