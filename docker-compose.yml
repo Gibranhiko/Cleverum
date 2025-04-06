@@ -8,12 +8,14 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - NODE_ENV=production
+      - WEB_PORT=3000
+      - BOT_PORT=4000
       - MONGODB_URI=${MONGODB_URI}
       - DB_NAME=${DB_NAME}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PUBLIC_URL=${PUBLIC_URL}
-      - WEB_SOCKET_URL=${WEB_SOCKET_URL}
       - DO_ENDPOINT=${DO_ENDPOINT}
       - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
       - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
@@ -25,14 +27,9 @@ services:
     ports:
       - "4000:4000"
     environment:
+      - NODE_ENV=production
+      - BOT_PORT=4000
+      - WEB_PORT=3000
       - OPEN_API_KEY=${OPEN_API_KEY}
-      - MONGODB_URI=${MONGODB_URI}
-      - DB_NAME=${DB_NAME}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PUBLIC_URL=${PUBLIC_URL}
-      - WEB_SOCKET_URL=${WEB_SOCKET_URL}
-      - DO_ENDPOINT=${DO_ENDPOINT}
-      - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
-      - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
-      - DO_BUCKET_NAME=${DO_BUCKET_NAME}
