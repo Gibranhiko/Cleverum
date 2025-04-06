@@ -8,6 +8,5 @@ dist
 web/.next
 .rollup.cache
 tsconfig.tsbuildinfo
-package-lock.json
 *.png
 *.lock
