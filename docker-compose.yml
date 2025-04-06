@@ -18,9 +18,6 @@ services:
       - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
       - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
       - DO_BUCKET_NAME=${DO_BUCKET_NAME}
-    depends_on:
-      - chatbot  # This makes sure the chatbot starts first, but doesn't wait for it to be ready
-
   chatbot:
     build:
       context: .
@@ -39,5 +36,3 @@ services:
       - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
       - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
       - DO_BUCKET_NAME=${DO_BUCKET_NAME}
-    depends_on:
-      - web  # This makes sure the web starts first, but doesn't wait for it to be ready
