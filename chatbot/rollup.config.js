@@ -9,6 +9,7 @@ export default {
     file: 'dist/app.cjs',
     format: 'cjs',
   },
+  context: 'globalThis',	
   plugins: [
     json(),  // Add JSON plugin here to handle package.json files
     resolve({
