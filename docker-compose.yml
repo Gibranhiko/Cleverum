@@ -8,7 +8,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=${NODE_ENV}
       - MONGODB_URI=${MONGODB_URI}
       - DB_NAME=${DB_NAME}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
@@ -20,7 +19,7 @@ services:
       - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
       - DO_BUCKET_NAME=${DO_BUCKET_NAME}
     depends_on:
-      - chatbot
+      - chatbot  # This makes sure the chatbot starts first, but doesn't wait for it to be ready
 
   chatbot:
     build:
@@ -29,21 +28,16 @@ services:
     ports:
       - "4000:4000"
     environment:
-      - NODE_ENV=${NODE_ENV}
-      - BOT_PORT=${BOT_PORT}
-      - WEB_PORT=${WEB_PORT}
-      - WEB_SOCKET_PORT=${WEB_SOCKET_PORT}
       - OPEN_API_KEY=${OPEN_API_KEY}
+      - MONGODB_URI=${MONGODB_URI}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
-      - WEB_SOCKET_URL=${WEB_SOCKET_URL}
       - PUBLIC_URL=${PUBLIC_URL}
+      - WEB_SOCKET_URL=${WEB_SOCKET_URL}
+      - DO_ENDPOINT=${DO_ENDPOINT}
+      - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
+      - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
+      - DO_BUCKET_NAME=${DO_BUCKET_NAME}
     depends_on:
-      - web
-
-# Optional WebSocket server (if needed later)
-# ws:
-#   build:
-#     context: .
-#   command: npm run start:ws
-#   ports:
-#     - "5000:5000"
+      - web  # This makes sure the web starts first, but doesn't wait for it to be ready
