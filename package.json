@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "npm-run-all --parallel dev:ws dev:web dev:bot",
     "build": "npm-run-all --parallel build:ws build:web build:bot",
-    "start": "npm-run-all --parallel start:ws start:web start:bot",
+    "start": "concurrently \"npm run start:web\" \"npm run start:bot\"",
     "dev:web": "npm --workspace=web run dev",
     "dev:bot": "npm --workspace=chatbot run dev",
     "dev:ws": "npm --workspace=websocket-server run dev",
@@ -26,5 +26,8 @@
   },
   "overrides": {
     "sharp": "0.32.6"
+  },
+  "dependencies": {
+    "concurrently": "^9.1.2"
   }
 }

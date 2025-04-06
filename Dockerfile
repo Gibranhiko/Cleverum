@@ -1,26 +1,15 @@
-# Use a lightweight Node.js image for building
+# ---------------------- #
+#       Build Stage      #
+# ---------------------- #
 FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Install Git for fetching dependencies
 RUN apk add --no-cache git
 
-# Define build arguments for sensitive information
-ARG MONGODB_URI
-ARG DO_ENDPOINT
-ARG DO_ACCESS_KEY_ID
-ARG DO_SECRET_ACCESS_KEY
-ARG DO_BUCKET_NAME
-
-# Set them as environment variables
-ENV MONGODB_URI=$MONGODB_URI
-ENV DO_ENDPOINT=$DO_ENDPOINT
-ENV DO_ACCESS_KEY_ID=$DO_ACCESS_KEY_ID
-ENV DO_SECRET_ACCESS_KEY=$DO_SECRET_ACCESS_KEY
-ENV DO_BUCKET_NAME=$DO_BUCKET_NAME
-
 # Copy root package.json and lockfiles before installing dependencies
 COPY package.json ./ 
+COPY package-lock.json ./
 COPY chatbot/package.json ./chatbot/
 COPY web/package.json ./web/
 # COPY websocket-server/package.json ./websocket-server/
@@ -43,7 +32,9 @@ RUN npm run build:web
 # Build chatbot separately to avoid high memory usage
 RUN npm run build:bot
 
-# Production stage
+# ---------------------- #
+#    Production Stage    #
+# ---------------------- #
 FROM node:18-alpine AS production
 WORKDIR /app
 
@@ -56,10 +47,11 @@ COPY --from=builder /app/chatbot/package.json ./chatbot/
 COPY --from=builder /app/web/package.json ./web/
 # COPY --from=builder /app/websocket-server/package.json ./websocket-server/
 
-# Copy node_modules from builder stage to production stage
-COPY --from=builder /app/node_modules ./node_modules
+# Install only production dependencies
+RUN npm install --omit=dev --prefer-offline --no-audit --no-fund && npm cache clean --force
 
 # Copy built files from the builder stage
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/web/.next ./web/.next
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
 # COPY --from=builder /app/websocket-server/dist ./websocket-server/dist
@@ -67,8 +59,8 @@ COPY --from=builder /app/chatbot/dist ./chatbot/dist
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
-# Expose application ports (if WebSocket server and Next.js app are running on separate ports)
+# Expose application ports (Next.js and chatbot)
 EXPOSE 3000 4000
 
-# Start both services in parallel (Web app and chatbot)
-CMD npm run start:web & npm run start:bot
+# Start both services in parallel using 'concurrently'
+CMD ["npm", "start"]
