@@ -9,7 +9,7 @@ const PHONE_NUMBER = process.env.PHONE_NUMBER
 
 const main = async () => {
   try {
-    console.log("🚀 Starting Bot...");
+    console.log("🚀 Starting Bot... with phone ", PHONE_NUMBER);
     const { httpServer } = await createBot(
       {
         database: new Database(),
