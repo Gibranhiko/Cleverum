@@ -11,7 +11,7 @@ RUN apk add --no-cache git
 COPY package.json ./ 
 COPY package-lock.json ./
 COPY chatbot/package.json ./chatbot/
-COPY web/package.json ./web/
+# COPY web/package.json ./web/
 # COPY websocket-server/package.json ./websocket-server/
 
 # Ensure package.json includes workspaces before running npm install
@@ -27,7 +27,7 @@ ENV NODE_OPTIONS="--max-old-space-size=1024"
 # RUN npm run build:ws
 
 # Build Next.js web app separately to avoid high memory usage
-RUN npm run build:web
+# RUN npm run build:web
 
 # Build chatbot separately to avoid high memory usage
 RUN npm run build:bot
@@ -44,7 +44,7 @@ RUN apk add --no-cache git
 # Copy only necessary production files
 COPY --from=builder /app/package.json ./ 
 COPY --from=builder /app/chatbot/package.json ./chatbot/
-COPY --from=builder /app/web/package.json ./web/
+# COPY --from=builder /app/web/package.json ./web/
 # COPY --from=builder /app/websocket-server/package.json ./websocket-server/
 
 # Install only production dependencies
@@ -52,7 +52,7 @@ RUN npm install --omit=dev --prefer-offline --no-audit --no-fund && npm cache cl
 
 # Copy built files from the builder stage
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/web/.next ./web/.next
+# COPY --from=builder /app/web/.next ./web/.next
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
 # COPY --from=builder /app/websocket-server/dist ./websocket-server/dist
 
@@ -60,7 +60,8 @@ COPY --from=builder /app/chatbot/dist ./chatbot/dist
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
 # Expose application ports (Next.js and chatbot)
-EXPOSE 3000 4000
+# EXPOSE 3000 4000
+EXPOSE 4000
 
 # Start both services in parallel using 'concurrently'
 CMD ["npm", "start"]

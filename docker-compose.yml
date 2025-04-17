@@ -1,19 +1,19 @@
 version: "3.9"
 
 services:
-  mongodb:
-    image: mongo
-    container_name: cleverum_mongodb
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongo mongodb:27017/cleverum --quiet
-      interval: 5s
-      timeout: 10s
-      retries: 5
+  # mongodb:
+  #   image: mongo
+  #   container_name: cleverum_mongodb
+  #   restart: always
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongodb_data:/data/db
+  #   healthcheck:
+  #     test: echo 'db.runCommand("ping").ok' | mongo mongodb:27017/cleverum --quiet
+  #     interval: 5s
+  #     timeout: 10s
+  #     retries: 5
 
   chatbot:
     build:
@@ -27,41 +27,40 @@ services:
     environment:
       - NODE_ENV=production
       - BOT_PORT=4000
-      - WEB_PORT=3000
       - OPEN_API_KEY=${OPEN_API_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PUBLIC_URL=${PUBLIC_URL}
-      - MONGODB_URI=mongodb://mongodb:27017/cleverum
+      #- MONGODB_URI=mongodb://mongodb:27017/cleverum
     healthcheck:
       test: curl --fail http://localhost:4000 || exit 1
       interval: 5s
       timeout: 10s
       retries: 5
 
-  web:
-    build:
-      context: .
-    command: npm run start:web
-    ports:
-      - "3000:3000"
-    depends_on:
-      chatbot:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-    environment:
-      - NODE_ENV=production
-      - WEB_PORT=3000
-      - BOT_PORT=4000
-      - MONGODB_URI=mongodb://mongodb:27017/cleverum
-      - DB_NAME=${DB_NAME}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
-      - PUBLIC_URL=${PUBLIC_URL}
-      - DO_ENDPOINT=${DO_ENDPOINT}
-      - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
-      - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
-      - DO_BUCKET_NAME=${DO_BUCKET_NAME}
+  # web:
+  #   build:
+  #     context: .
+  #   command: npm run start:web
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     chatbot:
+  #       condition: service_healthy
+  #     mongodb:
+  #       condition: service_healthy
+  #   environment:
+  #     - NODE_ENV=production
+  #     - WEB_PORT=3000
+  #     - BOT_PORT=4000
+  #     - MONGODB_URI=mongodb://mongodb:27017/cleverum
+  #     - DB_NAME=${DB_NAME}
+  #     - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+  #     - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
+  #     - PUBLIC_URL=${PUBLIC_URL}
+  #     - DO_ENDPOINT=${DO_ENDPOINT}
+  #     - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
+  #     - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
+  #     - DO_BUCKET_NAME=${DO_BUCKET_NAME}
 
 volumes:
   mongodb_data:
