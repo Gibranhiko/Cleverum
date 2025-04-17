@@ -13,6 +13,7 @@ services:
       - OPEN_API_KEY=${OPEN_API_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PUBLIC_URL=${PUBLIC_URL}
+      - PHONE_NUMBER=${PHONE_NUMBER}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000"]
       interval: 10s
