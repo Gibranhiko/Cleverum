@@ -5,7 +5,7 @@ import { BaileysProvider as Provider } from "@builderbot/provider-baileys";
 import flow from "./flows";
 import { provider } from "./provider";
 
-const BOT_PORT = process.env.BOT_PORT || 4000;
+const BOT_PORT = process.env.BOT_PORT;
 const PHONE_NUMBER = process.env.PHONE_NUMBER
 
 const main = async () => {
