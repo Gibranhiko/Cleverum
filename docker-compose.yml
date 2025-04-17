@@ -21,9 +21,9 @@ services:
     command: npm run start:bot
     ports:
       - "4000:4000"
-    depends_on:
-      mongodb:
-        condition: service_healthy
+    # depends_on:
+    #   mongodb:
+    #     condition: service_healthy
     environment:
       - NODE_ENV=production
       - BOT_PORT=4000
