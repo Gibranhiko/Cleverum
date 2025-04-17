@@ -12,7 +12,7 @@ const main = async () => {
     const { httpServer } = await createBot(
       {
         database: new Database(),
-        provider: createProvider(Provider),
+        provider: createProvider(Provider, {usePairingCode: true}),
         flow: flow,
       }
     );
