@@ -6,10 +6,10 @@ services:
       context: .
     command: npm run start:bot
     ports:
-      - "4001:4001"
+      - "4000:4000"
     environment:
       - NODE_ENV=production
-      - BOT_PORT=4001
+      - BOT_PORT=4000
       - OPEN_API_KEY=${OPEN_API_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PUBLIC_URL=${PUBLIC_URL}
