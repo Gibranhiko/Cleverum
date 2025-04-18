@@ -19,5 +19,16 @@
       "~/*": ["./*"]
     }
   },
-  "include": ["./**/*.ts"]
+  "include": [
+    "**/*.js",
+    "**/*.ts"
+, "eslint.config.js"  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**e2e**",
+    "**mock**"
+  ]
 }

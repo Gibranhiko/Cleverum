@@ -18,7 +18,6 @@ const main = async () => {
         flow: flow,
       }
     );
-    console.log("Provider started, waiting for pairing code...", provider);
 
     httpServer(Number(BOT_PORT));
     console.log("🚀 Bot server running at port " + BOT_PORT);
