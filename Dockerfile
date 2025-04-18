@@ -44,23 +44,17 @@ RUN apk add --no-cache git
 # Copy only necessary production files
 COPY --from=builder /app/package.json ./ 
 COPY --from=builder /app/chatbot/package.json ./chatbot/
-# COPY --from=builder /app/web/package.json ./web/
-# COPY --from=builder /app/websocket-server/package.json ./websocket-server/
 
 # Install only production dependencies
 RUN npm install --omit=dev --prefer-offline --no-audit --no-fund && npm cache clean --force
 
 # Copy built files from the builder stage
 COPY --from=builder /app/node_modules ./node_modules
-# COPY --from=builder /app/web/.next ./web/.next
 COPY --from=builder /app/chatbot/dist ./chatbot/dist
-# COPY --from=builder /app/websocket-server/dist ./websocket-server/dist
 
 # Copy environment files & static assets
 COPY --from=builder /app/chatbot/prompts ./chatbot/prompts
 
-# Expose application ports (Next.js and chatbot)
-# EXPOSE 3000 4000
 EXPOSE 4000
 
 # Start both services in parallel using 'concurrently'
