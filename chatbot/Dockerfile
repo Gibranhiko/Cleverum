@@ -41,6 +41,9 @@ COPY --from=builder /app/dist ./dist
 # Copy json and lock files
 COPY --from=builder /app/*.json /app/*-lock.yaml ./
 
+# Copy prompts files
+COPY --from=builder /app/prompts ./prompts
+
 # Install pnpm in the deploy stage
 RUN corepack enable && corepack prepare pnpm@latest --activate
 ENV PNPM_HOME=/usr/local/bin
