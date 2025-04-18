@@ -15,7 +15,8 @@
     "@builderbot/bot": "1.2.5",
     "@builderbot/provider-baileys": "1.2.5",
     "openai": "^4.27.0",
-    "date-fns": "^3.3.1"
+    "date-fns": "^3.3.1",
+    "dotenv": "^16.4.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
