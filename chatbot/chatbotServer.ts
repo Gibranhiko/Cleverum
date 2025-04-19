@@ -3,10 +3,11 @@ import { createBot, createProvider } from "@builderbot/bot";
 import { MemoryDB as Database } from '@builderbot/bot'
 import { BaileysProvider as Provider } from "@builderbot/provider-baileys";
 import flow from "./flows";
-import { provider } from "./provider";
+import AIClass from "./services/ai";
 
 const BOT_PORT = process.env.BOT_PORT;
-const PHONE_NUMBER = process.env.PHONE_NUMBER
+const PHONE_NUMBER = process.env.PHONE_NUMBER;
+const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-4o");
 
 const main = async () => {
   try {
@@ -16,7 +17,8 @@ const main = async () => {
         database: new Database(),
         provider: createProvider(Provider),
         flow: flow,
-      }
+      },
+      {extensions: {ai}}
     );
 
     httpServer(Number(BOT_PORT));
