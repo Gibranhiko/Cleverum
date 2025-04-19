@@ -4,19 +4,17 @@
     FROM node:18-alpine AS builder
     WORKDIR /app
     
-    # Install Git (needed if dependencies are pulled from Git repos)
+    # Install Git (if any Git-based deps)
     RUN apk add --no-cache git
     
-    # Copy only necessary files
-    COPY ../package.json ../package-lock.json ./           
-    COPY ./package.json ./                                 
-    COPY ../web ./                                         
+    # Copy only necessary files for install first (cache optimization)
+    COPY package.json package-lock.json* ./
     
-    # Install deps with workspace awareness
+    # Install dependencies
     RUN npm install --prefer-offline --no-audit --no-fund
     
-    # Set memory limit to prevent crashes during build
-    ENV NODE_OPTIONS="--max-old-space-size=1024"
+    # Copy remaining files
+    COPY . .
     
     # Build the Next.js app
     RUN npm run build
@@ -27,21 +25,25 @@
     FROM node:18-alpine AS production
     WORKDIR /app
     
-    # Install Git if your app needs it at runtime (optional)
+    # Install git if needed at runtime (optional)
     RUN apk add --no-cache git
     
-    # Copy production files
+    # Only copy necessary files
     COPY --from=builder /app/package.json ./
     COPY --from=builder /app/node_modules ./node_modules
     COPY --from=builder /app/.next ./.next
     COPY --from=builder /app/public ./public
     COPY --from=builder /app/next.config.js ./next.config.js
     
-    # Set production environment
+    # Optional: if using Tailwind CSS with custom postcss config
+    COPY --from=builder /app/postcss.config.js ./postcss.config.js
+    COPY --from=builder /app/tailwind.config.js ./tailwind.config.js
+    
+    # Set environment
     ENV NODE_ENV=production
     
     EXPOSE 3000
     
-    # Start the app
+    # Start the Next.js server
     CMD ["npm", "start"]
     
