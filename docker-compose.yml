@@ -46,3 +46,6 @@ services:
       - MONGO_URL=mongodb://mongodb:27017/cleverum
     ports:
       - "5000:5000"
+
+volumes:
+  mongo_data:
