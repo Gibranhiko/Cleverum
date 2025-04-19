@@ -15,6 +15,9 @@
     
     # Copy remaining files
     COPY . .
+
+    # Set Node.js memory limit for the build process (e.g., 4GB)
+    ENV NODE_OPTIONS="--max-old-space-size=1024"
     
     # Build the Next.js app
     RUN npm run build
