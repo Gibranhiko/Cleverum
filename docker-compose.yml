@@ -1,22 +1,74 @@
+version: "3.9"
+
 services:
+  websocket:
+    build:
+      context: ./websocket-server
+      dockerfile: ../websocket-server/Dockerfile
+    command: node dist/index.js
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - WS_PORT=${WEB_SOCKET_PORT}
+
+  mongodb:
+    image: mongo
+    container_name: cleverum_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo mongodb:27017/cleverum --quiet
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  web:
+    build:
+      context: ./web
+      dockerfile: ../web/Dockerfile
+    command: npm start
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - MONGODB_URI=mongodb://mongodb:27017/cleverum
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
+      - PUBLIC_URL=${PUBLIC_URL}
+      - WEB_SOCKET_URL=${WEB_SOCKET_URL}
+      - DO_ENDPOINT=${DO_ENDPOINT}
+      - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
+      - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
+      - DO_BUCKET_NAME=${DO_BUCKET_NAME}
+    depends_on:
+      - websocket
+      - mongodb
+
   chatbot:
     build:
-      context: .
-    command: npm run start:bot
+      context: ./chatbot
+      dockerfile: ../chatbot/Dockerfile
+    command: npm start
     ports:
       - "4000:4000"
     environment:
-      - NODE_ENV=production
-      - BOT_PORT=4000
+      - NODE_ENV=${NODE_ENV}
+      - BOT_PORT=${BOT_PORT}
+      - WEB_PORT=${WEB_PORT}
+      - WEB_SOCKET_PORT=${WEB_SOCKET_PORT}
       - OPEN_API_KEY=${OPEN_API_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
+      - WEB_SOCKET_URL=${WEB_SOCKET_URL}
       - PUBLIC_URL=${PUBLIC_URL}
-      - PHONE_NUMBER=${PHONE_NUMBER}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
+      - MONGODB_URI=mongodb://mongodb:27017/cleverum
+    depends_on:
+      - websocket
+      - mongodb
 
 volumes:
   mongodb_data:
