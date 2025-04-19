@@ -46,3 +46,32 @@ export const obtainIdFromUrl = (url: string): string => {
   const fileName = pathParts[pathParts.length - 1];
   return fileName.replace("product-", "").replace(".png", "");
 };
+
+export function formatOrder(orderList) {
+  const orderDetails = [];
+  orderList.forEach((item) => {
+    const productName = item.name || "Producto desconocido";
+    let quantityText = "";
+
+    if (item.type === "kg") {
+      if (item.quantity) {
+        quantityText = `${item.quantity} kilo${item.quantity > 1 ? "s" : ""}`;
+      } else {
+        quantityText = "Cantidad no especificada";
+      }
+    } else if (item.type === "unidad") {
+      if (item.quantity) {
+        quantityText = `${item.quantity} unidad${item.quantity > 1 ? "es" : ""}`;
+      } else {
+        quantityText = "Cantidad no especificada";
+      }
+    }
+
+    const totalCost = item.totalCost || 0; // Default to 0 if totalCost is missing
+    orderDetails.push(
+      `${productName} - ${quantityText} = $${totalCost.toFixed(2)}`
+    );
+  });
+
+  return orderDetails;
+}

@@ -2,7 +2,7 @@ import React from "react";
 import DataTable from "../components/data-table";
 import { IOrder } from "../api/orders/models/Order";
 import ColumnConfig from "../interfaces/Column";
-import { formatOrder } from "../../../chatbot/utils/order";
+import { formatOrder } from "../utils/format-data";
 
 interface OrdersTableProps {
   orders: IOrder[];
