@@ -10,7 +10,7 @@ services:
 
   websocket:
     build:
-      context: ./ws
+      context: ./websocket-server
       dockerfile: Dockerfile
     container_name: cleverum-websocket
     restart: unless-stopped
