@@ -35,8 +35,6 @@
     COPY --from=builder /app/package.json ./
     COPY --from=builder /app/node_modules ./node_modules
     COPY --from=builder /app/.next ./.next
-    COPY --from=builder /app/public ./public
-    COPY --from=builder /app/next.config.js ./next.config.js
     
     # Optional: if using Tailwind CSS with custom postcss config
     COPY --from=builder /app/postcss.config.js ./postcss.config.js
