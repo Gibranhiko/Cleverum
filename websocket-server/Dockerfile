@@ -8,7 +8,7 @@
     RUN apk add --no-cache git
     
     # Copy package files and install dependencies
-    COPY package.json package-lock.json ./
+    COPY package.json ./
     RUN npm install --prefer-offline --no-audit --no-fund
     
     # Copy the rest of the app (TypeScript sources, tsconfig, etc.)
