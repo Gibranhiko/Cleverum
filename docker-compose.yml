@@ -1,7 +1,7 @@
 version: '3.9'
 
 services:
-  mongodb:
+  mongo:
     image: mongo:6.0
     container_name: cleverum-mongodb
     ports:
@@ -16,7 +16,7 @@ services:
     container_name: cleverum-websocket
     restart: unless-stopped
     depends_on:
-      - mongodb
+      - mongo
     env_file:
       - ./websocket-server/.env
     environment:
