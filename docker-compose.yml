@@ -16,7 +16,7 @@ services:
     container_name: cleverum-websocket
     restart: unless-stopped
     depends_on:
-      - mongo
+      - mongodb
     env_file:
       - ./websocket-server/.env
     environment:
