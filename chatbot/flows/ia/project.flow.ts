@@ -5,6 +5,10 @@ import fs from "fs";
 import { generateTimer } from "../../utils/generateTimer";
 import { format } from "date-fns";
 import { sendOrder } from "~/utils/api";
+import { initializeSocket, getSocket } from "../../utils/socket-connect"; // Import the shared socket instance
+
+// Initialize the socket when needed
+initializeSocket();
 
 // Read the prompt templates once
 const promptOrderPath = path.join("prompts", "/prompt-order.txt");
@@ -92,12 +96,12 @@ const project = addKeyword(EVENTS.ACTION).addAction(
         try {
           await sendOrder(orderData);
 
-          const socket = extensions.socket;
-          if (socket) {
+          const socket = getSocket(); // Get the initialized socket
+          if (socket?.connected) {
             console.log("Emitting new order via WebSocket:", orderData);
-            socket.emit("new-order", orderData);
+            socket.emit("new-order", orderData); // Emit the order via WebSocket
           } else {
-            console.error("Socket not available in extensions");
+            console.error("Socket not connected");
           }
 
           await flowDynamic(

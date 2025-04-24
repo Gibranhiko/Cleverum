@@ -111,24 +111,23 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [state.isAuthenticated]);
 
-  // Conectar WebSocket cuando el usuario esté autenticado
-  // useEffect(() => {
-  //   if (!state.isAuthenticated) return;
+  useEffect(() => {
+    if (!state.isAuthenticated) return;
 
-  //   const socket: Socket = io(`${process.env.WEB_SOCKET_URL}:${process.env.WEB_SOCKET_PORT}`, { transports: ["websocket"] });
+    const socket: Socket = io(`${process.env.WEB_SOCKET_URL}:${process.env.WEB_SOCKET_PORT}`, { transports: ["websocket"] });
 
-  //   socket.on("new-order", (order: IOrder) => {
-  //     setState((prevState) => ({
-  //       ...prevState,
-  //       notifications: [...prevState.notifications, order],
-  //       orders: [...prevState.orders, order],
-  //     }));
-  //   });
+    socket.on("new-order", (order: IOrder) => {
+      setState((prevState) => ({
+        ...prevState,
+        notifications: [...prevState.notifications, order],
+        orders: [...prevState.orders, order],
+      }));
+    });
 
-  //   return () => {
-  //     socket.disconnect();
-  //   };
-  // }, [state.isAuthenticated]);
+    return () => {
+      socket.disconnect();
+    };
+  }, [state.isAuthenticated]);
 
   return (
     <AppContext.Provider value={{ state, setState, loaders, setLoader }}>
