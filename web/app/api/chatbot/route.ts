@@ -1,6 +1,5 @@
 export async function GET(req: Request) {
   const CHATBOT_INTERNAL_URL = process.env.CHATBOT_INTERNAL_URL;
-  const res = await fetch(`${CHATBOT_INTERNAL_URL}/qr`, { cache: "no-store" });
 
   try {
     // Fetch the QR code image from the chatbot server
