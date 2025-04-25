@@ -1,11 +1,12 @@
 export async function GET(req: Request) {
-  const PUBLIC_URL = process.env.PUBLIC_URL;
-  const BOT_PORT = process.env.BOT_PORT;
-
+  const CHATBOT_INTERNAL_URL = process.env.CHATBOT_INTERNAL_URL;
+  const res = await fetch(`${CHATBOT_INTERNAL_URL}/qr`, { cache: "no-store" });
 
   try {
     // Fetch the QR code image from the chatbot server
-    const response = await fetch(`${PUBLIC_URL}:${BOT_PORT}`, { cache: "no-store" });
+    const response = await fetch(`${CHATBOT_INTERNAL_URL}`, {
+      cache: "no-store",
+    });
     if (!response.ok) {
       throw new Error("Failed to fetch QR code");
     }
@@ -17,9 +18,10 @@ export async function GET(req: Request) {
       status: 200,
       headers: {
         "Content-Type": "image/png",
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
+        "Cache-Control":
+          "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     });
   } catch (error) {

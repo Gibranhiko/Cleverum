@@ -35,7 +35,7 @@ services:
     container_name: cleverum-web
     restart: unless-stopped
     depends_on:
-      - websocket
+      - chatbot
     env_file:
       - ./web/.env
     environment:
@@ -52,6 +52,7 @@ services:
       - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
       - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
       - DO_BUCKET_NAME=${DO_BUCKET_NAME}
+      - CHATBOT_INTERNAL_URL=http://chatbot:4000
     ports:
       - "3000:3000"
   chatbot:
@@ -61,7 +62,6 @@ services:
     container_name: cleverum-chatbot
     restart: unless-stopped
     depends_on:
-      - web
     env_file:
       - ./chatbot/.env
     environment:
