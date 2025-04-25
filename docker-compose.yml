@@ -1,16 +1,18 @@
-version: '3.9'
+version: "3.9"
 
 services:
+  # ──────────────────────  DATABASE  ──────────────────────
   mongo:
     image: mongo:6.0
     container_name: cleverum-mongodb
-    ports:
-      - "27017:27017"
     volumes:
       - cleverum-mongo-data:/data/db
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PWD}
+    ports:
+      - "27017:27017"              
+  # ──────────────────────  WEBSOCKET  ─────────────────────
   websocket:
     build:
       context: ./websocket-server
@@ -28,6 +30,25 @@ services:
       - WEB_SOCKET_URL=${WEB_SOCKET_URL}
     ports:
       - "5000:5000"
+
+  # ──────────────────────  CHATBOT  ───────────────────────
+  chatbot:
+    build:
+      context: ./chatbot
+      dockerfile: Dockerfile
+    container_name: cleverum-chatbot
+    restart: unless-stopped
+    env_file:
+      - ./chatbot/.env
+    environment:
+      - NODE_ENV=production
+      - BOT_PORT=4000
+      - OPEN_API_KEY=${OPEN_API_KEY}
+      - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
+      - PHONE_NUMBER=${PHONE_NUMBER}
+    expose:
+      - "4000"
+  # ──────────────────────  NEXT WEB  ──────────────────────
   web:
     build:
       context: ./web
@@ -35,15 +56,16 @@ services:
     container_name: cleverum-web
     restart: unless-stopped
     depends_on:
+      - mongo
       - chatbot
     env_file:
       - ./web/.env
     environment:
       - NODE_ENV=production
       - WEB_PORT=3000
-      - BOT_PORT=4000
       - WEB_SOCKET_PORT=5000
-      - MONGODB_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PWD}@159.203.143.209:27017/cleverum-db?authSource=admin
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PWD}@mongo:27017/cleverum-db?authSource=admin
+      - CHATBOT_INTERNAL_URL=http://chatbot:4000
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PUBLIC_URL=${PUBLIC_URL}
@@ -52,29 +74,8 @@ services:
       - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
       - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
       - DO_BUCKET_NAME=${DO_BUCKET_NAME}
-      - CHATBOT_INTERNAL_URL=http://chatbot:4000
     ports:
       - "3000:3000"
-  chatbot:
-    build:
-      context: ./chatbot
-      dockerfile: Dockerfile
-    container_name: cleverum-chatbot
-    restart: unless-stopped
-    depends_on:
-    env_file:
-      - ./chatbot/.env
-    environment:
-      - NODE_ENV=production
-      - BOT_PORT=4000
-      - WEB_PORT=3000
-      - WEB_SOCKET_PORT=5000
-      - OPEN_API_KEY=${OPEN_API_KEY}
-      - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
-      - PUBLIC_URL=${PUBLIC_URL}
-      - PHONE_NUMBER=${PHONE_NUMBER}
-    ports:
-      - "4000"
 
 volumes:
   cleverum-mongo-data:
