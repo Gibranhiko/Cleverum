@@ -47,7 +47,7 @@ services:
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PHONE_NUMBER=${PHONE_NUMBER}
     expose:
-      - "4000"
+      - "4000:4000"
   # ──────────────────────  NEXT WEB  ──────────────────────
   web:
     build:
