@@ -46,7 +46,7 @@ services:
       - OPEN_API_KEY=${OPEN_API_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PHONE_NUMBER=${PHONE_NUMBER}
-    expose:
+    ports:
       - "4000:4000"
   # ──────────────────────  NEXT WEB  ──────────────────────
   web:
