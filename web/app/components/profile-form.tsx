@@ -9,6 +9,7 @@ interface ProfileFormProps {
   profileData: {
     adminName: string;
     companyName: string;
+    companyType: string;
     companyAddress: string;
     companyEmail: string;
     whatsappPhone: string;
@@ -125,6 +126,20 @@ export default function ProfileForm({
         {errors.companyName && (
           <span className="text-red-500">
             {String(errors.companyName.message)}
+          </span>
+        )}
+      </div>
+      <div className="mb-4">
+        <label>Giro de la Empresa</label>
+        <input
+          {...register("companyType", {
+            required: "Este campo es obligatorio",
+          })}
+          className="border p-2 rounded w-full"
+        />
+        {errors.companyType && (
+          <span className="text-red-500">
+            {String(errors.companyType.message)}
           </span>
         )}
       </div>

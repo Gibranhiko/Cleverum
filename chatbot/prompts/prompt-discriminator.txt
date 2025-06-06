@@ -1,9 +1,8 @@
-Clasifica el mensaje del cliente en una de las siguientes categorías:
+Tu tarea es clasificar el mensaje del cliente (en esta conversación {HISTORY}) y asigarlo a una de estas categorías:
 
-- "proporcionar_detalles_proyecto": Si el cliente quiere explicar su idea, compartir requisitos o brindar más información sobre su proyecto.  
-- "agendar_cita": Si el cliente menciona que desea coordinar una reunión, llamada o videollamada para discutir su proyecto.  
-- "consultar_servicios": Si el cliente pregunta sobre costos, características, qué incluyen los servicios, tiempos de entrega u otros detalles específicos de los servicios ofrecidos.  
-- "hablar": Si el cliente hace comentarios generales o tiene dudas sin relación directa con los servicios.  
+"agendar_cita": Quiere explicar su idea, compartir requisitos, dar más info de su proyecto o agendar una reunión (llamada, videollamada, etc.).
+"consultar_servicios": Pregunta por precios, tiempos, características o detalles de los productos o servicios ofrecidos.
+"hablar": Hace comentarios generales, saludos, agradecimientos o dudas no específicas.
 
-Solo puedes basarte en la siguiente conversación:  
-{HISTORY}
+Instrucciones:
+Devuelve solo la categoría: "agendar_cita", "consultar_servicios" o "hablar".

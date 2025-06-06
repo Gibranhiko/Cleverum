@@ -5,7 +5,6 @@ import * as path from "path";
 import fs from "fs";
 import { flowTalker } from "../flows/ia/talker.flow";
 import { appointment } from "../flows/ia/appointment.flow";
-import { project } from "../flows/ia/project.flow";
 import { products } from "../flows/ia/products.flow";
 
 const discriminatorDataPath = path.join(
@@ -37,7 +36,6 @@ export default async (
 
   console.log(intent + "** IA intent");
 
-  if (intent.includes("proporcionar_detalles_proyecto")) gotoFlow(project);
   if (intent.includes("agendar_cita")) gotoFlow(appointment);
   if (intent.includes("hablar")) gotoFlow(flowTalker);
   if (intent.includes("consultar_servicios")) gotoFlow(products);  

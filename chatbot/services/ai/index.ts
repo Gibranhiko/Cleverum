@@ -108,7 +108,6 @@ class AIClass {
                   type: "string",
                   description: "The detected user intent.",
                   enum: [
-                    "proporcionar_detalles_proyecto",
                     "agendar_cita",
                     "consultar_servicios",
                     "hablar",

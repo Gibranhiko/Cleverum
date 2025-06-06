@@ -17,6 +17,7 @@ export const generatePromptSeller = (
 ) => {
   return PROMPT_TALKER.replace("{HISTORY}", history)
     .replace("{BUSINESSDATA.companyName}", businessdata.companyName)
+    .replace("{BUSINESSDATA.companyType}", businessdata.companyType)
     .replace("{PRODUCTS}", currentProducts);
 };
 

@@ -16,6 +16,7 @@ interface AppState {
   profileData: {
     adminName: string;
     companyName: string;
+    companyType: string;
     companyAddress: string;
     companyEmail: string;
     whatsappPhone: string;
@@ -45,6 +46,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     profileData: {
       adminName: "",
       companyName: "",
+      companyType: "",
       companyAddress: "",
       companyEmail: "",
       whatsappPhone: "",
@@ -114,7 +116,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!state.isAuthenticated) return;
 
-    const socket: Socket = io(`${process.env.WEB_SOCKET_URL}:${process.env.WEB_SOCKET_PORT}`, { transports: ["websocket"] });
+    const socket: Socket = io(
+      `${process.env.NEXT_PUBLIC_WEB_SOCKET_URL}:${process.env.NEXT_PUBLIC_WEB_SOCKET_PORT}`,
+      { transports: ["websocket"] }
+    );
 
     socket.on("new-order", (order: IOrder) => {
       setState((prevState) => ({

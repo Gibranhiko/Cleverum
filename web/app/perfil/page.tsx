@@ -59,6 +59,10 @@ export default function ProfilePage() {
             {profileData.companyName || "No especificado"}
           </p>
           <p>
+            <strong>Giro de la Empresa:</strong>{" "}
+            {profileData.companyType || "No especificado"}
+          </p>
+          <p>
             <strong>Dirección:</strong>{" "}
             {profileData.companyAddress || "No especificado"}
           </p>

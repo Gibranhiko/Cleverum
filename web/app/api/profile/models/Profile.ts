@@ -3,6 +3,7 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 export interface IProfile extends Document {
   adminName: string;
   companyName: string;
+  companyType: string;
   companyAddress?: string;
   companyEmail: string;
   whatsappPhone?: string;
@@ -18,6 +19,7 @@ const ProfileSchema = new Schema<IProfile>(
   {
     adminName: { type: String, required: true },
     companyName: { type: String, required: true },
+    companyType: { type: String, required: true },
     companyAddress: { type: String, default: null },
     companyEmail: { type: String, required: true },
     whatsappPhone: { type: String, default: null },

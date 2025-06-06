@@ -27,6 +27,7 @@ export async function PUT(request: Request) {
     const requiredFields = [
       "adminName",
       "companyName",
+      "companyType",
       "companyEmail",
       "whatsappPhone",
       "companyAddress",
