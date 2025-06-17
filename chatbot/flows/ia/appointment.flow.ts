@@ -53,6 +53,9 @@ const appointment = addKeyword(EVENTS.ACTION).addAction(
         formattedProducts,
         todayIs
       );
+
+      console.log("Prompt Info Appointment Flow: ", promptInfo);
+      
       const response = await ai.createChat([
         { role: "system", content: promptInfo },
       ]);

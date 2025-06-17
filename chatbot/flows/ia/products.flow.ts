@@ -41,6 +41,8 @@ const products = addKeyword(EVENTS.ACTION).addAction(
         formattedProducts
       );
 
+      console.log("Prompt Info Products Flow: ", promptInfo);
+
       const response = await ai.createChat(
         [
           {

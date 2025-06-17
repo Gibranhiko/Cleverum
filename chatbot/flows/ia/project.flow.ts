@@ -59,6 +59,8 @@ const project = addKeyword(EVENTS.ACTION).addAction(
         todayIs
       );
 
+      console.log("Prompt Info Project Flow: ", promptInfo);
+
       // Request to the AI
       const response = await ai.createChat([
         { role: "system", content: promptInfo },

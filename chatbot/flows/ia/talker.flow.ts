@@ -32,6 +32,8 @@ const flowTalker = addKeyword(EVENTS.ACTION).addAction(
         businessData,
       );
 
+      console.log("Prompt Info Talker Flow: ", promptInfo);
+
       const response = await ai.createChat(
         [
           {
