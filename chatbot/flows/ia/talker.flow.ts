@@ -15,6 +15,7 @@ export const generatePromptSeller = (
 ) => {
   return PROMPT_TALKER.replace("{HISTORY}", history)
     .replace("{BUSINESSDATA.companyName}", businessdata.companyName)
+    .replace("{BUSINESSDATA.whatsappPhone}", businessdata.whatsappPhone)
     .replace("{BUSINESSDATA.companyAddress}", businessdata.companyAddress)
     .replace("{BUSINESSDATA.companyEmail}", businessdata.companyEmail)
     .replace("{BUSINESSDATA.facebookLink}", businessdata.facebookLink)

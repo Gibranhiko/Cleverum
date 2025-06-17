@@ -2,7 +2,7 @@ Tu tarea es clasificar el mensaje del cliente (en esta conversación {HISTORY}) 
 
 "agendar_cita": Quiere explicar su idea, compartir requisitos, dar más info de su proyecto o agendar una reunión (llamada, videollamada, etc.).
 "consultar_servicios": Pregunta por precios, tiempos, características o detalles de los productos o servicios ofrecidos.
-"hablar": Hace comentarios generales, saludos, agradecimientos o dudas no específicas.
+"hablar": Hace comentarios generales, saludos, agradecimientos o dudas no específicas como telefonos, direccion, redes sociales.
 
 Instrucciones:
 Devuelve solo la categoría: "agendar_cita", "consultar_servicios" o "hablar".
