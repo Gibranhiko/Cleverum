@@ -76,5 +76,5 @@ export async function fileExists(key: string): Promise<boolean> {
 
 // Generate a random ID
 export function generateRandomId(length: number = 10): string {
-  return crypto.randomBytes(length).toString("hex").slice(0, length); // Generate random bytes and convert to hex
+  return crypto.randomBytes(length).toString("hex").slice(0, length);
 }

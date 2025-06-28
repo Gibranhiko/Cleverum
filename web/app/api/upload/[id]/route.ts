@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         Key: key,
         Body: file,
         ACL: "public-read",
-        ContentType: "image/png", // Adjust based on the uploaded file type
+        ContentType: "image/png",
       })
       .promise();
 

@@ -15,12 +15,10 @@ export const sendOrder = async (orderData) => {
       body: JSON.stringify(orderData),
     });
 
-    // Check if response is not OK (covers all non-2xx responses)
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    // Just return the parsed JSON response
     return await response.json();
   } catch (error) {
     console.error("Error sending order to API:", error);
@@ -38,7 +36,6 @@ export const fetchProducts = async () => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    //console.log("Fetched products:", data);
     return data;
   } catch (error) {
     console.error(
@@ -59,7 +56,6 @@ export const fetchProfile = async () => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    //console.log("Fetched profile:", data);
     return data;
   } catch (error) {
     console.error("Error fetching profile from API:", error);
