@@ -75,7 +75,7 @@ services:
       - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
       - DO_BUCKET_NAME=${DO_BUCKET_NAME}
     ports:
-      - "3000:3000"
+      - "80:3000"
 
 volumes:
   cleverum-mongo-data:
