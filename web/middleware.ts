@@ -17,7 +17,7 @@ export async function middleware(req: NextRequest) {
   if (!token) {
     const response = isApiRoute
       ? NextResponse.json({ message: "Unauthorized" }, { status: 401 })
-      : NextResponse.redirect(new URL("/login", req.url));
+      : NextResponse.redirect(new URL("/", req.url)); // Redirige a home page pública
 
     response.headers.set("X-Authenticated", "false");
     return response;
@@ -51,8 +51,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
-    "/home",
     "/pedidos",
     "/productos",
     "/promociones",

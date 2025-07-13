@@ -29,7 +29,7 @@ export default function RootLayout({
     <html lang="en">
       <Head>
         <link rel="icon" href="/restaurant-bot/favicon.ico" />
-        <title>Cleverum - Restaurant</title>
+        <title>Cleverum</title>
       </Head>
       <AppProvider>
       <body>

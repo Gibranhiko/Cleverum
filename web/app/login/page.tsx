@@ -52,7 +52,7 @@ export default function LoginPage() {
           isAuthenticated: true,
         }));
 
-        router.push("/");
+        router.push("/productos");
       } else {
         setErrorMessage(result.message);
         setSuccessMessage(null);
