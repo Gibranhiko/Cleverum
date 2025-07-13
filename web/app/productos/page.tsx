@@ -88,13 +88,15 @@ export default function ProductsPage() {
     const imageId = obtainIdFromUrl(imageUrl);
     try {
       // Step 1: Delete the image from S3
-      const deleteImageRes = await fetch(`/api/upload/${imageId}`, {
-        method: "DELETE",
-      });
-  
-      if (!deleteImageRes.ok) {
-        throw new Error("Error deleting image");
+      if (imageId) {
+        const deleteImageRes = await fetch(`/api/upload/${imageId}`, {
+          method: "DELETE",
+        });
+        if (!deleteImageRes.ok) {
+          throw new Error("Error deleting image");
+        }
       }
+  
   
       // Step 2: Delete the product from the database
       const deleteProductRes = await fetch(`/api/products/${productId}`, {
