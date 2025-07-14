@@ -7,10 +7,11 @@ const headers = {
   "Content-Type": "application/json",
   "x-chatbot-secret": CHATBOT_SECRET_KEY,
 };
+console.log("PUBLIC_URL:", PUBLIC_URL, "WEB_PORT:", WEB_PORT, "CHATBOT_SECRET_KEY:", CHATBOT_SECRET_KEY, "headers:", headers);
 
 export const sendOrder = async (orderData) => {
   try {
-    const response = await fetch(`/api/orders`, {
+    const response = await fetch(`${PUBLIC_URL}/api/orders`, {
       method: "POST",
       headers,
       body: JSON.stringify(orderData),
@@ -29,7 +30,7 @@ export const sendOrder = async (orderData) => {
 
 export const fetchProducts = async () => {
   try {
-    const response = await fetch(`/api/products`, {
+    const response = await fetch(`${PUBLIC_URL}/api/products`, {
       method: "GET",
       headers,
     });
@@ -49,7 +50,7 @@ export const fetchProducts = async () => {
 
 export const fetchProfile = async () => {
   try {
-    const response = await fetch(`/api/profile`, {
+    const response = await fetch(`${PUBLIC_URL}/api/profile`, {
       method: "GET",
       headers,
     });
