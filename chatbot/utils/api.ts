@@ -2,10 +2,12 @@ const PUBLIC_URL = process.env.PUBLIC_URL;
 const WEB_PORT = process.env.WEB_PORT;
 const CHATBOT_SECRET_KEY = process.env.CHATBOT_SECRET_KEY;
 
+
 const headers = {
   "Content-Type": "application/json",
   "x-chatbot-secret": CHATBOT_SECRET_KEY,
 };
+console.log("PUBLIC_URL:", PUBLIC_URL, "WEB_PORT:", WEB_PORT, "CHATBOT_SECRET_KEY:", CHATBOT_SECRET_KEY, "headers:", headers);
 
 export const sendOrder = async (orderData) => {
   try {
