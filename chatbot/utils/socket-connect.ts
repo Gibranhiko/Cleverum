@@ -4,7 +4,7 @@ let socket: Socket | null = null;
 
 export const initializeSocket = () => {
   if (!socket) {
-    socket = io(`${process.env.WEB_SOCKET_URL}:${process.env.WEB_SOCKET_PORT}/`, {
+    socket = io(`${process.env.WEB_SOCKET_URL}`, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 10,
