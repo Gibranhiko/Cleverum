@@ -1,22 +1,21 @@
-// pages/index.jsx (o donde esté tu HomePage)
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 import PublicNavbar from "./components/public-navbar";
-import Hero3DCanvas from "./components/hero3D"; // Importa el nuevo componente
-import { ArrowRight, Brain, ChevronDown, Rocket, Zap } from "lucide-react";
+import Hero3DCanvas from "./components/hero3D";
+import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
+import ChevronDown from 'lucide-react/dist/esm/icons/chevron-down';
+import Rocket from 'lucide-react/dist/esm/icons/rocket';
+import Zap from 'lucide-react/dist/esm/icons/zap';
 
-// Extiende la interfaz Window para incluir ScrollTrigger
 declare global {
   interface Window {
     gsap?: typeof gsap;
     ScrollTrigger?: typeof ScrollTrigger;
   }
 }
-
-// gsap.registerPlugin(ScrollTrigger);
 
 export default function HomePage() {
   const mainRef = useRef(null);
