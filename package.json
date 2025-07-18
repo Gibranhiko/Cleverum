@@ -28,6 +28,7 @@
     "sharp": "0.32.6"
   },
   "dependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^9.1.2",
+    "lucide-react": "^0.525.0"
   }
 }
