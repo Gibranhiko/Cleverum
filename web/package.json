@@ -26,7 +26,8 @@
     "react-hook-form": "^7.53.0",
     "socket.io-client": "^4.7.5",
     "tailwindcss": "^3.4.10",
-    "three": "^0.178.0"
+    "three": "^0.178.0",
+    "lucide-react": "^0.525.0"
   },
   "devDependencies": {
     "@types/react": "19.0.10",
@@ -35,8 +36,7 @@
     "nodemon": "^3.1.0",
     "postcss": "^8.4.41",
     "tsx": "^4.7.1",
-    "typescript": "^5.5.4",
-    "lucide-react": "^0.525.0"
+    "typescript": "^5.5.4"
   },
   "license": "ISC"
 }
