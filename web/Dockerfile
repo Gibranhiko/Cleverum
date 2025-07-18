@@ -29,7 +29,6 @@ WORKDIR /app
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
 
 # Optional: Tailwind CSS config (if needed)
 COPY --from=builder /app/postcss.config.js ./postcss.config.js
