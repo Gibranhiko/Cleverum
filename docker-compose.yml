@@ -11,7 +11,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PWD}
     ports:
-      - "27017:27017"              
+      - "127.0.0.1:27017:27017"              
   # ──────────────────────  WEBSOCKET  ─────────────────────
   websocket:
     build:
