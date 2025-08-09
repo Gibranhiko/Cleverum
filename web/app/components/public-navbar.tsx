@@ -1,4 +1,3 @@
-// components/public-navbar.jsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -46,7 +45,7 @@ export default function PublicNavbar() {
 
         <div className="flex-grow flex justify-end">
           <button className="relative group overflow-hidden border border-white/20 bg-white/5 backdrop-blur-sm text-white/90 hover:bg-white/10 hover:border-white/30 px-8 py-3 rounded-full font-medium transition-all duration-500 transform hover:scale-[1.02]">
-            <span className="relative z-10">Iniciar sesión</span>
+            <a href="/login" className="relative z-10">Iniciar sesión</a>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           </button>
         </div>

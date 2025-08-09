@@ -10,6 +10,7 @@ import { flowConfirm } from "./fixed/confirm.flow";
 import { project } from "./ia/project.flow";
 import { appointment } from "./ia/appointment.flow";
 import { products } from "./ia/products.flow";
+import {toggleFlow} from "./fixed/toggle.flow"
 
 export default createFlow([
   welcome,
@@ -22,6 +23,7 @@ export default createFlow([
   flowConfirm,
   project,
   appointment,
-  products
+  products,
+  toggleFlow
 ]);
 
