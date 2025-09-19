@@ -8,14 +8,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
 
+    await connectToDatabase();
+
+    // If no clientId provided, return empty array (user hasn't selected a client yet)
     if (!clientId) {
-      return NextResponse.json(
-        { message: "clientId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json([], { status: 200 });
     }
 
-    await connectToDatabase();
     const orders: IOrder[] = await Order.find({ clientId });
     return NextResponse.json(orders, { status: 200 });
   } catch (error) {
@@ -47,9 +46,9 @@ export async function POST(req: Request) {
       clientPayment,
     } = await req.json();
 
-    if (!clientId || !name || !phone || !date) {
+    if (!name || !phone || !date) {
       return NextResponse.json(
-        { message: "Missing required fields: clientId, name, phone, date" },
+        { message: "Missing required fields: name, phone, date" },
         { status: 400 }
       );
     }

@@ -8,14 +8,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
 
+    await connectToDatabase();
+
+    // If no clientId provided, return empty object (user hasn't selected a client yet)
     if (!clientId) {
-      return NextResponse.json(
-        { message: "clientId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({}, { status: 200 });
     }
 
-    await connectToDatabase();
     const profile = await Profile.findOne({ clientId });
 
     return NextResponse.json(profile || {}, { status: 200 });
@@ -36,12 +35,8 @@ export async function PUT(request: Request) {
 
     const { clientId } = updatedProfileData;
 
-    if (!clientId) {
-      return NextResponse.json(
-        { message: "clientId is required" },
-        { status: 400 }
-      );
-    }
+    // clientId is now optional - will be set when user selects a client
+    // If not provided, we'll allow creation but it won't be associated with any client yet
 
     const requiredFields = [
       "adminName",
@@ -98,14 +93,16 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
 
+    await connectToDatabase();
+
+    // If no clientId provided, return error
     if (!clientId) {
       return NextResponse.json(
-        { message: "clientId is required" },
+        { message: "clientId is required for deletion" },
         { status: 400 }
       );
     }
 
-    await connectToDatabase();
     const deletedProfile = await Profile.findOneAndDelete({ clientId });
 
     if (!deletedProfile) {

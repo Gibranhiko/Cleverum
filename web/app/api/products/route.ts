@@ -7,14 +7,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
 
+    await connectToDatabase();
+
+    // If no clientId provided, return empty array (user hasn't selected a client yet)
     if (!clientId) {
-      return NextResponse.json(
-        { message: "clientId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json([], { status: 200 });
     }
 
-    await connectToDatabase();
     const products = await Product.find({ clientId });
     return NextResponse.json(products, { status: 200 });
   } catch (error) {
@@ -28,12 +27,15 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const newProduct = await request.json();
 
-    const requiredFields = ["clientId", "category", "name", "description", "type", "options", "includes"];
+    const requiredFields = ["category", "name", "description", "type", "options", "includes"];
     for (const field of requiredFields) {
       if (!newProduct[field]) {
         return NextResponse.json({ message: `Field '${field}' is required` }, { status: 400 });
       }
     }
+
+    // clientId is now optional - will be set when user selects a client
+    // If not provided, we'll allow creation but it won't be associated with any client yet
 
     if (
       !Array.isArray(newProduct.options) ||
