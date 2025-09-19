@@ -79,6 +79,20 @@ npm run dev
 ```
 This will start both the Next.js admin client and the chatbot service with WebSocket integration.
 
+### Multi-Client Setup
+
+The application now supports multiple clients with complete data isolation:
+
+1. **Login** with your username and password (no clientId required)
+2. **Create clients** via the "Clientes" menu
+3. **Select a client** to manage their data
+4. **Switch between clients** using the dropdown in the navbar
+5. Each client has:
+   - Isolated orders, products, and profiles
+   - Independent chatbot sessions
+   - Separate WebSocket notifications
+   - Unique data storage
+
 ---
 
 **Production**

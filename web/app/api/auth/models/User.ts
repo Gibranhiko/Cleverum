@@ -4,20 +4,26 @@ import bcrypt from "bcrypt";
 const SALT_ROUNDS = 10;
 
 interface IUser extends Document {
-  clientId: string;
+  clientId?: string; // Optional - set when user selects a client
   username: string;
   password: string;
   comparePassword: (password: string) => Promise<boolean>;
 }
 
 const UserSchema: Schema<IUser> = new Schema({
-  clientId: { type: String, required: true },
+  clientId: { type: String, required: false }, // Optional - set when user selects a client
   username: { type: String, required: true },
   password: { type: String, required: true },
 });
 
-// Create a compound index for clientId + username to ensure uniqueness within each client
-UserSchema.index({ clientId: 1, username: 1 }, { unique: true });
+// Create a compound index for clientId + username to ensure uniqueness within each client (only when clientId exists)
+UserSchema.index({ clientId: 1, username: 1 }, {
+  unique: true,
+  partialFilterExpression: { clientId: { $exists: true } }
+});
+
+// Ensure usernames are unique globally
+UserSchema.index({ username: 1 }, { unique: true });
 
 // Pre-save hook to hash the password
 UserSchema.pre<IUser>("save", async function (next) {

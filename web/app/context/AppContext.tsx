@@ -97,24 +97,36 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         try {
           // Get selected client from localStorage
           const clientId = typeof window !== 'undefined' ? localStorage.getItem('selectedClientId') : null;
+          const clientName = typeof window !== 'undefined' ? localStorage.getItem('selectedClientName') : null;
 
-          const ordersUrl = clientId ? `/api/orders?clientId=${clientId}` : "/api/orders";
-          const profileUrl = clientId ? `/api/profile?clientId=${clientId}` : "/api/profile";
+          // Update selected client in state
+          if (clientId && clientName) {
+            setState((prev) => ({
+              ...prev,
+              selectedClient: { id: clientId, name: clientName },
+            }));
+          }
 
-          const [ordersRes, profileRes] = await Promise.all([
-            fetch(ordersUrl, { cache: "no-store" }),
-            fetch(profileUrl, { cache: "no-store" }),
-          ]);
+          // Only fetch client-specific data if a client is selected
+          if (clientId) {
+            const ordersUrl = `/api/orders?clientId=${clientId}`;
+            const profileUrl = `/api/profile?clientId=${clientId}`;
 
-          if (!ordersRes.ok || !profileRes.ok) throw new Error("Error fetching data");
+            const [ordersRes, profileRes] = await Promise.all([
+              fetch(ordersUrl, { cache: "no-store" }),
+              fetch(profileUrl, { cache: "no-store" }),
+            ]);
 
-          const [orders, profileData] = await Promise.all([ordersRes.json(), profileRes.json()]);
+            if (!ordersRes.ok || !profileRes.ok) throw new Error("Error fetching data");
 
-          setState((prev) => ({
-            ...prev,
-            orders,
-            profileData,
-          }));
+            const [orders, profileData] = await Promise.all([ordersRes.json(), profileRes.json()]);
+
+            setState((prev) => ({
+              ...prev,
+              orders,
+              profileData,
+            }));
+          }
         } catch (error) {
           console.error("Error fetching data after authentication:", error);
         }
@@ -133,7 +145,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // Join client-specific room if client is selected
-    const clientId = typeof window !== 'undefined' ? localStorage.getItem('selectedClientId') : null;
+    const clientId = state.selectedClient?.id;
     if (clientId) {
       socket.emit("join-client", clientId);
     }
@@ -166,7 +178,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       }
       socket.disconnect();
     };
-  }, [state.isAuthenticated]);
+  }, [state.isAuthenticated, state.selectedClient]);
 
   return (
     <AppContext.Provider value={{ state, setState, loaders, setLoader }}>

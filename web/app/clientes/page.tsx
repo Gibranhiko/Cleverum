@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAppContext } from '../context/AppContext';
 
 interface Client {
   _id: string;
@@ -14,6 +15,7 @@ interface Client {
 }
 
 export default function ClientsPage() {
+  const { state, setState } = useAppContext();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -67,9 +69,17 @@ export default function ClientsPage() {
 
   const handleSelectClient = (client: Client) => {
     setSelectedClient(client);
+
+    // Update AppContext state
+    setState((prevState) => ({
+      ...prevState,
+      selectedClient: { id: client._id, name: client.name },
+    }));
+
     // Store selected client in localStorage for persistence
     localStorage.setItem('selectedClientId', client._id);
     localStorage.setItem('selectedClientName', client.name);
+
     // Redirect to dashboard or main page
     router.push('/');
   };
