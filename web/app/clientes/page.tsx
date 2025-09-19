@@ -269,21 +269,30 @@ export default function ClientsPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {clients.map((client) => (
-          <div
-            key={client._id}
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">{client.name}</h3>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  client.isActive
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {client.isActive ? 'Activo' : 'Inactivo'}
-                </span>
+        {clients.map((client) => {
+          const isSelected = state.selectedClient?.id === client._id;
+          return (
+            <div
+              key={client._id}
+              className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow ${
+                isSelected ? 'border-2 border-blue-500 bg-blue-50' : ''
+              }`}
+            >
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">{client.name}</h3>
+                <div className="flex items-center space-x-2">
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    client.isActive
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {client.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                  {isSelected && (
+                    <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                      Seleccionado
+                    </span>
+                  )}
                 <div className="flex space-x-1">
                   <button
                     onClick={(e) => {
@@ -332,13 +341,16 @@ export default function ClientsPage() {
               </div>
               <button
                 onClick={() => handleSelectClient(client)}
-                className="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors"
+                disabled={isSelected}
+                className={`px-3 py-1 text-sm rounded transition-colors ${
+                  isSelected ? 'bg-gray-400 text-gray-200 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
               >
-                Seleccionar
+                {isSelected ? 'Seleccionado' : 'Seleccionar'}
               </button>
             </div>
           </div>
-        ))}
+        )})}
       </div>
 
       {clients.length === 0 && (
