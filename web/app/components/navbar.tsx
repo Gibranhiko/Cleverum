@@ -16,6 +16,7 @@ const navMenu = [
   { title: "Pedidos", link: "/pedidos" },
   { title: "Productos", link: "/productos" },
   { title: "Chatbot", link: "/chatbot" },
+  { title: "Clientes", link: "/clientes" },
 ];
 
 const dropDownMenu = [
@@ -82,6 +83,11 @@ export default function Navbar() {
           />
         <div className="flex flex-col">
           <span className="text-xl font-bold">Cleverum 1.0</span>
+          {typeof window !== 'undefined' && localStorage.getItem('selectedClientName') && (
+            <span className="text-sm text-gray-300">
+              Cliente: {localStorage.getItem('selectedClientName')}
+            </span>
+          )}
         </div>
         <ul className="flex space-x-4 ml-8">
           {navMenu.map((item: Menu, index: number) => (

@@ -7,14 +7,21 @@ import User from "../models/User";
 const JWT_SECRET = process.env.JWT_SECRET_KEY;
 
 export async function POST(req: Request) {
-  const { username, password } = await req.json();
+  const { clientId, username, password } = await req.json();
+
+  if (!clientId) {
+    return NextResponse.json({
+      success: false,
+      message: "clientId es requerido",
+    });
+  }
 
   // Connect to the database
   await connectToDatabase();
 
   try {
-    // Find the user by username
-    const user = await User.findOne({ username });
+    // Find the user by clientId and username
+    const user = await User.findOne({ clientId, username });
     if (!user) {
       return NextResponse.json({
         success: false,
@@ -35,6 +42,7 @@ export async function POST(req: Request) {
     const token = jwt.sign(
       {
         id: user._id,
+        clientId: user.clientId,
         username: user.username,
       },
       JWT_SECRET,

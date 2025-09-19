@@ -2,10 +2,20 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "../utils/mongoose";
 import Product from "./models/Product";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const clientId = searchParams.get('clientId');
+
+    if (!clientId) {
+      return NextResponse.json(
+        { message: "clientId is required" },
+        { status: 400 }
+      );
+    }
+
     await connectToDatabase();
-    const products = await Product.find({});
+    const products = await Product.find({ clientId });
     return NextResponse.json(products, { status: 200 });
   } catch (error) {
     console.error("Failed to fetch products:", error);
@@ -18,7 +28,7 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const newProduct = await request.json();
 
-    const requiredFields = ["category", "name", "description", "type", "options", "includes"];
+    const requiredFields = ["clientId", "category", "name", "description", "type", "options", "includes"];
     for (const field of requiredFields) {
       if (!newProduct[field]) {
         return NextResponse.json({ message: `Field '${field}' is required` }, { status: 400 });

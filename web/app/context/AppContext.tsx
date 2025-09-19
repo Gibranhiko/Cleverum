@@ -25,6 +25,10 @@ interface AppState {
     imageUrl: string;
     useAi: boolean;
   };
+  selectedClient: {
+    id: string;
+    name: string;
+  } | null;
   loading: boolean;
 }
 
@@ -55,6 +59,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       imageUrl: "",
       useAi: false,
     },
+    selectedClient: null,
     loading: true, // Nuevo estado para manejar carga inicial
   });
 
@@ -90,15 +95,21 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (state.isAuthenticated) {
       const fetchData = async () => {
         try {
+          // Get selected client from localStorage
+          const clientId = typeof window !== 'undefined' ? localStorage.getItem('selectedClientId') : null;
+
+          const ordersUrl = clientId ? `/api/orders?clientId=${clientId}` : "/api/orders";
+          const profileUrl = clientId ? `/api/profile?clientId=${clientId}` : "/api/profile";
+
           const [ordersRes, profileRes] = await Promise.all([
-            fetch("/api/orders", { cache: "no-store" }),
-            fetch("/api/profile", { cache: "no-store" }),
+            fetch(ordersUrl, { cache: "no-store" }),
+            fetch(profileUrl, { cache: "no-store" }),
           ]);
-  
+
           if (!ordersRes.ok || !profileRes.ok) throw new Error("Error fetching data");
-  
+
           const [orders, profileData] = await Promise.all([ordersRes.json(), profileRes.json()]);
-  
+
           setState((prev) => ({
             ...prev,
             orders,
@@ -108,7 +119,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           console.error("Error fetching data after authentication:", error);
         }
       };
-  
+
       fetchData();
     }
   }, [state.isAuthenticated]);
@@ -121,15 +132,38 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       { transports: ["websocket"] }
     );
 
-    socket.on("new-order", (order: IOrder) => {
-      setState((prevState) => ({
-        ...prevState,
-        notifications: [...prevState.notifications, order],
-        orders: [...prevState.orders, order],
-      }));
+    // Join client-specific room if client is selected
+    const clientId = typeof window !== 'undefined' ? localStorage.getItem('selectedClientId') : null;
+    if (clientId) {
+      socket.emit("join-client", clientId);
+    }
+
+    socket.on("new-order", (data: { clientId: string; order: IOrder }) => {
+      // Only process orders for the current client
+      if (!clientId || data.clientId === clientId) {
+        setState((prevState) => ({
+          ...prevState,
+          notifications: [...prevState.notifications, data.order],
+          orders: [...prevState.orders, data.order],
+        }));
+      }
     });
 
+    // Listen for client-specific order events
+    if (clientId) {
+      socket.on(`new-order-${clientId}`, (order: IOrder) => {
+        setState((prevState) => ({
+          ...prevState,
+          notifications: [...prevState.notifications, order],
+          orders: [...prevState.orders, order],
+        }));
+      });
+    }
+
     return () => {
+      if (clientId) {
+        socket.emit("leave-client", clientId);
+      }
       socket.disconnect();
     };
   }, [state.isAuthenticated]);
