@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAppContext } from "../context/AppContext";
 import NotificationBell from "./notification-bell";
 import DropDown from "./drop-down";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface Menu {
   title: string;
@@ -32,12 +32,25 @@ export default function Navbar() {
     ...state.orders.filter((order) => order.status === false),
   ];
   const router = useRouter();
+  const pathname = usePathname();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const toggleDropdown = useCallback(() => {
     setIsDropdownOpen((prev) => !prev);
+  }, []);
+
+  // Function to map pathname to page title
+  const getPageTitleFromPath = useCallback((path: string): string => {
+    const pathMap: { [key: string]: string } = {
+      '/clientes': 'Clientes',
+      '/pedidos': 'Pedidos',
+      '/productos': 'Productos',
+      '/chatbot': 'Chatbot',
+      '/perfil': 'Perfil',
+    };
+    return pathMap[path] || '';
   }, []);
 
 
@@ -52,6 +65,17 @@ export default function Navbar() {
     },
     [setState]
   );
+
+  // Update currentPage based on pathname changes
+  useEffect(() => {
+    const pageTitle = getPageTitleFromPath(pathname);
+    if (pageTitle && pageTitle !== state.currentPage) {
+      updateCurrentPage(pageTitle);
+    } else if (!pageTitle && pathname !== '/' && state.currentPage) {
+      // Clear currentPage if we're on a non-navigation page
+      updateCurrentPage('');
+    }
+  }, [pathname, getPageTitleFromPath, state.currentPage, updateCurrentPage]);
 
   const getNavLinkClasses = (page: string) =>
     `block mt-4 lg:inline-block lg:mt-0 ${
