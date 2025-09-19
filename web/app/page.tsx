@@ -20,6 +20,7 @@ declare global {
 export default function HomePage() {
   const mainRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const phoneNumber = "5218186018847";
   const encodedMessage = encodeURIComponent(
@@ -39,6 +40,10 @@ export default function HomePage() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Note: Authentication redirection is now handled by middleware.ts
+  // The middleware validates tokens on the home page and redirects authenticated users to /clientes
+  // This provides server-side protection and better security
 
   useEffect(() => {
     // Cargar GSAP si no está disponible
@@ -164,6 +169,19 @@ export default function HomePage() {
   const scrollToNextSection = () => {
     document.getElementById("section1")?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // Show loading screen during redirection
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold mb-2">Redirigiendo...</h2>
+          <p className="text-gray-400">Accediendo al panel de administración</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

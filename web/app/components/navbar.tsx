@@ -120,18 +120,37 @@ export default function Navbar() {
     }`;
 
   const handleLogout = async () => {
-    // Call logout API endpoint
+    // Call logout API endpoint (clears httpOnly cookie server-side)
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+
+      // Clear localStorage (client-side data only)
+      localStorage.removeItem('selectedClientId');
+      localStorage.removeItem('selectedClientName');
+
       // Clear user state
       setState({
         ...state,
         notifications: [],
         orders: [],
         isAuthenticated: false,
+        selectedClient: null,
+        profileData: {
+          adminName: "",
+          companyName: "",
+          companyType: "",
+          companyAddress: "",
+          companyEmail: "",
+          whatsappPhone: "",
+          facebookLink: "",
+          instagramLink: "",
+          imageUrl: "",
+          useAi: false,
+        },
       });
-      // Redirect to login
-      router.push("/login");
+
+      // Redirect to home page (middleware will handle authentication)
+      router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
     }
