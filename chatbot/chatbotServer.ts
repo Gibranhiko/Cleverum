@@ -5,16 +5,33 @@ import { BaileysProvider as Provider } from "@builderbot/provider-baileys";
 import flow from "./flows";
 import AIClass from "./services/ai";
 
-const BOT_PORT = process.env.BOT_PORT;
-const PHONE_NUMBER = process.env.PHONE_NUMBER;
+const BOT_PORT_1 = process.env.BOT_PORT || "4000";
+const BOT_PORT_2 = process.env.BOT_PORT_2 || "4001";
+const PHONE_NUMBER_1 = process.env.PHONE_NUMBER_1 || process.env.PHONE_NUMBER;
+const PHONE_NUMBER_2 = process.env.PHONE_NUMBER_2;
 
-// Store active bot instances
-const activeBots = new Map<string, any>();
+// Bot configuration
+const botConfigs = [
+  {
+    id: "client-a",
+    name: "Bot 1",
+    port: BOT_PORT_1,
+    phone: PHONE_NUMBER_1,
+    sessionName: "bot-session-1"
+  },
+  {
+    id: "client-b",
+    name: "Bot 2",
+    port: BOT_PORT_2,
+    phone: PHONE_NUMBER_2,
+    sessionName: "bot-session-2"
+  }
+];
 
-// Function to create a bot instance for a specific client
-const createClientBot = async (clientId: string, phoneNumber?: string) => {
+// Function to create and start a bot
+const createBotInstance = async (config: typeof botConfigs[0]) => {
   try {
-    console.log(`🚀 Starting Bot for client ${clientId}... with phone ${phoneNumber || PHONE_NUMBER}`);
+    console.log(`🚀 Starting ${config.name}... with phone ${config.phone}`);
 
     const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-4o");
 
@@ -22,52 +39,42 @@ const createClientBot = async (clientId: string, phoneNumber?: string) => {
       {
         database: new Database(),
         provider: createProvider(Provider, {
-          name: `bot-${clientId}`, // Unique session name per client
+          name: config.sessionName,
         }),
         flow: flow,
       },
-      { extensions: { ai, clientId } } // Pass clientId in extensions
+      { extensions: { ai, clientId: config.id } }
     );
 
-    activeBots.set(clientId, { httpServer, ai, clientId });
-    console.log(`🚀 Bot for client ${clientId} running at port ${BOT_PORT}`);
+    httpServer(Number(config.port));
+    console.log(`✅ ${config.name} running at port ${config.port}`);
+
     return { httpServer, ai };
   } catch (err) {
-    console.error(`❌ Bot for client ${clientId} could not start:`, err);
+    console.error(`❌ ${config.name} could not start:`, err);
     throw err;
-  }
-};
-
-// Function to stop a client bot
-const stopClientBot = async (clientId: string) => {
-  const botInstance = activeBots.get(clientId);
-  if (botInstance) {
-    // Close the HTTP server
-    if (botInstance.httpServer && botInstance.httpServer.close) {
-      botInstance.httpServer.close();
-    }
-    activeBots.delete(clientId);
-    console.log(`🛑 Bot for client ${clientId} stopped`);
   }
 };
 
 // Main server setup
 const main = async () => {
   try {
-    // Start with a default bot instance (for backward compatibility)
-    if (!activeBots.has('default')) {
-      await createClientBot('default', PHONE_NUMBER);
+    console.log("🤖 Starting Cleverum Chatbot Server...");
+    console.log("📱 Creating 2 bot instances with QR codes\n");
+
+    // Create both bots sequentially
+    for (const config of botConfigs) {
+      await createBotInstance(config);
     }
 
-    console.log(`🚀 Chatbot management server running`);
-    console.log(`📋 Active bots: ${Array.from(activeBots.keys()).join(', ')}`);
+    console.log("\n🎉 All bots started successfully!");
+    console.log("📋 Active bots: client-a, client-b");
+    console.log("🔗 Scan the QR codes in your terminal to connect WhatsApp");
 
   } catch (err) {
-    console.error("❌ App could not start:", err);
+    console.error("❌ Server could not start:", err);
+    process.exit(1);
   }
 };
 
 main();
-
-// Export functions for external use
-export { createClientBot, stopClientBot, activeBots };
