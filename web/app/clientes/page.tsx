@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
 import Navbar from '../components/navbar';
+import ClientFormModal from '../components/client-form-modal';
 
 interface Client {
   _id: string;
@@ -13,6 +14,16 @@ interface Client {
   email?: string;
   isActive: boolean;
   createdAt: string;
+  // Profile fields
+  adminName?: string;
+  companyName?: string;
+  companyType?: string;
+  companyAddress?: string;
+  companyEmail?: string;
+  facebookLink?: string;
+  instagramLink?: string;
+  imageUrl?: string;
+  useAi?: boolean;
 }
 
 export default function ClientsPage() {
@@ -23,12 +34,6 @@ export default function ClientsPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    whatsappPhone: '',
-    email: ''
-  });
   const router = useRouter();
 
   useEffect(() => {
@@ -49,8 +54,7 @@ export default function ClientsPage() {
     }
   };
 
-  const handleCreateClient = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateClient = async (formData: any) => {
     try {
       const response = await fetch('/api/clients', {
         method: 'POST',
@@ -61,12 +65,15 @@ export default function ClientsPage() {
       });
 
       if (response.ok) {
-        setFormData({ name: '', description: '', whatsappPhone: '', email: '' });
         setShowCreateForm(false);
         fetchClients();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error creating client');
       }
     } catch (error) {
       console.error('Error creating client:', error);
+      throw error;
     }
   };
 
@@ -76,12 +83,21 @@ export default function ClientsPage() {
     // Update AppContext state
     setState((prevState) => ({
       ...prevState,
-      selectedClient: { id: client._id, name: client.name },
+      selectedClient: {
+        id: client._id,
+        name: client.name,
+        imageUrl: client.imageUrl
+      },
     }));
 
     // Store selected client in localStorage for persistence
     localStorage.setItem('selectedClientId', client._id);
     localStorage.setItem('selectedClientName', client.name);
+    if (client.imageUrl) {
+      localStorage.setItem('selectedClientImageUrl', client.imageUrl);
+    } else {
+      localStorage.removeItem('selectedClientImageUrl');
+    }
 
     // Redirect to dashboard or main page
     router.push('/');
@@ -89,17 +105,10 @@ export default function ClientsPage() {
 
   const handleEditClient = (client: Client) => {
     setEditingClient(client);
-    setFormData({
-      name: client.name,
-      description: client.description || '',
-      whatsappPhone: client.whatsappPhone || '',
-      email: client.email || ''
-    });
     setShowEditForm(true);
   };
 
-  const handleUpdateClient = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateClient = async (formData: any) => {
     if (!editingClient) return;
 
     try {
@@ -115,7 +124,6 @@ export default function ClientsPage() {
       });
 
       if (response.ok) {
-        setFormData({ name: '', description: '', whatsappPhone: '', email: '' });
         setShowEditForm(false);
         setEditingClient(null);
         fetchClients();
@@ -128,9 +136,13 @@ export default function ClientsPage() {
           }));
           localStorage.setItem('selectedClientName', formData.name);
         }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error updating client');
       }
     } catch (error) {
       console.error('Error updating client:', error);
+      throw error;
     }
   };
 
@@ -155,6 +167,7 @@ export default function ClientsPage() {
           }));
           localStorage.removeItem('selectedClientId');
           localStorage.removeItem('selectedClientName');
+          localStorage.removeItem('selectedClientImageUrl');
         }
       }
     } catch (error) {
@@ -162,10 +175,6 @@ export default function ClientsPage() {
     }
   };
 
-  const resetForm = () => {
-    setFormData({ name: '', description: '', whatsappPhone: '', email: '' });
-    setEditingClient(null);
-  };
 
   if (loading) {
     return (
@@ -174,6 +183,7 @@ export default function ClientsPage() {
       </div>
     );
   }
+  
 
   return (
     <>
@@ -190,82 +200,20 @@ export default function ClientsPage() {
       </div>
 
       {(showCreateForm || showEditForm) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">
-              {showEditForm ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
-            </h2>
-            <form onSubmit={showEditForm ? handleUpdateClient : handleCreateClient}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descripción
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  rows={3}
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Teléfono WhatsApp
-                </label>
-                <input
-                  type="tel"
-                  value={formData.whatsappPhone}
-                  onChange={(e) => setFormData({ ...formData, whatsappPhone: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (showEditForm) {
-                      setShowEditForm(false);
-                      resetForm();
-                    } else {
-                      setShowCreateForm(false);
-                    }
-                  }}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  {showEditForm ? 'Actualizar' : 'Crear'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ClientFormModal
+          isOpen={showCreateForm || showEditForm}
+          isEditing={showEditForm}
+          clientData={editingClient}
+          onSave={showEditForm ? handleUpdateClient : handleCreateClient}
+          onClose={() => {
+            if (showEditForm) {
+              setShowEditForm(false);
+              setEditingClient(null);
+            } else {
+              setShowCreateForm(false);
+            }
+          }}
+        />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -333,7 +281,42 @@ export default function ClientsPage() {
               {client.email && (
                 <p>✉️ {client.email}</p>
               )}
+              {client.adminName && (
+                <p>👤 Admin: {client.adminName}</p>
+              )}
+              {client.companyName && (
+                <p>🏢 Empresa: {client.companyName}</p>
+              )}
+              {client.companyType && (
+                <p>📋 Tipo: {client.companyType}</p>
+              )}
+              {client.companyAddress && (
+                <p>📍 Dirección: {client.companyAddress}</p>
+              )}
+              {client.companyEmail && (
+                <p>💼 Email Empresa: {client.companyEmail}</p>
+              )}
+              {client.facebookLink && (
+                <p>📘 Facebook: <a href={client.facebookLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ver</a></p>
+              )}
+              {client.instagramLink && (
+                <p>📷 Instagram: <a href={client.instagramLink} target="_blank" rel="noopener noreferrer" className="text-pink-500 hover:underline">Ver</a></p>
+              )}
+              {client.useAi !== undefined && (
+                <p>🤖 IA: {client.useAi ? 'Activada' : 'Desactivada'}</p>
+              )}
             </div>
+
+            {/* Company Logo */}
+            {client.imageUrl && (
+              <div className="mb-4 flex justify-center">
+                <img
+                  src={client.imageUrl}
+                  alt={`Logo de ${client.companyName || client.name}`}
+                  className="h-12 w-12 object-contain rounded"
+                />
+              </div>
+            )}
 
             <div className="flex justify-between items-center">
               <div className="text-xs text-gray-400">

@@ -13,21 +13,10 @@ interface AppState {
   currentPage: string;
   notifications: IOrder[];
   orders: IOrder[];
-  profileData: {
-    adminName: string;
-    companyName: string;
-    companyType: string;
-    companyAddress: string;
-    companyEmail: string;
-    whatsappPhone: string;
-    facebookLink: string;
-    instagramLink: string;
-    imageUrl: string;
-    useAi: boolean;
-  };
   selectedClient: {
     id: string;
     name: string;
+    imageUrl?: string;
   } | null;
   loading: boolean;
 }
@@ -47,18 +36,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     currentPage: "/",
     notifications: [],
     orders: [],
-    profileData: {
-      adminName: "",
-      companyName: "",
-      companyType: "",
-      companyAddress: "",
-      companyEmail: "",
-      whatsappPhone: "",
-      facebookLink: "",
-      instagramLink: "",
-      imageUrl: "",
-      useAi: false,
-    },
     selectedClient: null,
     loading: true, // Nuevo estado para manejar carga inicial
   });
@@ -98,33 +75,33 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           // Get selected client from localStorage
           const clientId = typeof window !== 'undefined' ? localStorage.getItem('selectedClientId') : null;
           const clientName = typeof window !== 'undefined' ? localStorage.getItem('selectedClientName') : null;
+          const clientImageUrl = typeof window !== 'undefined' ? localStorage.getItem('selectedClientImageUrl') : null;
 
           // Update selected client in state
           if (clientId && clientName) {
             setState((prev) => ({
               ...prev,
-              selectedClient: { id: clientId, name: clientName },
+              selectedClient: {
+                id: clientId,
+                name: clientName,
+                imageUrl: clientImageUrl || undefined
+              },
             }));
           }
 
           // Only fetch client-specific data if a client is selected
           if (clientId) {
             const ordersUrl = `/api/orders?clientId=${clientId}`;
-            const profileUrl = `/api/profile?clientId=${clientId}`;
 
-            const [ordersRes, profileRes] = await Promise.all([
-              fetch(ordersUrl, { cache: "no-store" }),
-              fetch(profileUrl, { cache: "no-store" }),
-            ]);
+            const ordersRes = await fetch(ordersUrl, { cache: "no-store" });
 
-            if (!ordersRes.ok || !profileRes.ok) throw new Error("Error fetching data");
+            if (!ordersRes.ok) throw new Error("Error fetching data");
 
-            const [orders, profileData] = await Promise.all([ordersRes.json(), profileRes.json()]);
+            const orders = await ordersRes.json();
 
             setState((prev) => ({
               ...prev,
               orders,
-              profileData,
             }));
           }
         } catch (error) {

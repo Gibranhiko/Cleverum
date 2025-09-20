@@ -9,6 +9,16 @@ export interface IClient extends Document {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  // Profile fields
+  adminName?: string;
+  companyName?: string;
+  companyType?: string;
+  companyAddress?: string;
+  companyEmail?: string;
+  facebookLink?: string;
+  instagramLink?: string;
+  imageUrl?: string;
+  useAi?: boolean;
 }
 
 const ClientSchema = new Schema<IClient>(
@@ -18,6 +28,16 @@ const ClientSchema = new Schema<IClient>(
     whatsappPhone: { type: String, default: null },
     email: { type: String, default: null },
     isActive: { type: Boolean, default: true },
+    // Profile fields
+    adminName: { type: String, default: null },
+    companyName: { type: String, default: null },
+    companyType: { type: String, default: null },
+    companyAddress: { type: String, default: null },
+    companyEmail: { type: String, default: null },
+    facebookLink: { type: String, default: null },
+    instagramLink: { type: String, default: null },
+    imageUrl: { type: String, default: null },
+    useAi: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

@@ -7,6 +7,18 @@ export async function GET() {
   try {
     await connectToDatabase();
     const clients = await Client.find({ isActive: true });
+    console.log(`Fetched ${clients.length} active clients`);
+    console.log("Sample client data:", clients[0] ? {
+      id: clients[0]._id,
+      name: clients[0].name,
+      hasImage: !!clients[0].imageUrl,
+      profileFields: {
+        adminName: clients[0].adminName,
+        companyName: clients[0].companyName,
+        facebookLink: clients[0].facebookLink,
+        useAi: clients[0].useAi
+      }
+    } : "No clients found");
     return NextResponse.json(clients, { status: 200 });
   } catch (error) {
     console.error("Failed to fetch clients:", error);
@@ -23,6 +35,8 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const newClient = await request.json();
 
+    console.log("Creating client with data:", newClient);
+
     const requiredFields = ["name"];
     for (const field of requiredFields) {
       if (!newClient[field]) {
@@ -34,8 +48,9 @@ export async function POST(request: Request) {
     }
 
     const client = new Client(newClient);
-    await client.save();
-    return NextResponse.json(client, { status: 201 });
+    const savedClient = await client.save();
+    console.log("Client saved successfully:", savedClient);
+    return NextResponse.json(savedClient, { status: 201 });
   } catch (error) {
     console.error("Failed to create client:", error);
     return NextResponse.json(
@@ -50,6 +65,9 @@ export async function PUT(request: Request) {
   try {
     await connectToDatabase();
     const { id, ...updateData } = await request.json();
+
+    console.log("Updating client with ID:", id);
+    console.log("Update data:", updateData);
 
     if (!id) {
       return NextResponse.json(
@@ -71,6 +89,7 @@ export async function PUT(request: Request) {
       );
     }
 
+    console.log("Client updated successfully:", updatedClient);
     return NextResponse.json(updatedClient, { status: 200 });
   } catch (error) {
     console.error("Failed to update client:", error);

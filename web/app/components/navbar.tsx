@@ -20,14 +20,12 @@ const navMenu = [
 ];
 
 const dropDownMenu = [
-  { title: "Perfil", link: "/perfil" },
   { title: "Desconectar", link: "#" },
 ];
 
 
 export default function Navbar() {
   const { state, setState } = useAppContext();
-  const { profileData } = state;
   const currentOrders = [
     ...state.orders.filter((order) => order.status === false),
   ];
@@ -57,7 +55,6 @@ export default function Navbar() {
       '/pedidos': 'Pedidos',
       '/productos': 'Productos',
       '/chatbot': 'Chatbot',
-      '/perfil': 'Perfil',
     };
     return pathMap[path] || '';
   }, []);
@@ -124,18 +121,6 @@ export default function Navbar() {
         orders: [],
         isAuthenticated: false,
         selectedClient: null,
-        profileData: {
-          adminName: "",
-          companyName: "",
-          companyType: "",
-          companyAddress: "",
-          companyEmail: "",
-          whatsappPhone: "",
-          facebookLink: "",
-          instagramLink: "",
-          imageUrl: "",
-          useAi: false,
-        },
       });
 
       // Redirect to home page (middleware will handle authentication)
@@ -242,24 +227,23 @@ export default function Navbar() {
         <NotificationBell notifications={currentOrders} />
 
         <div className="w-10 h-10 rounded-full overflow-hidden bg-white">
-          {(!profileData.imageUrl || imageError) ? (
+          {state.selectedClient?.imageUrl && !imageError ? (
+            <img
+              src={state.selectedClient.imageUrl}
+              alt={`${state.selectedClient.name} logo`}
+              className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
             <div className="w-full h-full bg-blue-500 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
             </div>
-          ) : (
-            <img
-              src={profileData.imageUrl}
-              alt="Store Logo"
-              width={40}
-              height={40}
-              onError={() => setImageError(true)}
-            />
           )}
         </div>
         <span className="font-bold">
-          {profileData.companyName ? profileData.companyName : "Company Name"}
+          {state.selectedClient ? state.selectedClient.name : "No Client Selected"}
         </span>
         <button
           onClick={toggleDropdown}
@@ -295,20 +279,19 @@ export default function Navbar() {
         <NotificationBell notifications={currentOrders} />
 
         <div className="w-8 h-8 rounded-full overflow-hidden bg-white">
-          {(!profileData.imageUrl || imageError) ? (
+          {state.selectedClient?.imageUrl && !imageError ? (
+            <img
+              src={state.selectedClient.imageUrl}
+              alt={`${state.selectedClient.name} logo`}
+              className="w-full h-full object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
             <div className="w-full h-full bg-blue-500 rounded-full flex items-center justify-center">
               <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
             </div>
-          ) : (
-            <img
-              src={profileData.imageUrl}
-              alt="Store Logo"
-              width={32}
-              height={32}
-              onError={() => setImageError(true)}
-            />
           )}
         </div>
 
@@ -340,7 +323,7 @@ export default function Navbar() {
           <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50">
             <div className="py-1">
               <div className="px-4 py-2 text-sm text-gray-700 border-b">
-                <div className="font-medium">{profileData.companyName || "Company Name"}</div>
+                <div className="font-medium">{state.selectedClient ? state.selectedClient.name : "No Client Selected"}</div>
               </div>
               {dropDownMenu.map((item, index) => (
                 <button
