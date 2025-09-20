@@ -23,7 +23,6 @@ export default async (
   const history = getHistoryParse(state);
   const prompt = PROMPT_DISCRIMINATOR;
 
-  console.log(history);
 
   const { intent } = await ai.determineIntentFn(
     [
@@ -34,7 +33,6 @@ export default async (
     ]
   );
 
-  console.log(intent + "** IA intent");
 
   if (intent.includes("agendar_cita")) gotoFlow(appointment);
   if (intent.includes("hablar")) gotoFlow(flowTalker);

@@ -4,7 +4,6 @@ import { parseForm, s3, bucketName } from "../utils";
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params;
-    console.log(id, 'id');
 
     if (!id) {
       return NextResponse.json(
@@ -16,7 +15,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     // Construct the S3 key for the image
     const key = `products/product-${id}.png`;
 
-    console.log(key, 'key');
 
     // Check if the file exists
     const exists = await s3

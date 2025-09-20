@@ -5,7 +5,6 @@ export async function POST(req: Request) {
     success: true,
     message: "Logged out successfully",
   });
-  console.log(req.body);
 
   // Clear the token cookie
   response.cookies.delete("token");

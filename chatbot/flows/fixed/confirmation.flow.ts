@@ -53,7 +53,6 @@ export const confirmation = addKeyword(EVENTS.ACTION)
       const deliveryMethod = state.get("deliveryMethod");
 
       if (deliveryMethod === "domicilio") {
-        console.log(ctx);
         if (ctx.message && ctx.message.locationMessage) {
           const { degreesLatitude: latitude, degreesLongitude: longitude } =
             ctx.message.locationMessage;

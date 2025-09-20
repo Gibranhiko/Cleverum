@@ -36,6 +36,13 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
 
+  // Reset imageError when selectedClient changes
+  useEffect(() => {
+    if (state.selectedClient?.imageUrl) {
+      setImageError(false);
+    }
+  }, [state.selectedClient?.imageUrl]);
+
   const toggleDropdown = useCallback(() => {
     setIsDropdownOpen((prev) => !prev);
   }, []);
@@ -113,6 +120,7 @@ export default function Navbar() {
       // Clear localStorage (client-side data only)
       localStorage.removeItem('selectedClientId');
       localStorage.removeItem('selectedClientName');
+      localStorage.removeItem('selectedClientImageUrl');
 
       // Clear user state
       setState({

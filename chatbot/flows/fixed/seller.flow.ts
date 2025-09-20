@@ -44,7 +44,6 @@ const flowSeller = addKeyword(EVENTS.ACTION)
       ]
     );
 
-    console.log(order);
 
     // if (!validateOrder(order, productsData)) {
     //   const notGetOrderMsg =

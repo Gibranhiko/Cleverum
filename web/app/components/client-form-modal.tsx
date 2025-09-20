@@ -79,7 +79,6 @@ export default function ClientFormModal({
   // Reset form when clientData changes (for editing existing clients)
   useEffect(() => {
     if (clientData && isEditing) {
-      console.log('Populating form with client data:', clientData);
       reset({
         name: clientData.name || '',
         description: clientData.description || '',
@@ -96,7 +95,6 @@ export default function ClientFormModal({
         useAi: clientData.useAi || false
       });
     } else if (!isEditing) {
-      console.log('Resetting form for new client creation');
       // Reset to empty form for creating new clients
       reset({
         name: '',
@@ -147,13 +145,6 @@ export default function ClientFormModal({
         formData.append("file", selectedFile);
         formData.append("isProfileForm", "true");
 
-        console.log("Uploading file with form data:", {
-          fileName: selectedFile.name,
-          fileSize: selectedFile.size,
-          fileType: selectedFile.type,
-          isProfileForm: "true"
-        });
-
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
@@ -170,7 +161,6 @@ export default function ClientFormModal({
         }
 
         const responseData = await res.json();
-        console.log("Upload successful:", responseData);
 
         const { fileUrl } = responseData;
         data.imageUrl = fileUrl;
