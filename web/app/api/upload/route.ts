@@ -9,9 +9,10 @@ export async function POST(req: NextRequest) {
     let folder: string;
 
     if (fields.isProfileForm === "true") {
-      // Always use a fixed name for profile pictures
+      // Generate unique filename for each client's profile picture
       folder = "uploads";
-      fileName = "company-logo.png";
+      const clientId = fields.clientId || "unknown";
+      fileName = `company-logo-${clientId}.png`;
     } else if (fields.isProductForm === "true") {
       folder = "products";
       const providedProductId = fields.productId && fields.productId !== "null" ? fields.productId : null;

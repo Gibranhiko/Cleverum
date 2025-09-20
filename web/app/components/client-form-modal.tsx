@@ -145,6 +145,14 @@ export default function ClientFormModal({
         formData.append("file", selectedFile);
         formData.append("isProfileForm", "true");
 
+        // Add clientId to ensure unique filename per client
+        if (clientData?._id) {
+          formData.append("clientId", clientData._id);
+        } else if (isEditing) {
+          // Fallback for editing mode without clientData
+          formData.append("clientId", "unknown-client");
+        }
+
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
