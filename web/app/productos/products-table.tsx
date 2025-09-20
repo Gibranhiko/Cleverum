@@ -29,24 +29,30 @@ const ProductTable: React.FC<ProductTableProps> = ({
 
     row["Precio"] = formatPrice(product.options);
     row["Imagen"] = (
-      <img src={product.imageUrl} alt="Imagen del producto" className="h-20 w-auto" />
+      <div className="flex justify-center md:justify-start">
+        <img
+          src={product.imageUrl}
+          alt="Imagen del producto"
+          className="h-16 w-16 md:h-20 md:w-auto object-cover rounded"
+        />
+      </div>
     );
 
     row["Acciones"] = (
-      <div className="flex space-x-2">
+      <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-2">
         <button
           onClick={() => openModalForEdit(product)}
-          className="text-blue-500 hover:underline"
+          className="flex items-center justify-center space-x-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded text-sm"
         >
-          <PencilSquareIcon className="h-5 w-5 inline-block" />
-          Editar
+          <PencilSquareIcon className="h-4 w-4" />
+          <span>Editar</span>
         </button>
         <button
           onClick={() => openModalForDelete(product)}
-          className="text-red-500 hover:underline"
+          className="flex items-center justify-center space-x-1 text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded text-sm"
         >
-          <TrashIcon className="h-5 w-5 inline-block" />
-          Eliminar
+          <TrashIcon className="h-4 w-4" />
+          <span>Eliminar</span>
         </button>
       </div>
     );

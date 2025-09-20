@@ -36,7 +36,7 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
           row[col.title] = (
             <button
               onClick={() => onStatusClick(order._id)}
-              className="text-blue-500 hover:underline"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors w-full sm:w-auto"
             >
               Entregar
             </button>
@@ -44,11 +44,13 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
         } else if (col.field === "order" && Array.isArray(order[col.field])) {
           const formattedOrder = formatOrder(order[col.field]);
           row[col.title] = (
-            <ul>
-              {formattedOrder.map((detail, index) => (
-                <li key={index}>{detail}</li>
-              ))}
-            </ul>
+            <div className="max-w-xs md:max-w-none">
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                {formattedOrder.map((detail, index) => (
+                  <li key={index} className="break-words">{detail}</li>
+                ))}
+              </ul>
+            </div>
           );
         } else if (col.field === "location") {
           if (typeof order[col.field] === "string") {
@@ -57,13 +59,16 @@ const OrdersTable: React.FC<OrdersTableProps> = ({
                 href={order[col.field]}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-500 hover:underline"
+                className="inline-flex items-center text-blue-500 hover:text-blue-700 hover:underline text-sm"
               >
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
                 Ubicación
               </a>
             );
           } else {
-            row[col.title] = "Ubicación no disponible";
+            row[col.title] = <span className="text-gray-500 text-sm">Ubicación no disponible</span>;
           }
         } else {
           row[col.title] = order[col.field];
