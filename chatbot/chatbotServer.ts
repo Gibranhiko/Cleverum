@@ -13,14 +13,14 @@ const PHONE_NUMBER_2 = process.env.PHONE_NUMBER_2;
 // Bot configuration
 const botConfigs = [
   {
-    id: "client-a",
+    id: "68cdc85e5eb788f7dcce041f",
     name: "Bot 1",
     port: BOT_PORT_1,
     phone: PHONE_NUMBER_1,
     sessionName: "bot-session-1"
   },
   {
-    id: "client-b",
+    id: "68cdc9a35eb788f7dcce042d",
     name: "Bot 2",
     port: BOT_PORT_2,
     phone: PHONE_NUMBER_2,

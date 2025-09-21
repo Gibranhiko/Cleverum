@@ -26,7 +26,8 @@ const flowTalker = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic, extensions }) => {
     try {
       const ai = extensions.ai as AIClass;
-      const businessData = state.get("currentProfile");
+      const clientId = extensions.clientId as string;
+      const businessData = state.get(`currentClient_${clientId}`);
       const history = getHistoryParse(state);
       const promptInfo = generatePromptSeller(
         history,

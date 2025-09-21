@@ -28,9 +28,10 @@ const flowSeller = addKeyword(EVENTS.ACTION)
     await flowDynamic(assiMsgOrder);
     await handleHistory({ content: assiMsgOrder, role: "assistant" }, state);
     const ai = extensions.ai as AIClass;
+    const clientId = extensions.clientId as string;
     const history = getHistoryParse(state);
     const productsData = state
-      .get("currentProducts")
+      .get(`currentProducts_${clientId}`)
       .map((product) => product.name.toLowerCase());
 
     const promptInfo = generatePromptSeller(history, productsData);

@@ -23,17 +23,19 @@ const generateMenuOptions = (products) => {
 };
 
 const fixed = addKeyword(EVENTS.ACTION)
-  .addAction(async (_, { state, flowDynamic, endFlow, gotoFlow }) => {
-    const {useAi} = state.get("currentProfile");
+  .addAction(async (_, { state, flowDynamic, endFlow, gotoFlow, extensions }) => {
+    const clientId = extensions.clientId as string;
+    const client = state.get(`currentClient_${clientId}`);
+    const { useAi } = client;
     if (useAi) {
         gotoFlow(welcome);
     }
     try {
-      const { companyName } = state.get("currentProfile");
+      const { companyName } = client;
       const welcomeMessage = `Hola, bienvenido a ${companyName}! \n\n¿Qué te gustaría ordenar hoy?`;
       await flowDynamic(welcomeMessage);
 
-      const products = await fetchProducts();
+      const products = await fetchProducts(clientId);
       const menuOptions = generateMenuOptions(products);
 
       await state.update({ menuOptions, products });
@@ -46,7 +48,7 @@ const fixed = addKeyword(EVENTS.ACTION)
       const answer = menuOptions.map((option) => option.display).join("\n");
       await flowDynamic(`Selecciona una opción:\n\n${answer}`);
     } catch (error) {
-      console.error("Error fetching products or profile", error);
+      console.error("Error fetching products or client", error);
       await flowDynamic(
         "Hubo un problema al obtener los productos, inténtalo de nuevo más tarde."
       );
