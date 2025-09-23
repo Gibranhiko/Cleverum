@@ -17,7 +17,8 @@ export default function OrdersPage() {
   const { state, setState, loaders, setLoader } = useAppContext();
   const [columnsConfig, setColumnsConfig] = useState<ColumnConfig[]>([]);
 
-  const currentOrders = state.orders.filter((order) => order.status === false);
+  const clientId = state.selectedClient?.id;
+  const currentOrders = state.orders.filter((order) => order && order.status === false && (!clientId || order.clientId === clientId));
   const deliveryOrders = currentOrders.filter(
     (order) => order.deliveryType === "domicilio"
   );

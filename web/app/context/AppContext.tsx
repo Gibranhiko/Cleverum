@@ -68,50 +68,59 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     checkAuthStatus();
   }, []);
 
+  // Effect to set selected client from localStorage on auth
   useEffect(() => {
-    if (state.isAuthenticated) {
-      const fetchData = async () => {
+    if (state.isAuthenticated && !state.selectedClient) {
+      const clientId = typeof window !== 'undefined' ? localStorage.getItem('selectedClientId') : null;
+      const clientName = typeof window !== 'undefined' ? localStorage.getItem('selectedClientName') : null;
+      const clientImageUrl = typeof window !== 'undefined' ? localStorage.getItem('selectedClientImageUrl') : null;
+
+      if (clientId && clientName) {
+        setState((prev) => ({
+          ...prev,
+          selectedClient: {
+            id: clientId,
+            name: clientName,
+            imageUrl: clientImageUrl || undefined
+          },
+        }));
+      }
+    }
+  }, [state.isAuthenticated, state.selectedClient]);
+
+  // Effect to fetch orders when selectedClient changes
+  useEffect(() => {
+    if (state.isAuthenticated && state.selectedClient?.id) {
+      const fetchOrders = async () => {
         try {
-          // Get selected client from localStorage
-          const clientId = typeof window !== 'undefined' ? localStorage.getItem('selectedClientId') : null;
-          const clientName = typeof window !== 'undefined' ? localStorage.getItem('selectedClientName') : null;
-          const clientImageUrl = typeof window !== 'undefined' ? localStorage.getItem('selectedClientImageUrl') : null;
+          const ordersUrl = `/api/orders?clientId=${state.selectedClient.id}`;
 
-          // Update selected client in state
-          if (clientId && clientName) {
-            setState((prev) => ({
-              ...prev,
-              selectedClient: {
-                id: clientId,
-                name: clientName,
-                imageUrl: clientImageUrl || undefined
-              },
-            }));
-          }
+          const ordersRes = await fetch(ordersUrl, { cache: "no-store" });
 
-          // Only fetch client-specific data if a client is selected
-          if (clientId) {
-            const ordersUrl = `/api/orders?clientId=${clientId}`;
+          if (!ordersRes.ok) throw new Error("Error fetching orders");
 
-            const ordersRes = await fetch(ordersUrl, { cache: "no-store" });
+          const orders = await ordersRes.json();
 
-            if (!ordersRes.ok) throw new Error("Error fetching data");
-
-            const orders = await ordersRes.json();
-
-            setState((prev) => ({
-              ...prev,
-              orders,
-            }));
-          }
+          setState((prev) => ({
+            ...prev,
+            orders: orders.filter(order => order != null),
+            notifications: [], // Clear notifications for new client
+          }));
         } catch (error) {
-          console.error("Error fetching data after authentication:", error);
+          console.error("Error fetching orders:", error);
         }
       };
 
-      fetchData();
+      fetchOrders();
+    } else if (!state.selectedClient) {
+      // Clear orders if no client
+      setState((prev) => ({
+        ...prev,
+        orders: [],
+        notifications: [],
+      }));
     }
-  }, [state.isAuthenticated]);
+  }, [state.selectedClient?.id, state.isAuthenticated]);
 
   useEffect(() => {
     if (!state.isAuthenticated) return;
@@ -127,9 +136,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       socket.emit("join-client", clientId);
     }
 
-    socket.on("new-order", (data: { clientId: string; order: IOrder }) => {
+    socket.on("new-order", (data: { clientId?: string; order: IOrder }) => {
       // Only process orders for the current client
-      if (!clientId || data.clientId === clientId) {
+      if (data && (!clientId || (data.clientId && data.clientId === clientId)) && data.order) {
         setState((prevState) => ({
           ...prevState,
           notifications: [...prevState.notifications, data.order],
@@ -141,11 +150,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // Listen for client-specific order events
     if (clientId) {
       socket.on(`new-order-${clientId}`, (order: IOrder) => {
-        setState((prevState) => ({
-          ...prevState,
-          notifications: [...prevState.notifications, order],
-          orders: [...prevState.orders, order],
-        }));
+        if (order && order.clientId === clientId) {
+          setState((prevState) => ({
+            ...prevState,
+            notifications: [...prevState.notifications, order],
+            orders: [...prevState.orders, order],
+          }));
+        }
       });
     }
 

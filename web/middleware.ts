@@ -14,15 +14,6 @@ export async function middleware(req: NextRequest) {
 
   // Force log with timestamp to avoid caching
   const timestamp = new Date().toISOString();
-  console.log(`[${timestamp}] 🔒 Middleware Security Check:`, {
-    pathname,
-    hasToken: !!token,
-    tokenPreview: token ? token.substring(0, 20) + '...' : 'no token',
-    isHomePage,
-    isApiRoute,
-    isAuthApiRoute,
-    cacheBuster: Math.random() // Prevent log caching
-  });
 
   // Always allow login page and auth API routes
   if (isLoginPage || isAuthApiRoute) {

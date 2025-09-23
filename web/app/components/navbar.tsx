@@ -27,8 +27,9 @@ const dropDownMenu = [
 
 export default function Navbar() {
   const { state, setState } = useAppContext();
+  const clientId = state.selectedClient?.id;
   const currentOrders = [
-    ...state.orders.filter((order) => order.status === false),
+    ...state.orders.filter((order) => order && order.status === false && (!clientId || order.clientId === clientId)),
   ];
   const router = useRouter();
   const pathname = usePathname();

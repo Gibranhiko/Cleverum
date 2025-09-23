@@ -46,9 +46,9 @@ export async function POST(req: Request) {
       clientPayment,
     } = await req.json();
 
-    if (!name || !phone || !date) {
+    if (!clientId || !name || !phone || !date) {
       return NextResponse.json(
-        { message: "Missing required fields: name, phone, date" },
+        { message: "Missing required fields: clientId, name, phone, date" },
         { status: 400 }
       );
     }

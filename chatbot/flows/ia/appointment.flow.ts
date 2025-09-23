@@ -76,6 +76,7 @@ const appointment = addKeyword(EVENTS.ACTION).addAction(
         ]);
 
         const appointmentData = {
+          clientId,
           name: appointment.name,
           description: appointment.service,
           phone: appointment.phone,

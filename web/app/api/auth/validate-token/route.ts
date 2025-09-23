@@ -23,12 +23,6 @@ export async function POST(request: Request) {
     // Verify the JWT token using jose
     const { payload: decoded } = await jwtVerify(finalToken, secret);
 
-    console.log('Token validation successful:', {
-      userId: decoded.id,
-      username: decoded.username,
-      clientId: decoded.clientId
-    });
-
     return NextResponse.json({
       valid: true,
       user: decoded,
