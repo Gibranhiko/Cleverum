@@ -3,6 +3,7 @@ import { fetchProducts, fetchClient } from "../utils/api";
 import { aiFlow } from "./ai.flow";
 import { fixed } from "./fixed/fixed.flow";
 import { toggleFlow } from "./fixed/toggle.flow";
+import { botDisabled, adminDisabledUsers } from "../utils/globalState";
 
 const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
 const CMD = new Set(["botoff", "status", "boton"]);
@@ -13,6 +14,10 @@ const welcome = addKeyword(EVENTS.WELCOME)
 
     if (CMD.has(txt)) {
       return gotoFlow(toggleFlow);
+    }
+
+    if (adminDisabledUsers.has(ctx.from) || botDisabled) {
+      return endFlow();
     }
 
     if (state.get<boolean>("botOffForThisUser")) {
