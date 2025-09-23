@@ -4,6 +4,7 @@ import { MemoryDB as Database } from "@builderbot/bot";
 import { BaileysProvider as Provider } from "@builderbot/provider-baileys";
 import flow from "./flows";
 import AIClass from "./services/ai";
+import ReminderService from "./services/reminder.service";
 
 const BOT_PORT_1 = process.env.BOT_PORT || "4000";
 const BOT_PORT_2 = process.env.BOT_PORT_2 || "4001";
@@ -28,6 +29,10 @@ const botConfigs = [
   }
 ];
 
+// Initialize reminder service
+const reminderService = new ReminderService();
+await reminderService.init();
+
 // Function to create and start a bot
 const createBotInstance = async (config: typeof botConfigs[0]) => {
   try {
@@ -35,7 +40,7 @@ const createBotInstance = async (config: typeof botConfigs[0]) => {
 
     const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-4o");
 
-    const { httpServer } = await createBot(
+    const { httpServer, provider } = await createBot(
       {
         database: new Database(),
         provider: createProvider(Provider, {
@@ -45,6 +50,9 @@ const createBotInstance = async (config: typeof botConfigs[0]) => {
       },
       { extensions: { ai, clientId: config.id } }
     );
+
+    // Set provider for reminder service
+    reminderService.setProvider(provider);
 
     httpServer(Number(config.port));
     console.log(`✅ ${config.name} running at port ${config.port}`);

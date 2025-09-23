@@ -16,6 +16,7 @@ const navMenu = [
   { title: "Clientes", link: "/clientes" },
   { title: "Pedidos", link: "/pedidos" },
   { title: "Productos", link: "/productos" },
+  { title: "Recordatorios", link: "/reminders" },
   { title: "Chatbot", link: "/chatbot" },
 ];
 
@@ -61,6 +62,7 @@ export default function Navbar() {
       '/clientes': 'Clientes',
       '/pedidos': 'Pedidos',
       '/productos': 'Productos',
+      '/reminders': 'Recordatorios',
       '/chatbot': 'Chatbot',
     };
     return pathMap[path] || '';

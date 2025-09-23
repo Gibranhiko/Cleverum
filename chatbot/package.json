@@ -14,8 +14,11 @@
   "dependencies": {
     "@builderbot/bot": "1.2.9",
     "@builderbot/provider-baileys": "1.2.9",
+    "csv-parser": "^3.0.0",
     "date-fns": "^3.3.1",
     "dotenv": "^16.4.2",
+    "mongoose": "^8.0.0",
+    "node-cron": "^3.0.3",
     "openai": "^4.27.0",
     "socket.io-client": "^4.8.1"
   },

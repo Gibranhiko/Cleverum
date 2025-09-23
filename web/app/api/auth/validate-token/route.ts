@@ -13,13 +13,6 @@ export async function POST(request: Request) {
     const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
     const finalToken = token || headerToken;
 
-    console.log('Validate Token Debug:', {
-      hasToken: !!finalToken,
-      tokenPreview: finalToken ? finalToken.substring(0, 20) + '...' : 'no token',
-      jwtSecret: JWT_SECRET ? 'JWT_SECRET is set' : 'JWT_SECRET is NOT set',
-      source: token ? 'body' : headerToken ? 'header' : 'none'
-    });
-
     if (!finalToken) {
       return NextResponse.json(
         { valid: false, message: 'Token is required' },
