@@ -53,6 +53,8 @@ const products = addKeyword(EVENTS.ACTION).addAction(
         ]
       );
 
+      console.log("AI Response for products:", response);
+
       await handleHistory({ content: response, role: "assistant" }, state);
 
       const imageMatch = response.match(/IMAGEN_SOLICITADA:\s*(.+)/);
