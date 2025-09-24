@@ -19,6 +19,9 @@ export interface IClient extends Document {
   instagramLink?: string;
   imageUrl?: string;
   useAi?: boolean;
+  // Bot configuration
+  botPort?: number;
+  botSessionName?: string;
 }
 
 const ClientSchema = new Schema<IClient>(
@@ -38,6 +41,9 @@ const ClientSchema = new Schema<IClient>(
     instagramLink: { type: String, default: null },
     imageUrl: { type: String, default: null },
     useAi: { type: Boolean, default: false },
+    // Bot configuration
+    botPort: { type: Number, default: null },
+    botSessionName: { type: String, default: null },
   },
   { timestamps: true }
 );

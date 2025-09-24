@@ -25,7 +25,7 @@ class ReminderService {
   }
 
   public async init() {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/cleverum');
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB for reminders');
     await this.initializeCronJobs();
     // Log countdowns every 60 seconds for active reminders

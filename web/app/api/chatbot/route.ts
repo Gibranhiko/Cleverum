@@ -1,17 +1,23 @@
+import connectToDatabase from "../utils/mongoose";
+import Client from "../clients/models/Client";
+
 export async function GET(req: Request) {
    const url = new URL(req.url);
    const server = url.searchParams.get('server');
 
-   let BOT_URL;
-   if (server === '68cdc85e5eb788f7dcce041f') {
-     BOT_URL = 'http://localhost:4000';
-   } else if (server === '68cdc9a35eb788f7dcce042d') {
-     BOT_URL = 'http://localhost:4001';
-   } else {
-     BOT_URL = process.env.BOT_URL || 'http://localhost:4000';
+   if (!server) {
+     return new Response("Server parameter required", { status: 400 });
    }
 
    try {
+     await connectToDatabase();
+     const client = await Client.findById(server);
+     if (!client || !client.botPort) {
+       return new Response("Client or bot port not found", { status: 404 });
+     }
+
+     const BOT_URL = `http://localhost:${client.botPort}`;
+
      // Fetch the QR code image from the chatbot server
      const response = await fetch(`${BOT_URL}`, {
        cache: "no-store",
