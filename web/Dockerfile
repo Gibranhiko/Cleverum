@@ -1,41 +1,25 @@
 # ----------------------
-#       Build Stage
-# ----------------------
-FROM node:18-alpine AS builder
-WORKDIR /app
-
-# Copy only necessary files for install first (cache optimization)
-COPY package.json package-lock.json* ./
-
-# Install dependencies
-RUN npm install --prefer-offline --no-audit --no-fund
-
-# Copy remaining files
-COPY . .
-
-# Set Node.js memory limit for build process
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-
-# Build the Next.js app
-RUN npm run build
-
-# ----------------------
-#    Production Stage
+#    Production Stage (Pre-built)
 # ----------------------
 FROM node:18-alpine AS production
 WORKDIR /app
 
-# Copy necessary files
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+# Copy package files
+COPY package.json package-lock.json* ./
 
-# Optional: Tailwind CSS config (if needed)
-COPY --from=builder /app/postcss.config.js ./postcss.config.js
-COPY --from=builder /app/tailwind.config.js ./tailwind.config.js
+# Install only production dependencies
+RUN npm install --prefer-offline --no-audit --no-fund --only=production
 
-# Set memory limit in production too (optional)
-ENV NODE_OPTIONS="--max-old-space-size=1024"
+# Copy pre-built Next.js files (built outside Docker with build-web.sh)
+COPY .next ./.next
+COPY public ./public
+
+# Copy necessary config files
+COPY next.config.cjs ./
+COPY postcss.config.js ./postcss.config.js
+COPY tailwind.config.js ./tailwind.config.js
+
+# Set environment
 ENV NODE_ENV=production
 
 EXPOSE 3000
