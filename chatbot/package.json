@@ -38,5 +38,9 @@
     "typescript": "^5.4.3"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "overrides": {
+    "@whiskeysockets/libsignal-node": "npm:@fahriofficial/libsignal-node@2.0.1",
+    "libsignal": "npm:@fahriofficial/libsignal-node@2.0.1"
+  }
 }
