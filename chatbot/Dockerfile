@@ -25,8 +25,8 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS builder
 # Bring full source now
 COPY . .
-WORKDIR /app
-RUN pnpm --filter chatbot run build
+WORKDIR /app/chatbot
+RUN pnpm run build
 
 ############################
 # Runtime (prod deps only)
