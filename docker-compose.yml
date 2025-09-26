@@ -42,8 +42,8 @@ services:
 
   chatbot:
     build:
-      context: ./chatbot
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: chatbot/Dockerfile
     container_name: cleverum-chatbot
     env_file: [ ./chatbot/.env ]
     environment:
