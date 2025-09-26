@@ -34,8 +34,8 @@ services:
   # ──────────────────────  CHATBOT  ───────────────────────
   chatbot:
     build:
-      context: ./chatbot
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./chatbot/Dockerfile
     container_name: cleverum-chatbot
     restart: unless-stopped
     env_file:
