@@ -25,8 +25,16 @@
     "npm-run-all": "^4.1.5"
   },
   "overrides": {
+    "baileys": "6.7.18",
     "sharp": "0.32.6"
   },
+  "pnpm": {
+    "overrides": {
+      "baileys": "6.7.18",
+      "sharp": "0.32.6"
+    }
+  },
+  "engines": { "node": ">=20 <21" },
   "dependencies": {
     "concurrently": "^9.1.2"
   }
