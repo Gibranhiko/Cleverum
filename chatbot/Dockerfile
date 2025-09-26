@@ -41,6 +41,9 @@ EXPOSE 4000
 # For sharp prebuilt compatibility
 RUN apk add --no-cache libc6-compat
 
+# Install pnpm
+RUN npm install -g pnpm
+
 # Install ONLY production deps for chatbot
 COPY package.json pnpm-lock.yaml ./
 COPY chatbot/package.json chatbot/package.json
