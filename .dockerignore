@@ -1,8 +1,10 @@
 node_modules
-.env
+**/node_modules
+.git
+.DS_Store
+.vscode
 *.log
-*.png
-*_sessions
+coverage
+.turbo
+.next
 dist
-.rollup.cache
-tsconfig.tsbuildinfo

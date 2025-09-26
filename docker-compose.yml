@@ -62,8 +62,8 @@ services:
 
   web:
     build:
-      context: ./web
-      dockerfile: Dockerfile
+      context: .                 # ⟵ root context so lockfile & workspace config are visible
+      dockerfile: web/Dockerfile # ⟵ still keep the Dockerfile in web/
     container_name: cleverum-web
     env_file: [ ./web/.env ]
     environment:
@@ -82,8 +82,8 @@ services:
       - DO_BUCKET_NAME=${DO_BUCKET_NAME}
     depends_on: [ mongo, chatbot ]
     ports:
-      - "127.0.0.1:3000:3000"   # bind to localhost
-    mem_limit: 900m            # leave headroom for build/other services
+      - "127.0.0.1:3000:3000"
+    mem_limit: 900m
     cpus: "0.60"
     restart: unless-stopped
 
