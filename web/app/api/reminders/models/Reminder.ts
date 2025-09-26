@@ -25,6 +25,6 @@ const ReminderSchema: Schema = new Schema({
   lastSent: { type: Date }
 });
 
-const ReminderModel: Model<IReminder> = mongoose.models.WebReminder || mongoose.model<IReminder>('WebReminder', ReminderSchema);
+const ReminderModel: Model<IReminder> = mongoose.models.Reminder || mongoose.model<IReminder>('Reminder', ReminderSchema);
 
 export default ReminderModel;
