@@ -13,7 +13,7 @@ RUN apk add --no-cache libc6-compat
 RUN npm install -g pnpm
 
 # Copy only manifests (cache-friendly)
-COPY package.json package-lock.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml ./
 COPY chatbot/package.json chatbot/package.json
 
 # Install deps ONLY for the chatbot workspace (with dev deps for build)
@@ -42,7 +42,7 @@ EXPOSE 4000
 RUN apk add --no-cache libc6-compat
 
 # Install ONLY production deps for chatbot
-COPY package.json package-lock.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml ./
 COPY chatbot/package.json chatbot/package.json
 RUN pnpm install --frozen-lockfile --filter chatbot --prod
 
