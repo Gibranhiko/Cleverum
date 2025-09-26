@@ -1,11 +1,16 @@
 {
     "compilerOptions": {
-      "target": "es6",
+      "target": "es2020",
       "module": "commonjs",
       "outDir": "dist",
       "rootDir": ".",
       "strict": true,
-      "esModuleInterop": true
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "moduleResolution": "node",
+      "allowSyntheticDefaultImports": true,
+      "resolveJsonModule": true
     },
     "exclude": ["node_modules"]
   }
