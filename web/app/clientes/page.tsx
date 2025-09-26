@@ -92,15 +92,6 @@ export default function ClientsPage() {
       },
     }));
 
-    // Store selected client in localStorage for persistence
-    localStorage.setItem('selectedClientId', client._id);
-    localStorage.setItem('selectedClientName', client.name);
-    if (client.imageUrl) {
-      localStorage.setItem('selectedClientImageUrl', client.imageUrl);
-    } else {
-      localStorage.removeItem('selectedClientImageUrl');
-    }
-
     // Redirect to dashboard or main page
     router.push('/');
   };
@@ -163,15 +154,12 @@ export default function ClientsPage() {
       if (response.ok) {
         fetchClients();
 
-        // If deleting the currently selected client, clear selection
+        // Clear selected client if it was the deleted one
         if (state.selectedClient?.id === client._id) {
-          setState((prevState) => ({
-            ...prevState,
+          setState((prev) => ({
+            ...prev,
             selectedClient: null,
           }));
-          localStorage.removeItem('selectedClientId');
-          localStorage.removeItem('selectedClientName');
-          localStorage.removeItem('selectedClientImageUrl');
         }
       }
     } catch (error) {

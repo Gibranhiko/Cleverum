@@ -120,11 +120,6 @@ export default function Navbar() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
 
-      // Clear localStorage (client-side data only)
-      localStorage.removeItem('selectedClientId');
-      localStorage.removeItem('selectedClientName');
-      localStorage.removeItem('selectedClientImageUrl');
-
       // Clear user state
       setState({
         ...state,

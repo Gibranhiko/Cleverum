@@ -68,25 +68,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     checkAuthStatus();
   }, []);
 
-  // Effect to set selected client from localStorage on auth
-  useEffect(() => {
-    if (state.isAuthenticated && !state.selectedClient) {
-      const clientId = typeof window !== 'undefined' ? localStorage.getItem('selectedClientId') : null;
-      const clientName = typeof window !== 'undefined' ? localStorage.getItem('selectedClientName') : null;
-      const clientImageUrl = typeof window !== 'undefined' ? localStorage.getItem('selectedClientImageUrl') : null;
-
-      if (clientId && clientName) {
-        setState((prev) => ({
-          ...prev,
-          selectedClient: {
-            id: clientId,
-            name: clientName,
-            imageUrl: clientImageUrl || undefined
-          },
-        }));
-      }
-    }
-  }, [state.isAuthenticated, state.selectedClient]);
+  // No longer persist selected client - rely on API data only
 
   // Effect to fetch orders when selectedClient changes
   useEffect(() => {
