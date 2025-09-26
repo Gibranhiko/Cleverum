@@ -27,7 +27,7 @@ interface Client {
 }
 
 export default function ClientsPage() {
-  const { state, setState } = useAppContext();
+  const { state, setState, loaders, setLoader } = useAppContext();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -66,8 +66,7 @@ export default function ClientsPage() {
 
       if (response.ok) {
         const createdClient = await response.json();
-        setShowCreateForm(false);
-        fetchClients();
+        // Don't close modal or refetch here - let the modal handle the complete flow
         return createdClient;
       } else {
         const errorData = await response.json();
@@ -207,6 +206,10 @@ export default function ClientsPage() {
               setShowCreateForm(false);
             }
           }}
+          onSuccess={() => {
+            // Refetch clients only when all operations complete successfully
+            fetchClients();
+          }}
         />
       )}
 
@@ -302,15 +305,25 @@ export default function ClientsPage() {
             </div>
 
             {/* Company Logo */}
-            {client.imageUrl && (
-              <div className="mb-4 flex justify-center">
+            <div className="mb-4 flex justify-center">
+              {loaders[`client-image-${client._id}`] ? (
+                <div className="h-12 w-12 rounded bg-gray-200 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                </div>
+              ) : client.imageUrl ? (
                 <img
                   src={client.imageUrl}
                   alt={`Logo de ${client.companyName || client.name}`}
                   className="h-12 w-12 object-contain rounded"
                 />
-              </div>
-            )}
+              ) : (
+                <div className="h-12 w-12 rounded bg-gray-200 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </div>
 
             <div className="flex justify-between items-center">
               <div className="text-xs text-gray-400">

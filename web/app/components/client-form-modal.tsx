@@ -31,6 +31,7 @@ interface ClientFormModalProps {
   clientData: Client | null;
   onSave: (data: any) => Promise<Client>;
   onClose: () => void;
+  onSuccess?: () => void; // Called when all operations complete successfully
 }
 
 export default function ClientFormModal({
@@ -38,7 +39,8 @@ export default function ClientFormModal({
   isEditing,
   clientData,
   onSave,
-  onClose
+  onClose,
+  onSuccess
 }: ClientFormModalProps) {
   const { loaders, setLoader } = useAppContext();
 
@@ -149,13 +151,18 @@ export default function ClientFormModal({
           throw new Error('El archivo es demasiado grande (máximo 5MB)');
         }
 
+        // Set loading state for this client's image
+        const currentClientId = isEditing ? clientData?._id : savedClient._id;
+        if (currentClientId) {
+          setLoader(`client-image-${currentClientId}`, true);
+        }
+
         const formData = new FormData();
         formData.append("file", selectedFile);
         formData.append("isProfileForm", "true");
 
         // Use the correct clientId
-        const clientId = isEditing ? clientData?._id : savedClient._id;
-        formData.append("clientId", clientId);
+        formData.append("clientId", currentClientId);
 
         const res = await fetch("/api/upload", {
           method: "POST",
@@ -175,6 +182,11 @@ export default function ClientFormModal({
         const responseData = await res.json();
         const { fileUrl } = responseData;
         data.imageUrl = fileUrl;
+
+        // Clear loading state
+        if (currentClientId) {
+          setLoader(`client-image-${currentClientId}`, false);
+        }
       } else {
         // Keep existing image or set to null
         data.imageUrl = data.imageUrl ?? null;
@@ -185,7 +197,7 @@ export default function ClientFormModal({
         await onSave(data);
       } else {
         // Update the newly created client with imageUrl
-        await fetch('/api/clients', {
+        const updateResponse = await fetch('/api/clients', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -195,10 +207,20 @@ export default function ClientFormModal({
             ...data
           }),
         });
+
+        if (!updateResponse.ok) {
+          const errorData = await updateResponse.json();
+          throw new Error(errorData.message || 'Error updating client with image');
+        }
       }
 
-      // Close modal (parent component will handle refetch)
+      // Close modal
       onClose();
+
+      // Notify parent of successful completion
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error: any) {
       console.error("Error:", error.message);
     } finally {
