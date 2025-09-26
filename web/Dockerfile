@@ -9,21 +9,20 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=1536"
 
-# Copy root/workspace manifests (npm workspaces)
+# Copy workspace manifests (need root lockfile!)
 COPY package.json package-lock.json ./
 COPY web/package.json web/package.json
 
-# Install ONLY the web workspace deps into /app/node_modules
-RUN npm ci -w web --include-workspace-root=false --prefer-offline --no-audit --no-fund \
- && npm prune --omit=dev
+# Install web workspace WITH dev deps (needed for postcss/autoprefixer)
+RUN npm ci -w web --include-workspace-root=false --prefer-offline --no-audit --no-fund
 
-# Copy full source and build just web
+# Copy the rest and build web
 COPY . .
 WORKDIR /app/web
 RUN npm run build
 
 # ----------------------
-#    Runtime Stage
+#       Runtime Stage
 # ----------------------
 FROM node:20-alpine AS runner
 WORKDIR /app/web
@@ -32,15 +31,21 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=1024"
 
+# Non-root user
 RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
 
-# Use root-level node_modules (workspace install) and run Next from web/
-COPY --from=builder /app/node_modules /app/node_modules
-COPY --from=builder /app/web/package.json ./package.json
-COPY --from=builder /app/web/.next ./.next
-COPY --from=builder /app/web/public ./public
+# Install ONLY production deps for web workspace
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY web/package.json web/package.json
+RUN npm ci -w web --omit=dev --include-workspace-root=false --prefer-offline --no-audit --no-fund
 
+# Bring built assets
+COPY --from=builder /app/web/.next /app/web/.next
+COPY --from=builder /app/web/public /app/web/public
+
+WORKDIR /app/web
 USER nodeuser
 EXPOSE 3000
-# Call next binary from the parent node_modules
-CMD ["node","../node_modules/next/dist/bin/next","start","-p","3000"]
+# Start Next.js (no standalone)
+CMD ["node", "../node_modules/next/dist/bin/next", "start", "-p", "3000"]
