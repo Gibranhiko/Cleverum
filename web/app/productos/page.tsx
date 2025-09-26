@@ -20,21 +20,23 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<IProduct | null>(null);
   const [productToDelete, setProductToDelete] = useState<IProduct | null>(null);
   const [columnsConfig, setColumnsConfig] = useState<ColumnConfig[]>([]);
-  const { loaders, setLoader } = useAppContext();
+  const { state, loaders, setLoader } = useAppContext();
+
+  const fetchProducts = async (clientId?: string) => {
+    try {
+      const url = clientId ? `/api/products?clientId=${clientId}` : "/api/products";
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch products");
+      const data: IProduct[] = await res.json();
+      setProducts(data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch("/api/products", { cache: "no-store" });
-        if (!res.ok) throw new Error("Failed to fetch products");
-        const data: IProduct[] = await res.json();
-        setProducts(data);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      }
-    };
-    fetchProducts();
-  }, []);
+    fetchProducts(state.selectedClient?.id);
+  }, [state.selectedClient?.id]);
 
   useEffect(() => {
     setColumnsConfig(productFields);
@@ -49,7 +51,8 @@ export default function ProductsPage() {
       });
       if (!res.ok) throw new Error("Error adding product");
       const savedProduct = await res.json();
-      setProducts((prev) => [...prev, savedProduct]);
+      // Refresh the products list to ensure it includes the new product
+      fetchProducts(state.selectedClient?.id);
     } catch (error) {
       console.error("Error adding product:", error);
     }
@@ -71,10 +74,8 @@ export default function ProductsPage() {
       if (!res.ok) throw new Error("Error updating product");
   
       const updated = await res.json();
-      setProducts((prev) =>
-        prev.map((prod) => (prod._id === updated._id ? updated : prod))
-      );
-  
+      // Refresh the products list to ensure it reflects the update
+      fetchProducts(state.selectedClient?.id);
       setAddEditModalOpen(false);
     } catch (error) {
       console.error("Error updating product:", error);

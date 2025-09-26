@@ -53,12 +53,17 @@ export default function AddProductForm({
     validateImage,
   } = useFileUpload(editingProduct?.imageUrl || "");
 
-  const { loaders, setLoader } = useAppContext();
+  const { state, loaders, setLoader } = useAppContext();
 
   // Handle form submission
   const onSubmit = async (data: IProduct) => {
     if (!validateImage()) {
       return; // Stop submission if the image is invalid
+    }
+
+    if (!state.selectedClient?.id) {
+      alert("Debe seleccionar un cliente antes de agregar un producto.");
+      return; // Stop submission if no client is selected
     }
   
     setLoader("upload", true);
@@ -97,10 +102,11 @@ export default function AddProductForm({
         imageUrl = data.imageUrl ?? null;
       }
   
-      // Update the product data with the new imageUrl
+      // Update the product data with the new imageUrl and clientId
       const transformedData = {
         ...data,
         imageUrl,
+        clientId: editingProduct?.clientId || state.selectedClient!.id,
         options: data.options.map((option) => ({
           min: Number(option.min),
           max: option.max ? Number(option.max) : undefined,

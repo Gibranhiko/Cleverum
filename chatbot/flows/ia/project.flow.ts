@@ -42,11 +42,12 @@ const project = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic, extensions }) => {
     try {
       const ai = extensions.ai;
-      const businessData = state.get("currentProfile");
+      const clientId = extensions.clientId as string;
+      const businessData = state.get(`currentClient_${clientId}`);
       const history = getHistoryParse(state);
 
       // Obtener lista de productos de la empresa
-      const products = state.get("currentProducts");
+      const products = state.get(`currentProducts_${clientId}`);
 
       const todayIs = format(new Date(), "yyyy-MM-dd");
 

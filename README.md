@@ -79,6 +79,37 @@ npm run dev
 ```
 This will start both the Next.js admin client and the chatbot service with WebSocket integration.
 
+### Multi-Client Setup
+
+The application now supports multiple clients with complete data isolation and automatic session-based redirection:
+
+#### Session-Based Redirection
+- **Automatic Login Detection**: When you have a valid JWT session, you're automatically redirected to `/clientes` on app load/refresh
+- **Middleware Protection**: Server-side middleware checks for valid tokens and redirects authenticated users
+- **Fallback Client-Side Check**: JavaScript validation ensures redirection even if middleware fails
+- **Seamless Experience**: No more landing on the home page after login/refresh
+
+#### Multi-Client Management
+1. **Login** with your username and password (no clientId required)
+2. **Auto-redirect** to `/clientes` if authenticated
+3. **Create clients** via the "Clientes" menu
+4. **Select a client** to manage their data
+5. **Switch between clients** using the dropdown in the navbar
+6. Each client has:
+   - Isolated orders, products, and profiles
+   - Independent chatbot sessions
+   - Separate WebSocket notifications
+   - Unique data storage
+
+#### Authentication Flow
+```
+User visits / → Middleware checks JWT → Redirect to /clientes if valid
+                     ↓
+User logs in → Store JWT in cookies + localStorage → Redirect to /clientes
+                     ↓
+User refreshes → Client-side check → Stay on /clientes or redirect
+```
+
 ---
 
 **Production**

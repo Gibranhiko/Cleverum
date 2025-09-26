@@ -2,11 +2,20 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "../utils/mongoose";
 import Profile from "./models/Profile";
 
-// GET: Fetch profile data
-export async function GET(_: Request) {
+// GET: Fetch profile data for a specific client
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const clientId = searchParams.get('clientId');
+
     await connectToDatabase();
-    const profile = await Profile.findOne();
+
+    // If no clientId provided, return empty object (user hasn't selected a client yet)
+    if (!clientId) {
+      return NextResponse.json({}, { status: 200 });
+    }
+
+    const profile = await Profile.findOne({ clientId });
 
     return NextResponse.json(profile || {}, { status: 200 });
   } catch (error) {
@@ -18,11 +27,16 @@ export async function GET(_: Request) {
   }
 }
 
-// PUT: Update profile data
+// PUT: Update profile data for a specific client
 export async function PUT(request: Request) {
   try {
     await connectToDatabase();
     const updatedProfileData = await request.json();
+
+    const { clientId } = updatedProfileData;
+
+    // clientId is now optional - will be set when user selects a client
+    // If not provided, we'll allow creation but it won't be associated with any client yet
 
     const requiredFields = [
       "adminName",
@@ -58,7 +72,7 @@ export async function PUT(request: Request) {
 
     // Perform the database update
     let profile = await Profile.findOneAndUpdate(
-      {}, // Match the first (and only) document
+      { clientId }, // Match by clientId
       updatedProfileData,
       { new: true, upsert: true } // Create the profile if it doesn't exist
     );
@@ -73,11 +87,23 @@ export async function PUT(request: Request) {
   }
 }
 
-// DELETE: Delete profile data (optional)
-export async function DELETE(_: Request) {
+// DELETE: Delete profile data for a specific client (optional)
+export async function DELETE(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const clientId = searchParams.get('clientId');
+
     await connectToDatabase();
-    const deletedProfile = await Profile.findOneAndDelete();
+
+    // If no clientId provided, return error
+    if (!clientId) {
+      return NextResponse.json(
+        { message: "clientId is required for deletion" },
+        { status: 400 }
+      );
+    }
+
+    const deletedProfile = await Profile.findOneAndDelete({ clientId });
 
     if (!deletedProfile) {
       return NextResponse.json(

@@ -3,8 +3,10 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/navbar";
 import Image from "next/image";
+import { useAppContext } from "../context/AppContext";
 
 export default function ChatBotPage() {
+  const { state } = useAppContext();
   const [qrCodeSrc, setQrCodeSrc] = useState("");
   const [loading, setLoading] = useState(false);
   const [disabled, setDisabled] = useState(false);
@@ -42,8 +44,15 @@ export default function ChatBotPage() {
   const handleButtonClick = async () => {
     fetchQRCode();
 
+    const clientId = state.selectedClient?.id;
+    if (!clientId) {
+      console.error("No client selected");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/chatbot?timestamp=${Date.now()}`, {
+      const response = await fetch(`/api/chatbot?timestamp=${Date.now()}&server=${clientId}`, {
         cache: "no-store",
       });
       if (!response.ok) {
@@ -75,7 +84,7 @@ export default function ChatBotPage() {
         <button
           onClick={handleButtonClick}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400 relative overflow-hidden"
-          disabled={loading || disabled}
+          disabled={loading || disabled || !state.selectedClient}
         >
           {loading ? "Actualizando..." : "Refrescar QR"}
           {disabled && (

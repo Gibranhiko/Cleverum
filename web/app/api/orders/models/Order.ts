@@ -18,6 +18,7 @@ interface IOrderItem {
 
 export interface IOrder extends Document {
   _id: string;
+  clientId: string;
   name: string;
   order?: IOrderItem[];
   description?: string;
@@ -55,6 +56,7 @@ const OrderItemSchema = new Schema<IOrderItem>(
 );
 
 const OrderSchema = new Schema<IOrder>({
+  clientId: { type: String, required: true },
   name: { type: String, required: true },
   description: { type: String, default: null },
   order: { type: [OrderItemSchema], default: null},

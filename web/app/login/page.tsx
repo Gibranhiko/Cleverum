@@ -30,7 +30,8 @@ export default function LoginPage() {
 
   const { loaders, setLoader, setState } = useAppContext();
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: FormData, e?: any) => {
+    e?.preventDefault();
     setLoader("login", true);
 
     try {
@@ -52,7 +53,8 @@ export default function LoginPage() {
           isAuthenticated: true,
         }));
 
-        router.push("/productos");
+        // Let middleware handle the redirection
+        router.push("/clientes");
       } else {
         setErrorMessage(result.message);
         setSuccessMessage(null);
@@ -61,7 +63,8 @@ export default function LoginPage() {
     } catch (error) {
       setErrorMessage("Error al iniciar sesión: " + error);
       setSuccessMessage(null);
-    } 
+      setLoader("login", false);
+    }
   };
 
   return (

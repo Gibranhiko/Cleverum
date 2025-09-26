@@ -13,18 +13,11 @@ interface AppState {
   currentPage: string;
   notifications: IOrder[];
   orders: IOrder[];
-  profileData: {
-    adminName: string;
-    companyName: string;
-    companyType: string;
-    companyAddress: string;
-    companyEmail: string;
-    whatsappPhone: string;
-    facebookLink: string;
-    instagramLink: string;
-    imageUrl: string;
-    useAi: boolean;
-  };
+  selectedClient: {
+    id: string;
+    name: string;
+    imageUrl?: string;
+  } | null;
   loading: boolean;
 }
 
@@ -43,18 +36,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     currentPage: "/",
     notifications: [],
     orders: [],
-    profileData: {
-      adminName: "",
-      companyName: "",
-      companyType: "",
-      companyAddress: "",
-      companyEmail: "",
-      whatsappPhone: "",
-      facebookLink: "",
-      instagramLink: "",
-      imageUrl: "",
-      useAi: false,
-    },
+    selectedClient: null,
     loading: true, // Nuevo estado para manejar carga inicial
   });
 
@@ -86,32 +68,41 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     checkAuthStatus();
   }, []);
 
+  // No longer persist selected client - rely on API data only
+
+  // Effect to fetch orders when selectedClient changes
   useEffect(() => {
-    if (state.isAuthenticated) {
-      const fetchData = async () => {
+    if (state.isAuthenticated && state.selectedClient?.id) {
+      const fetchOrders = async () => {
         try {
-          const [ordersRes, profileRes] = await Promise.all([
-            fetch("/api/orders", { cache: "no-store" }),
-            fetch("/api/profile", { cache: "no-store" }),
-          ]);
-  
-          if (!ordersRes.ok || !profileRes.ok) throw new Error("Error fetching data");
-  
-          const [orders, profileData] = await Promise.all([ordersRes.json(), profileRes.json()]);
-  
+          const ordersUrl = `/api/orders?clientId=${state.selectedClient.id}`;
+
+          const ordersRes = await fetch(ordersUrl, { cache: "no-store" });
+
+          if (!ordersRes.ok) throw new Error("Error fetching orders");
+
+          const orders = await ordersRes.json();
+
           setState((prev) => ({
             ...prev,
-            orders,
-            profileData,
+            orders: orders.filter(order => order != null),
+            notifications: [], // Clear notifications for new client
           }));
         } catch (error) {
-          console.error("Error fetching data after authentication:", error);
+          console.error("Error fetching orders:", error);
         }
       };
-  
-      fetchData();
+
+      fetchOrders();
+    } else if (!state.selectedClient) {
+      // Clear orders if no client
+      setState((prev) => ({
+        ...prev,
+        orders: [],
+        notifications: [],
+      }));
     }
-  }, [state.isAuthenticated]);
+  }, [state.selectedClient?.id, state.isAuthenticated]);
 
   useEffect(() => {
     if (!state.isAuthenticated) return;
@@ -121,18 +112,43 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       { transports: ["websocket"] }
     );
 
-    socket.on("new-order", (order: IOrder) => {
-      setState((prevState) => ({
-        ...prevState,
-        notifications: [...prevState.notifications, order],
-        orders: [...prevState.orders, order],
-      }));
+    // Join client-specific room if client is selected
+    const clientId = state.selectedClient?.id;
+    if (clientId) {
+      socket.emit("join-client", clientId);
+    }
+
+    socket.on("new-order", (data: { clientId?: string; order: IOrder }) => {
+      // Only process orders for the current client
+      if (data && (!clientId || (data.clientId && data.clientId === clientId)) && data.order) {
+        setState((prevState) => ({
+          ...prevState,
+          notifications: [...prevState.notifications, data.order],
+          orders: [...prevState.orders, data.order],
+        }));
+      }
     });
 
+    // Listen for client-specific order events
+    if (clientId) {
+      socket.on(`new-order-${clientId}`, (order: IOrder) => {
+        if (order && order.clientId === clientId) {
+          setState((prevState) => ({
+            ...prevState,
+            notifications: [...prevState.notifications, order],
+            orders: [...prevState.orders, order],
+          }));
+        }
+      });
+    }
+
     return () => {
+      if (clientId) {
+        socket.emit("leave-client", clientId);
+      }
       socket.disconnect();
     };
-  }, [state.isAuthenticated]);
+  }, [state.isAuthenticated, state.selectedClient]);
 
   return (
     <AppContext.Provider value={{ state, setState, loaders, setLoader }}>

@@ -6,6 +6,7 @@ import fs from "fs";
 import { flowTalker } from "../flows/ia/talker.flow";
 import { appointment } from "../flows/ia/appointment.flow";
 import { products } from "../flows/ia/products.flow";
+import { botDisabled, adminDisabledUsers } from "../utils/globalState";
 
 const discriminatorDataPath = path.join(
   "prompts",
@@ -19,11 +20,13 @@ export default async (
   _: BotContext,
   { state, gotoFlow, extensions }: BotMethods
 ) => {
-  const ai = extensions.ai as AIClass;
+  try {
+    if (botDisabled || adminDisabledUsers.has(_.from)) return;
+
+    const ai = extensions.ai as AIClass;
   const history = getHistoryParse(state);
   const prompt = PROMPT_DISCRIMINATOR;
 
-  console.log(history);
 
   const { intent } = await ai.determineIntentFn(
     [
@@ -34,9 +37,12 @@ export default async (
     ]
   );
 
-  console.log(intent + "** IA intent");
 
-  if (intent.includes("agendar_cita")) gotoFlow(appointment);
-  if (intent.includes("hablar")) gotoFlow(flowTalker);
-  if (intent.includes("consultar_servicios")) gotoFlow(products);  
+    if (intent.includes("agendar_cita")) gotoFlow(appointment);
+    if (intent.includes("hablar")) gotoFlow(flowTalker);
+    if (intent.includes("consultar_servicios")) gotoFlow(products);
+  } catch (error) {
+    console.error("Error in main layer:", error);
+    // Optionally, you could send a message, but since it's the main layer, perhaps not
+  }
 };

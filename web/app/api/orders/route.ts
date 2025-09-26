@@ -2,11 +2,20 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "../utils/mongoose";
 import Order, { IOrder } from "./models/Order";
 
-// Fetch all orders
-export async function GET() {
+// Fetch all orders for a specific client
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const clientId = searchParams.get('clientId');
+
     await connectToDatabase();
-    const orders: IOrder[] = await Order.find({});
+
+    // If no clientId provided, return empty array (user hasn't selected a client yet)
+    if (!clientId) {
+      return NextResponse.json([], { status: 200 });
+    }
+
+    const orders: IOrder[] = await Order.find({ clientId });
     return NextResponse.json(orders, { status: 200 });
   } catch (error) {
     console.error("Failed to fetch orders:", error);
@@ -21,6 +30,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const {
+      clientId,
       name,
       order,
       description,
@@ -36,9 +46,9 @@ export async function POST(req: Request) {
       clientPayment,
     } = await req.json();
 
-    if (!name || !phone || !date) {
+    if (!clientId || !name || !phone || !date) {
       return NextResponse.json(
-        { message: "Missing required fields" },
+        { message: "Missing required fields: clientId, name, phone, date" },
         { status: 400 }
       );
     }
@@ -53,6 +63,7 @@ export async function POST(req: Request) {
     await connectToDatabase();
 
     const newOrder: IOrder = new Order({
+      clientId,
       name,
       order,
       description,
@@ -71,7 +82,8 @@ export async function POST(req: Request) {
     await newOrder.save();
 
     if (global.io) {
-      global.io.emit("new-order", newOrder);
+      global.io.emit("new-order", { clientId, order: newOrder });
+      global.io.emit(`new-order-${clientId}`, newOrder);
     }
 
     return NextResponse.json(newOrder, { status: 201 });

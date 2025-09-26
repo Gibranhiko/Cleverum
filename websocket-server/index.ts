@@ -19,9 +19,25 @@ const io = new Server(httpWebSocketServer, {
 io.on("connection", (socket) => {
   console.log("New WebSocket connection:", socket.id);
 
-  socket.on("new-order", (order) => {
-    console.log("New order received:", order);
+  socket.on("new-order", (data) => {
+    const { clientId, order } = data;
+    console.log(`New order received for client ${clientId}:`, order);
+
+    // Emit to all clients with the same clientId
+    io.emit(`new-order-${clientId}`, order);
+
+    // Also emit to general channel for backward compatibility
     io.emit("new-order", order);
+  });
+
+  socket.on("join-client", (clientId) => {
+    console.log(`Socket ${socket.id} joined client room: ${clientId}`);
+    socket.join(`client-${clientId}`);
+  });
+
+  socket.on("leave-client", (clientId) => {
+    console.log(`Socket ${socket.id} left client room: ${clientId}`);
+    socket.leave(`client-${clientId}`);
   });
 
   socket.on("disconnect", () => {

@@ -25,8 +25,9 @@ const products = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic, extensions }) => {
     try {
       const ai = extensions.ai as AIClass;
-      const businessData = state.get("currentProfile");
-      const currentProducts = state.get("currentProducts");
+      const clientId = extensions.clientId as string;
+      const businessData = state.get(`currentClient_${clientId}`);
+      const currentProducts = state.get(`currentProducts_${clientId}`);
       const formattedProducts = currentProducts.map(
         (p) =>
           `${p.name}: ${p.description}, incluye: ${
@@ -51,6 +52,8 @@ const products = addKeyword(EVENTS.ACTION).addAction(
           },
         ]
       );
+
+      console.log("AI Response for products:", response);
 
       await handleHistory({ content: response, role: "assistant" }, state);
 

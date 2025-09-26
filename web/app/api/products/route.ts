@@ -2,10 +2,19 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "../utils/mongoose";
 import Product from "./models/Product";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const clientId = searchParams.get('clientId');
+
     await connectToDatabase();
-    const products = await Product.find({});
+
+    // If no clientId provided, return empty array (user hasn't selected a client yet)
+    if (!clientId) {
+      return NextResponse.json([], { status: 200 });
+    }
+
+    const products = await Product.find({ clientId });
     return NextResponse.json(products, { status: 200 });
   } catch (error) {
     console.error("Failed to fetch products:", error);
@@ -24,6 +33,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: `Field '${field}' is required` }, { status: 400 });
       }
     }
+
+    // clientId is now optional - will be set when user selects a client
+    // If not provided, we'll allow creation but it won't be associated with any client yet
 
     if (
       !Array.isArray(newProduct.options) ||

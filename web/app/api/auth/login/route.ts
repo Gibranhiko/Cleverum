@@ -1,10 +1,11 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import { SignJWT } from "jose";
 import { NextResponse } from "next/server";
 import connectToDatabase from "../../utils/mongoose";
 import User from "../models/User";
 
 const JWT_SECRET = process.env.JWT_SECRET_KEY;
+const secret = new TextEncoder().encode(JWT_SECRET);
 
 export async function POST(req: Request) {
   const { username, password } = await req.json();
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
   await connectToDatabase();
 
   try {
-    // Find the user by username
+    // Find the user by username only (not client-specific for login)
     const user = await User.findOne({ username });
     if (!user) {
       return NextResponse.json({
@@ -31,15 +32,14 @@ export async function POST(req: Request) {
       });
     }
 
-    // Generate JWT (token)
-    const token = jwt.sign(
-      {
-        id: user._id,
-        username: user.username,
-      },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    // Generate JWT (token) using jose - clientId will be set when user selects a client
+    const token = await new SignJWT({
+      id: user._id.toString(),
+      username: user.username,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('1h')
+      .sign(secret);
 
     // Create a NextResponse object
     const response = NextResponse.json({
@@ -47,12 +47,23 @@ export async function POST(req: Request) {
       message: "Inicio de sesión exitoso",
     });
 
-    // Set the cookie with the token
+    // Set the cookie with the token (httpOnly for security)
     response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: false, // Change on prod
-      maxAge: 60 * 60,
+      httpOnly: true, // Prevent XSS attacks
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60, // 1 hour
       path: '/',
+      sameSite: 'lax', // Allow cross-site requests for development
+    });
+
+    console.log('🍪 Login successful - cookie set:', {
+      tokenLength: token.length,
+      cookieName: 'token',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 3600,
+      path: '/',
+      sameSite: 'lax'
     });
 
     return response;

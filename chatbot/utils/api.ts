@@ -26,9 +26,9 @@ export const sendOrder = async (orderData) => {
   }
 };
 
-export const fetchProducts = async () => {
+export const fetchProducts = async (clientId: string) => {
   try {
-    const response = await fetch(`${PUBLIC_URL}/api/products`, {
+    const response = await fetch(`${PUBLIC_URL}/api/products?clientId=${clientId}`, {
       method: "GET",
       headers,
     });
@@ -46,19 +46,20 @@ export const fetchProducts = async () => {
   }
 };
 
-export const fetchProfile = async () => {
+export const fetchClient = async (clientId: string) => {
   try {
-    const response = await fetch(`${PUBLIC_URL}/api/profile`, {
+    const response = await fetch(`${PUBLIC_URL}/api/clients/${clientId}`, {
       method: "GET",
       headers,
     });
+    console.log("Fetch client response:", response);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("Error fetching profile from API:", error);
+    console.error("Error fetching client from API:", error);
     throw error;
   }
 };

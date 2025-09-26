@@ -8,6 +8,7 @@ export interface IOptions {
 
 export interface IProduct {
   _id: string;
+  clientId: string;
   name: string;
   category: string;
   description: string;
@@ -15,7 +16,7 @@ export interface IProduct {
   options: { min: number; max?: number; price: number }[];
   includes: string;
   imageUrl?: string;
-} 
+}
 
 const OptionSchema = new Schema<IOptions>({
   min: { type: Number, required: true },
@@ -24,6 +25,7 @@ const OptionSchema = new Schema<IOptions>({
 });
 
 const ProductSchema = new Schema<IProduct>({
+  clientId: { type: String, required: true },
   category: { type: String, required: true },
   name: { type: String, required: true },
   description: { type: String, required: true },
