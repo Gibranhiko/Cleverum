@@ -8,7 +8,7 @@
     "start": "node ./dist/app.js",
     "lint": "eslint . --config eslint.config.js",
     "dev": "npm run lint && nodemon chatbotServer.ts",
-    "build": "npx rollup -c"
+    "build": "rollup -c"
   },
   "keywords": [],
   "dependencies": {
