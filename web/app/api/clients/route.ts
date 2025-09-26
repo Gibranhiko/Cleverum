@@ -179,20 +179,42 @@ export async function DELETE(request: Request) {
       try {
         const chatbotUrl = process.env.BOT_URL || 'http://localhost:4000';
 
-        // Stop the bot (includes cleanup of session files and QR code)
+        // Stop the bot first
         if (client.botPort) {
-          await fetch(`${chatbotUrl}/stop-bot`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-chatbot-secret': process.env.CHATBOT_SECRET_KEY || ''
-            },
-            body: JSON.stringify({ id })
-          });
+          try {
+            await fetch(`${chatbotUrl}/stop-bot`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-chatbot-secret': process.env.CHATBOT_SECRET_KEY || ''
+              },
+              body: JSON.stringify({ id })
+            });
+          } catch (error) {
+            console.error('Failed to stop bot via API:', error);
+            // Continue with manual cleanup even if API call fails
+          }
+        }
+
+        // Always perform cleanup of session files as backup
+        // This ensures files are cleaned up even if the bot stop API fails
+        if (client.botSessionName) {
+          try {
+            await fetch(`${chatbotUrl}/cleanup-session`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-chatbot-secret': process.env.CHATBOT_SECRET_KEY || ''
+              },
+              body: JSON.stringify({ sessionName: client.botSessionName })
+            });
+          } catch (error) {
+            console.error('Failed to cleanup session via API:', error);
+          }
         }
       } catch (error) {
-        console.error('Failed to stop bot:', error);
-        // Continue with deletion even if stop fails
+        console.error('Failed to cleanup resources:', error);
+        // Continue with deletion even if cleanup fails
       }
     });
 

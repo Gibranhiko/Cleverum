@@ -1,7 +1,6 @@
 import express from "express";
-import fs from "fs";
-import path from "path";
 import { createBotInstance, runningBots } from "../chatbotServer";
+import { cleanupBotSession } from "../services/botService";
 
 const router = express.Router();
 
@@ -50,17 +49,8 @@ router.post('/stop-bot', async (req, res) => {
     }
     runningBots.delete(id);
 
-    // Clean up session folder
-    const sessionFolder = path.join(process.cwd(), `${bot.config.sessionName}_sessions`);
-    if (fs.existsSync(sessionFolder)) {
-      fs.rmSync(sessionFolder, { recursive: true, force: true });
-    }
-
-    // Clean up QR file
-    const qrFile = path.join(process.cwd(), `${bot.config.sessionName}.qr.png`);
-    if (fs.existsSync(qrFile)) {
-      fs.unlinkSync(qrFile);
-    }
+    // Clean up session files
+    cleanupBotSession(bot.config.sessionName);
 
     res.json({ message: `Bot stopped and cleaned up for ${bot.config.name}` });
   } catch (error) {
@@ -79,6 +69,22 @@ router.get('/status', (req, res) => {
     sessionName: bot.config.sessionName
   }));
   res.json({ bots, total: bots.length });
+});
+
+// API endpoint to cleanup session files
+router.post('/cleanup-session', async (req, res) => {
+  try {
+    const { sessionName } = req.body;
+    if (!sessionName) {
+      return res.status(400).json({ error: 'Session name required' });
+    }
+
+    cleanupBotSession(sessionName);
+    res.json({ message: `Session cleaned up for ${sessionName}` });
+  } catch (error) {
+    console.error('Failed to cleanup session:', error);
+    res.status(500).json({ error: 'Failed to cleanup session' });
+  }
 });
 
 // API endpoint to check if a port is available

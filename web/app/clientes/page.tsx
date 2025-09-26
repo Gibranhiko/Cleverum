@@ -54,7 +54,7 @@ export default function ClientsPage() {
     }
   };
 
-  const handleCreateClient = async (formData: any) => {
+  const handleCreateClient = async (formData: any): Promise<Client> => {
     try {
       const response = await fetch('/api/clients', {
         method: 'POST',
@@ -65,8 +65,10 @@ export default function ClientsPage() {
       });
 
       if (response.ok) {
+        const createdClient = await response.json();
         setShowCreateForm(false);
         fetchClients();
+        return createdClient;
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error creating client');
@@ -108,8 +110,8 @@ export default function ClientsPage() {
     setShowEditForm(true);
   };
 
-  const handleUpdateClient = async (formData: any) => {
-    if (!editingClient) return;
+  const handleUpdateClient = async (formData: any): Promise<Client> => {
+    if (!editingClient) throw new Error('No client being edited');
 
     try {
       const response = await fetch('/api/clients', {
@@ -124,6 +126,7 @@ export default function ClientsPage() {
       });
 
       if (response.ok) {
+        const updatedClient = await response.json();
         setShowEditForm(false);
         setEditingClient(null);
         fetchClients();
@@ -136,6 +139,7 @@ export default function ClientsPage() {
           }));
           localStorage.setItem('selectedClientName', formData.name);
         }
+        return updatedClient;
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error updating client');

@@ -29,7 +29,7 @@ interface ClientFormModalProps {
   isOpen: boolean;
   isEditing: boolean;
   clientData: Client | null;
-  onSave: (data: any) => void;
+  onSave: (data: any) => Promise<Client>;
   onClose: () => void;
 }
 
@@ -130,6 +130,14 @@ export default function ClientFormModal({
     setLoader("upload", true);
 
     try {
+      // For new clients, create client first without image to get clientId
+      let savedClient: Client;
+      if (!isEditing) {
+        const clientDataWithoutImage = { ...data };
+        delete clientDataWithoutImage.imageUrl; // Remove imageUrl for initial creation
+        savedClient = await onSave(clientDataWithoutImage);
+      }
+
       // Handle image upload if a new file is selected
       if (selectedFile) {
         // Validate file before upload
@@ -145,13 +153,9 @@ export default function ClientFormModal({
         formData.append("file", selectedFile);
         formData.append("isProfileForm", "true");
 
-        // Add clientId to ensure unique filename per client
-        if (clientData?._id) {
-          formData.append("clientId", clientData._id);
-        } else if (isEditing) {
-          // Fallback for editing mode without clientData
-          formData.append("clientId", "unknown-client");
-        }
+        // Use the correct clientId
+        const clientId = isEditing ? clientData?._id : savedClient._id;
+        formData.append("clientId", clientId);
 
         const res = await fetch("/api/upload", {
           method: "POST",
@@ -169,7 +173,6 @@ export default function ClientFormModal({
         }
 
         const responseData = await res.json();
-
         const { fileUrl } = responseData;
         data.imageUrl = fileUrl;
       } else {
@@ -177,8 +180,25 @@ export default function ClientFormModal({
         data.imageUrl = data.imageUrl ?? null;
       }
 
-      // Call the parent save function
-      await onSave(data);
+      // For editing or updating new client with imageUrl
+      if (isEditing) {
+        await onSave(data);
+      } else {
+        // Update the newly created client with imageUrl
+        await fetch('/api/clients', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: savedClient._id,
+            ...data
+          }),
+        });
+      }
+
+      // Close modal (parent component will handle refetch)
+      onClose();
     } catch (error: any) {
       console.error("Error:", error.message);
     } finally {
