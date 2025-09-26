@@ -42,7 +42,6 @@ RUN npm ci -w web --omit=dev --include-workspace-root=false --prefer-offline --n
 
 # Bring built assets
 COPY --from=builder /app/web/.next /app/web/.next
-COPY --from=builder /app/web/public /app/web/public
 
 WORKDIR /app/web
 USER nodeuser
