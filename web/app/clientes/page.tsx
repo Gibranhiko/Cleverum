@@ -147,7 +147,7 @@ export default function ClientsPage() {
   };
 
   const handleDeleteClient = async (client: Client) => {
-    if (!confirm(`¿Estás seguro de que quieres desactivar el cliente "${client.name}"? Esto ocultará todos sus datos pero no los eliminará permanentemente.`)) {
+    if (!confirm(`¿Estás seguro de que quieres borrar el cliente "${client.name}"?`)) {
       return;
     }
 
@@ -191,12 +191,14 @@ export default function ClientsPage() {
       <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Gestión de Clientes</h1>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-        >
-          Nuevo Cliente
-        </button>
+        {clients.length > 0 && (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Nuevo Cliente
+          </button>
+        )}
       </div>
 
       {(showCreateForm || showEditForm) && (
