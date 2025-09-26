@@ -159,7 +159,7 @@ export default function ClientFormModal({
 
         const formData = new FormData();
         formData.append("file", selectedFile);
-        formData.append("isProfileForm", "true");
+        formData.append("isClientForm", "true");
 
         // Use the correct clientId
         formData.append("clientId", currentClientId);

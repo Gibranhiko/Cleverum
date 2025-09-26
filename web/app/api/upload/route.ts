@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     let fileName: string;
     let folder: string;
 
-    if (fields.isProfileForm === "true") {
+    if (fields.isClientForm === "true") {
       // Generate unique filename for each client's profile picture
       folder = "uploads";
       const clientId = fields.clientId || "unknown";
