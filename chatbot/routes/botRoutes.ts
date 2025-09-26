@@ -44,7 +44,9 @@ router.post('/stop-bot', async (req, res) => {
     const bot = runningBots.get(id);
     if (bot?.server) {
       // Close the HTTP server
-      bot.server.close();
+      bot.server.close(() => {
+        console.log(`Server closed for bot ${id}`);
+      });
     }
     runningBots.delete(id);
 
@@ -65,6 +67,43 @@ router.post('/stop-bot', async (req, res) => {
     console.error('Failed to stop bot:', error);
     res.status(500).json({ error: 'Failed to stop bot' });
   }
+});
+
+// API endpoint to get status of all bots
+router.get('/status', (req, res) => {
+  const bots = Array.from(runningBots.entries()).map(([id, bot]) => ({
+    id,
+    name: bot.config.name,
+    port: bot.config.port,
+    phone: bot.config.phone,
+    sessionName: bot.config.sessionName
+  }));
+  res.json({ bots, total: bots.length });
+});
+
+// API endpoint to check if a port is available
+router.post('/check-port', async (req, res) => {
+  const { port } = req.body;
+  if (!port || typeof port !== 'number') {
+    return res.status(400).json({ error: 'Port number required' });
+  }
+
+  const net = await import('net');
+  const server = net.createServer();
+
+  server.listen(port, () => {
+    server.close(() => {
+      res.json({ available: true });
+    });
+  });
+
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      res.json({ available: false });
+    } else {
+      res.status(500).json({ error: 'Port check failed' });
+    }
+  });
 });
 
 export default router;

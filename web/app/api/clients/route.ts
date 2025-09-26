@@ -37,11 +37,38 @@ export async function POST(request: Request) {
     const client = new Client(newClient);
     const savedClient = await client.save();
 
-    // Assign unique port (find max existing port + 1, default 4001 since 4000 is management server)
-    const maxPortClient = await Client.findOne({ isActive: true, botPort: { $ne: null } })
-      .sort({ botPort: -1 })
-      .select('botPort');
-    const nextPort = maxPortClient?.botPort ? maxPortClient.botPort + 1 : 4001;
+    // Assign unique port (find the next available port starting from 4001)
+    const activeClients = await Client.find({ isActive: true, botPort: { $ne: null } })
+      .select('botPort')
+      .sort({ botPort: 1 });
+    const usedPorts = activeClients.map(c => c.botPort);
+    let nextPort = 4001;
+    const chatbotUrl = process.env.BOT_URL || 'http://localhost:4000';
+
+    // Find a port that's not used by clients and not currently bound
+    while (true) {
+      if (!usedPorts.includes(nextPort)) {
+        // Check if port is actually available
+        try {
+          const checkResponse = await fetch(`${chatbotUrl}/check-port`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-chatbot-secret': process.env.CHATBOT_SECRET_KEY || ''
+            },
+            body: JSON.stringify({ port: nextPort })
+          });
+          const checkData = await checkResponse.json();
+          if (checkData.available) {
+            break; // Port is available
+          }
+        } catch (error) {
+          console.error('Port check failed:', error);
+          // If check fails, assume port is in use to be safe
+        }
+      }
+      nextPort++;
+    }
 
     // Assign session name
     const sessionName = `session-${savedClient._id}`;
@@ -147,23 +174,27 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Stop the bot if running
-    if (client.botPort) {
+    // Stop the bot and cleanup resources asynchronously
+    setImmediate(async () => {
       try {
         const chatbotUrl = process.env.BOT_URL || 'http://localhost:4000';
-        await fetch(`${chatbotUrl}/stop-bot`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-chatbot-secret': process.env.CHATBOT_SECRET_KEY || ''
-          },
-          body: JSON.stringify({ id })
-        });
+
+        // Stop the bot (includes cleanup of session files and QR code)
+        if (client.botPort) {
+          await fetch(`${chatbotUrl}/stop-bot`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-chatbot-secret': process.env.CHATBOT_SECRET_KEY || ''
+            },
+            body: JSON.stringify({ id })
+          });
+        }
       } catch (error) {
         console.error('Failed to stop bot:', error);
         // Continue with deletion even if stop fails
       }
-    }
+    });
 
     // Hard delete the client
     await Client.findByIdAndDelete(id);
