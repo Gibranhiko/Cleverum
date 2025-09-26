@@ -1,44 +1,49 @@
 # ----------------------
 #       Build Stage
 # ----------------------
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy only necessary files for install first (cache optimization)
+# System deps that sometimes help sharp/canvas; comment if not needed
+# RUN apk add --no-cache libc6-compat python3 make g++ pkgconfig
+
+# Copy manifests first for better cache
 COPY package.json package-lock.json* ./
+RUN npm ci --prefer-offline --no-audit --no-fund
 
-# Install dependencies
-RUN npm install --prefer-offline --no-audit --no-fund
-
-# Copy remaining files
+# Copy source
 COPY . .
 
-# Set Node.js memory limit for build process
-ENV NODE_OPTIONS="--max-old-space-size=1024"
+# Ensure a modest Node heap during build on small hosts
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 
-# Build the Next.js app
+# Produce standalone build (server needs only the output)
+# (in next.config.js set: output: 'standalone')
 RUN npm run build
 
 # ----------------------
 #    Production Stage
 # ----------------------
-FROM node:18-alpine AS production
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Copy necessary files
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-
-# Optional: Tailwind CSS config (if needed)
-COPY --from=builder /app/postcss.config.js ./postcss.config.js
-COPY --from=builder /app/tailwind.config.js ./tailwind.config.js
-
-# Set memory limit in production too (optional)
-ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+# Small heap in runtime is fine
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 
+# Create non-root user
+RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
+
+# Copy only the standalone output and public assets
+# After `output: 'standalone'`, Next puts a self-contained server in .next/standalone
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+USER nodeuser
 EXPOSE 3000
 
-# Start Next.js
-CMD ["npm", "start"]
+# Start the server from the standalone entrypoint
+CMD ["node", "server.js"]
