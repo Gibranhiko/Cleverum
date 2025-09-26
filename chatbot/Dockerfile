@@ -26,7 +26,7 @@ FROM deps AS builder
 # Bring full source now
 COPY . .
 WORKDIR /app/chatbot
-RUN npm run build
+RUN pnpm run build
 
 ############################
 # Runtime (prod deps only)
