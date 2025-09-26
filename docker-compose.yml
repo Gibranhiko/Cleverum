@@ -61,31 +61,31 @@ services:
     restart: unless-stopped
 
   web:
-    build:
-      context: .                 # ⟵ root context so lockfile & workspace config are visible
-      dockerfile: web/Dockerfile # ⟵ still keep the Dockerfile in web/
-    container_name: cleverum-web
-    env_file: [ ./web/.env ]
-    environment:
-      - NODE_ENV=production
-      - WEB_PORT=3000
-      - WEB_SOCKET_PORT=5000
-      - MONGODB_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PWD}@mongo:27017/cleverum-db?authSource=admin
-      - CHATBOT_INTERNAL_URL=http://chatbot:4000
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
-      - PUBLIC_URL=${PUBLIC_URL}
-      - WEB_SOCKET_URL=${WEB_SOCKET_URL}
-      - DO_ENDPOINT=${DO_ENDPOINT}
-      - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
-      - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
-      - DO_BUCKET_NAME=${DO_BUCKET_NAME}
-    depends_on: [ mongo, chatbot ]
-    ports:
-      - "127.0.0.1:3000:3000"
-    mem_limit: 900m
-    cpus: "0.60"
-    restart: unless-stopped
+  build:
+    context: .                 # ← root, not ./web
+    dockerfile: web/Dockerfile # ← Dockerfile still lives in web/
+  container_name: cleverum-web
+  env_file: [ ./web/.env ]
+  environment:
+    - NODE_ENV=production
+    - WEB_PORT=3000
+    - WEB_SOCKET_PORT=5000
+    - MONGODB_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PWD}@mongo:27017/cleverum-db?authSource=admin
+    - CHATBOT_INTERNAL_URL=http://chatbot:4000
+    - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
+    - PUBLIC_URL=${PUBLIC_URL}
+    - WEB_SOCKET_URL=${WEB_SOCKET_URL}
+    - DO_ENDPOINT=${DO_ENDPOINT}
+    - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
+    - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
+    - DO_BUCKET_NAME=${DO_BUCKET_NAME}
+  depends_on: [ mongo, chatbot ]
+  ports:
+    - "127.0.0.1:3000:3000"
+  mem_limit: 900m
+  cpus: "0.60"
+  restart: unless-stopped
 
 volumes:
   cleverum-mongo-data:
