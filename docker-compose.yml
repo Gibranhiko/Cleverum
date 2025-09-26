@@ -1,71 +1,65 @@
 version: "3.9"
 
 services:
+  # ──────────────────────  DATABASE  ──────────────────────
   mongo:
     image: mongo:6.0
     container_name: cleverum-mongodb
-    command: ["--wiredTigerCacheSizeGB", "0.25"] # ~256MB cache cap
+    volumes:
+      - cleverum-mongo-data:/data/db
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PWD}
-    volumes:
-      - cleverum-mongo-data:/data/db
     ports:
-      - "127.0.0.1:27017:27017"
-    mem_limit: 600m
-    memswap_limit: 0         # prevent using swap inside container
-    cpus: "0.50"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 20s
-      timeout: 5s
-      retries: 5
-
+      - "127.0.0.1:27017:27017"              
+  # ──────────────────────  WEBSOCKET  ─────────────────────
   websocket:
     build:
       context: ./websocket-server
       dockerfile: Dockerfile
     container_name: cleverum-websocket
-    env_file: [ ./websocket-server/.env ]
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    env_file:
+      - ./websocket-server/.env
     environment:
       - NODE_ENV=production
       - WEB_SOCKET_PORT=5000
       - PUBLIC_URL=${PUBLIC_URL}
       - WEB_SOCKET_URL=${WEB_SOCKET_URL}
-    depends_on: [ mongo ]
     ports:
-      - "127.0.0.1:5000:5000"   # bind to localhost
-    mem_limit: 300m
-    cpus: "0.30"
-    restart: unless-stopped
+      - "5000:5000"
 
+  # ──────────────────────  CHATBOT  ───────────────────────
   chatbot:
     build:
-      context: .
-      dockerfile: chatbot/Dockerfile
+      context: ./chatbot
+      dockerfile: Dockerfile
     container_name: cleverum-chatbot
-    env_file: [ ./chatbot/.env ]
+    restart: unless-stopped
+    env_file:
+      - ./chatbot/.env
     environment:
       - NODE_ENV=production
       - BOT_PORT=4000
       - OPEN_API_KEY=${OPEN_API_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PHONE_NUMBER=${PHONE_NUMBER}
-      - MONGODB_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PWD}@mongo:27017/cleverum-db?authSource=admin
-    depends_on: [ mongo ]
     ports:
-      - "127.0.0.1:4000:4000"   # bind to localhost
-    mem_limit: 350m
-    cpus: "0.35"
-    restart: unless-stopped
-
+      - "4000:4000"
+  # ──────────────────────  NEXT WEB  ──────────────────────
   web:
     build:
-      context: .                 # ← root, not ./web
-      dockerfile: web/Dockerfile # ← Dockerfile still lives in web/
+      context: ./web
+      dockerfile: Dockerfile
     container_name: cleverum-web
-    env_file: [ ./web/.env ]
+    restart: unless-stopped
+    depends_on:
+      - mongo
+      - chatbot
+    env_file:
+      - ./web/.env
     environment:
       - NODE_ENV=production
       - WEB_PORT=3000
@@ -80,12 +74,8 @@ services:
       - DO_ACCESS_KEY_ID=${DO_ACCESS_KEY_ID}
       - DO_SECRET_ACCESS_KEY=${DO_SECRET_ACCESS_KEY}
       - DO_BUCKET_NAME=${DO_BUCKET_NAME}
-    depends_on: [ mongo, chatbot ]
     ports:
-      - "127.0.0.1:3000:3000"
-    mem_limit: 900m
-    cpus: "0.60"
-    restart: unless-stopped
+      - "3000:3000"
 
 volumes:
   cleverum-mongo-data:
