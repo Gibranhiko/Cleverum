@@ -8,7 +8,6 @@ ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # copy only lockfiles + package manifests needed for workspace install (speeds layer caching)
 COPY package.json package-lock.json ./
-COPY web/package.json web/package.json
 # install web workspace WITH dev deps (needed for build tools like postcss)
 RUN npm ci -w web --include-workspace-root=false --prefer-offline --no-audit --no-fund
 
@@ -36,7 +35,6 @@ RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
 # Install only production deps for web workspace (keeps image small)
 WORKDIR /app
 COPY package.json package-lock.json ./
-COPY web/package.json web/package.json
 RUN npm ci -w web --omit=dev --include-workspace-root=false --prefer-offline --no-audit --no-fund
 
 # copy built assets from builder
