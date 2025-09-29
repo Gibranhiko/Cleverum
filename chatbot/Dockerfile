@@ -3,8 +3,15 @@ FROM node:21-alpine3.18 as builder
 
 WORKDIR /app
 
+# Enable corepack and prepare pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+ENV PNPM_HOME=/usr/local/bin
+
 # Copy all necessary files for installation
-COPY package*.json *-lock.json ./
+COPY . .
+
+# Install dependencies
+COPY package*.json *-lock.yaml ./
 
 # Install build dependencies
 RUN apk add --no-cache --virtual .gyp \
@@ -12,14 +19,8 @@ RUN apk add --no-cache --virtual .gyp \
         make \
         g++ \
     && apk add --no-cache git \
-    && npm ci \
+    && pnpm install && pnpm run build \
     && apk del .gyp
-
-# Copy source code
-COPY . .
-
-# Build the chatbot
-RUN cd chatbot && npm run build
 
 # ----------------------------
 # Deployment Stage
@@ -35,17 +36,22 @@ ENV PORT $PORT
 EXPOSE $PORT
 
 # Copy built files from the builder stage
-COPY --from=builder /app/chatbot/dist ./dist
+COPY --from=builder /app/dist ./dist
 
 # Copy json and lock files
-COPY --from=builder /app/package*.json /app/*-lock.json ./
+COPY --from=builder /app/*.json /app/*-lock.yaml ./
 
 # Copy prompts files
-COPY --from=builder /app/chatbot/prompts ./prompts
+COPY --from=builder /app/prompts ./prompts
+
+# Install pnpm in the deploy stage
+RUN corepack enable && corepack prepare pnpm@latest --activate
+ENV PNPM_HOME=/usr/local/bin
 
 # Install production dependencies
-RUN npm ci --only=production \
-    && addgroup -g 1001 -S nodejs && adduser -S -u 1001 nodejs
+RUN npm cache clean --force && pnpm install --production --ignore-scripts \
+    && addgroup -g 1001 -S nodejs && adduser -S -u 1001 nodejs \
+    && rm -rf $PNPM_HOME/.npm $PNPM_HOME/.node-gyp
 
 # Start the application
 CMD ["npm", "start"]

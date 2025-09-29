@@ -1,50 +1,44 @@
-# syntax=docker/dockerfile:1.7
-
 # ----------------------
 #       Build Stage
 # ----------------------
-FROM node:20-alpine AS builder
+FROM node:18-alpine AS builder
 WORKDIR /app
 
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=1536"
+# Copy only necessary files for install first (cache optimization)
+COPY package.json package-lock.json* ./
 
-# Copy workspace manifests (need root lockfile!)
-COPY package.json package-lock.json ./
-COPY web/package.json web/package.json
+# Install dependencies
+RUN npm install --prefer-offline --no-audit --no-fund
 
-# Install web workspace WITH dev deps (needed for postcss/autoprefixer)
-RUN npm ci -w web --include-workspace-root=false --prefer-offline --no-audit --no-fund
-
-# Copy the rest and build web
+# Copy remaining files
 COPY . .
-WORKDIR /app/web
+
+# Set Node.js memory limit for build process
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+
+# Build the Next.js app
 RUN npm run build
 
 # ----------------------
-#       Runtime Stage
+#    Production Stage
 # ----------------------
-FROM node:20-alpine AS runner
-WORKDIR /app/web
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-
-# Non-root user
-RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
-
-# Install ONLY production deps for web workspace
+FROM node:18-alpine AS production
 WORKDIR /app
-COPY package.json package-lock.json ./
-COPY web/package.json web/package.json
-RUN npm ci -w web --omit=dev --include-workspace-root=false --prefer-offline --no-audit --no-fund
 
-# Bring built assets
-COPY --from=builder /app/web/.next /app/web/.next
+# Copy necessary files
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
 
-WORKDIR /app/web
-USER nodeuser
+# Optional: Tailwind CSS config (if needed)
+COPY --from=builder /app/postcss.config.js ./postcss.config.js
+COPY --from=builder /app/tailwind.config.js ./tailwind.config.js
+
+# Set memory limit in production too (optional)
+ENV NODE_OPTIONS="--max-old-space-size=1024"
+ENV NODE_ENV=production
+
 EXPOSE 3000
-# Start Next.js (no standalone)
-CMD ["node", "../node_modules/next/dist/bin/next", "start", "-p", "3000"]
+
+# Start Next.js
+CMD ["npm", "start"]
