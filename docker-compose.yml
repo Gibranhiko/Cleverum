@@ -52,7 +52,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: web/Dockerfile
     container_name: cleverum-web
     restart: unless-stopped
     depends_on:
