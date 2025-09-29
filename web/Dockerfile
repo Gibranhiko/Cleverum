@@ -1,44 +1,51 @@
-# ----------------------
-#       Build Stage
-# ----------------------
-FROM node:18-alpine AS builder
+# syntax=docker/dockerfile:1.7
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy only necessary files for install first (cache optimization)
-COPY package.json package-lock.json* ./
+# disable telemetry and give Node more memory for the build
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
-# Install dependencies
-RUN npm install --prefer-offline --no-audit --no-fund
+# copy only lockfiles + package manifests needed for workspace install (speeds layer caching)
+COPY package.json package-lock.json ./
+COPY web/package.json web/package.json
+# install web workspace WITH dev deps (needed for build tools like postcss)
+RUN npm ci -w web --include-workspace-root=false --prefer-offline --no-audit --no-fund
 
-# Copy remaining files
+# copy sources
 COPY . .
 
-# Set Node.js memory limit for build process
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-
-# Build the Next.js app
+# build inside the web workspace
+WORKDIR /app/web
 RUN npm run build
 
 # ----------------------
-#    Production Stage
+# Runtime image
 # ----------------------
-FROM node:18-alpine AS production
-WORKDIR /app
+FROM node:20-alpine AS runner
+WORKDIR /app/web
 
-# Copy necessary files
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-
-# Optional: Tailwind CSS config (if needed)
-COPY --from=builder /app/postcss.config.js ./postcss.config.js
-COPY --from=builder /app/tailwind.config.js ./tailwind.config.js
-
-# Set memory limit in production too (optional)
-ENV NODE_OPTIONS="--max-old-space-size=1024"
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+# runtime memory limit (optional, lower than build)
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 
+# create non-root user for safety
+RUN addgroup -S nodejs && adduser -S nodeuser -G nodejs
+
+# Install only production deps for web workspace (keeps image small)
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY web/package.json web/package.json
+RUN npm ci -w web --omit=dev --include-workspace-root=false --prefer-offline --no-audit --no-fund
+
+# copy built assets from builder
+COPY --from=builder /app/web/.next /app/web/.next
+COPY --from=builder /app/web/public /app/web/public
+COPY --from=builder /app/web/next.config.js /app/web/next.config.js
+# (optionally copy other files needed at runtime like .env.production or next-i18next config)
+
+WORKDIR /app/web
+USER nodeuser
 EXPOSE 3000
-
-# Start Next.js
-CMD ["npm", "start"]
+CMD ["node", "../node_modules/next/dist/bin/next", "start", "-p", "3000"]
