@@ -46,6 +46,8 @@ services:
       - OPEN_API_KEY=${OPEN_API_KEY}
       - CHATBOT_SECRET_KEY=${CHATBOT_SECRET_KEY}
       - PHONE_NUMBER=${PHONE_NUMBER}
+      - PHONE_ADMIN=${PHONE_ADMIN}
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PWD}@mongo:27017/cleverum-db?authSource=admin
     ports:
       - "4000:4000"
   # ──────────────────────  NEXT WEB  ──────────────────────
