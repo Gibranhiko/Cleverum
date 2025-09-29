@@ -51,7 +51,7 @@ services:
   # ──────────────────────  NEXT WEB  ──────────────────────
   web:
     build:
-      context: ./web
+      context: .
       dockerfile: Dockerfile
     container_name: cleverum-web
     restart: unless-stopped
