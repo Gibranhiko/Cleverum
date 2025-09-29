@@ -7,7 +7,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # copy only lockfiles + package manifests needed for workspace install (speeds layer caching)
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json* ./
 # install web workspace WITH dev deps (needed for build tools like postcss)
 RUN npm ci -w web --include-workspace-root=false --prefer-offline --no-audit --no-fund
 
@@ -39,7 +39,6 @@ RUN npm ci -w web --omit=dev --include-workspace-root=false --prefer-offline --n
 
 # copy built assets from builder
 COPY --from=builder /app/web/.next /app/web/.next
-COPY --from=builder /app/web/public /app/web/public
 COPY --from=builder /app/web/next.config.js /app/web/next.config.js
 # (optionally copy other files needed at runtime like .env.production or next-i18next config)
 
