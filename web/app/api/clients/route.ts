@@ -44,13 +44,18 @@ export async function POST(request: Request) {
     const usedPorts = activeClients.map(c => c.botPort);
     let nextPort = 4001;
     const chatbotUrl = process.env.BOT_URL || 'http://localhost:4000';
+    console.log('DEBUG: chatbotUrl for port check:', chatbotUrl);
 
     // Find a port that's not used by clients and not currently bound
-    while (true) {
+    let portCheckRetries = 0;
+    const maxPortCheckRetries = 10; // Prevent infinite loop
+    while (portCheckRetries < maxPortCheckRetries) {
       if (!usedPorts.includes(nextPort)) {
         // Check if port is actually available
         try {
-          const checkResponse = await fetch(`${chatbotUrl}/check-port`, {
+          const checkUrl = `${chatbotUrl}/check-port`;
+          console.log('DEBUG: Fetching port check URL:', checkUrl, 'for port:', nextPort);
+          const checkResponse = await fetch(checkUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -58,16 +63,37 @@ export async function POST(request: Request) {
             },
             body: JSON.stringify({ port: nextPort })
           });
-          const checkData = await checkResponse.json();
-          if (checkData.available) {
-            break; // Port is available
+          console.log('DEBUG: Port check response status:', checkResponse.status);
+          console.log('DEBUG: Port check response content-type:', checkResponse.headers.get('content-type'));
+
+          if (!checkResponse.ok) {
+            console.error('DEBUG: Port check response not ok, text:', await checkResponse.text());
+            // Assume port in use if not ok
+          } else {
+            try {
+              const checkData = await checkResponse.json();
+              console.log('DEBUG: Port check data:', checkData);
+              if (checkData.available) {
+                break; // Port is available
+              }
+            } catch (jsonError) {
+              console.error('DEBUG: Failed to parse JSON from port check response:', jsonError);
+              const responseText = await checkResponse.text();
+              console.error('DEBUG: Port check response text:', responseText);
+              // Assume port in use if JSON parse fails
+            }
           }
         } catch (error) {
-          console.error('Port check failed:', error);
+          console.error('DEBUG: Port check fetch failed:', error);
           // If check fails, assume port is in use to be safe
         }
       }
       nextPort++;
+      portCheckRetries++;
+    }
+
+    if (portCheckRetries >= maxPortCheckRetries) {
+      throw new Error('Unable to find an available port after maximum retries');
     }
 
     // Assign session name
@@ -81,7 +107,9 @@ export async function POST(request: Request) {
     // Start bot via chatbot API
     try {
       const chatbotUrl = process.env.BOT_URL || 'http://localhost:4000';
-      const response = await fetch(`${chatbotUrl}/start-bot`, {
+      const startBotUrl = `${chatbotUrl}/start-bot`;
+      console.log('DEBUG: Starting bot with URL:', startBotUrl);
+      const response = await fetch(startBotUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,11 +124,17 @@ export async function POST(request: Request) {
         })
       });
 
+      console.log('DEBUG: Start bot response status:', response.status);
+      console.log('DEBUG: Start bot response content-type:', response.headers.get('content-type'));
+
       if (!response.ok) {
-        console.error('Failed to start bot:', await response.text());
+        const errorText = await response.text();
+        console.error('DEBUG: Failed to start bot, response text:', errorText);
+      } else {
+        console.log('DEBUG: Bot started successfully');
       }
     } catch (error) {
-      console.error('Failed to start bot:', error);
+      console.error('DEBUG: Failed to start bot fetch:', error);
       // Note: Client is still created, bot can be started manually later
     }
 
