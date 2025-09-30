@@ -16,6 +16,8 @@ const io = new Server(httpWebSocketServer, {
   },
 });
 
+console.log("WebSocket server CORS origins:", [`${PUBLIC_URL}:${WEB_PORT}`, `${PUBLIC_URL}:${BOT_PORT}`, `${PUBLIC_URL}:${WEB_SOCKET_PORT}`]);
+
 io.on("connection", (socket) => {
   console.log("New WebSocket connection:", socket.id);
 
