@@ -4,12 +4,16 @@ let socket: Socket | null = null;
 
 export const initializeSocket = () => {
   if (!socket) {
+    console.log("Connecting to WebSocket with URL:", process.env.WEB_SOCKET_URL);
+
     socket = io(`${process.env.WEB_SOCKET_URL}`, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 5000,
     });
+
+    console.log("Socket namespace:", socket);
 
     socket.on("connect", () => {
       console.log("✅ Flow socket connected to WebSocket server");
