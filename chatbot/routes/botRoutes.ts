@@ -112,4 +112,33 @@ router.post('/check-port', async (req, res) => {
   });
 });
 
+// API endpoint to proxy QR code requests to per-bot servers
+router.get('/qr', async (req, res) => {
+  const port = Number(req.query.port);
+  if (!port) {
+    return res.status(400).json({ error: 'Port query required' });
+  }
+
+  const http = await import('http');
+
+  const options = {
+    hostname: '127.0.0.1', // inside chatbot container, bots bind to 0.0.0.0/127.0.0.1
+    port,
+    path: '/qr', // path the per-bot exposes
+    method: 'GET'
+  };
+
+  const proxyReq = http.request(options, proxyRes => {
+    res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', (err) => {
+    console.error('Error proxying QR request to bot:', err);
+    res.status(502).json({ error: 'Failed to retrieve QR from bot' });
+  });
+
+  proxyReq.end();
+});
+
 export default router;

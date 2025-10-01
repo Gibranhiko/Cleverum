@@ -16,10 +16,8 @@ export async function GET(req: Request) {
        return new Response("Client or bot port not found", { status: 404 });
      }
 
-     const BOT_URL = `http://localhost:${client.botPort}`;
-
-     // Fetch the QR code image from the chatbot server
-     const response = await fetch(`${BOT_URL}`, {
+     // Fetch the QR code image via the chatbot proxy
+     const response = await fetch(`${process.env.BOT_URL}/qr?port=${client.botPort}`, {
        cache: "no-store",
      });
      if (!response.ok) {
