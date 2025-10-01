@@ -124,7 +124,7 @@ router.get('/qr', async (req, res) => {
   const options = {
     hostname: '127.0.0.1', // inside chatbot container, bots bind to 0.0.0.0/127.0.0.1
     port,
-    path: '/qr', // path the per-bot exposes
+    path: '/', // path the per-bot exposes
     method: 'GET'
   };
 
