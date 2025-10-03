@@ -8,15 +8,12 @@ import ClientFormModal from '../components/client-form-modal';
 
 interface Client {
   _id: string;
-  name: string;
-  description?: string;
   whatsappPhone?: string;
-  email?: string;
   isActive: boolean;
   createdAt: string;
   // Profile fields
   adminName?: string;
-  companyName?: string;
+  companyName: string;
   companyType?: string;
   companyAddress?: string;
   companyEmail?: string;
@@ -86,7 +83,7 @@ export default function ClientsPage() {
       ...prevState,
       selectedClient: {
         id: client._id,
-        name: client.name,
+        name: client.companyName,
         imageUrl: client.imageUrl
       },
     }));
@@ -125,9 +122,9 @@ export default function ClientsPage() {
         if (state.selectedClient?.id === editingClient._id) {
           setState((prevState) => ({
             ...prevState,
-            selectedClient: { id: editingClient._id, name: formData.name },
+            selectedClient: { id: editingClient._id, name: formData.companyName },
           }));
-          localStorage.setItem('selectedClientName', formData.name);
+          localStorage.setItem('selectedClientName', formData.companyName);
         }
         return updatedClient;
       } else {
@@ -141,7 +138,7 @@ export default function ClientsPage() {
   };
 
   const handleDeleteClient = async (client: Client) => {
-    if (!confirm(`¿Estás seguro de que quieres borrar el cliente "${client.name}"?`)) {
+    if (!confirm(`¿Estás seguro de que quieres borrar el cliente "${client.companyName}"?`)) {
       return;
     }
 
@@ -224,7 +221,7 @@ export default function ClientsPage() {
               }`}
             >
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">{client.name}</h3>
+                <h3 className="text-xl font-semibold text-gray-900">{client.companyName}</h3>
                 <div className="flex items-center space-x-2">
                   <span className={`px-2 py-1 rounded-full text-xs ${
                     client.isActive
@@ -267,16 +264,12 @@ export default function ClientsPage() {
               </div>
             </div>
 
-            {client.description && (
-              <p className="text-gray-600 mb-4">{client.description}</p>
-            )}
-
             <div className="space-y-2 text-sm text-gray-500 mb-4">
               {client.whatsappPhone && (
                 <p>📱 {client.whatsappPhone}</p>
               )}
-              {client.email && (
-                <p>✉️ {client.email}</p>
+              {client.companyEmail && (
+                <p>✉️ {client.companyEmail}</p>
               )}
               {client.adminName && (
                 <p>👤 Admin: {client.adminName}</p>
@@ -289,9 +282,6 @@ export default function ClientsPage() {
               )}
               {client.companyAddress && (
                 <p>📍 Dirección: {client.companyAddress}</p>
-              )}
-              {client.companyEmail && (
-                <p>💼 Email Empresa: {client.companyEmail}</p>
               )}
               {client.facebookLink && (
                 <p>📘 Facebook: <a href={client.facebookLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ver</a></p>
@@ -313,7 +303,7 @@ export default function ClientsPage() {
               ) : client.imageUrl ? (
                 <img
                   src={client.imageUrl}
-                  alt={`Logo de ${client.companyName || client.name}`}
+                  alt={`Logo de ${client.companyName}`}
                   className="h-12 w-12 object-contain rounded"
                 />
               ) : (

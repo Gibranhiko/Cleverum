@@ -2,16 +2,13 @@ import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface IClient extends Document {
   _id: string;
-  name: string;
-  description?: string;
   whatsappPhone?: string;
-  email?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
   // Profile fields
   adminName?: string;
-  companyName?: string;
+  companyName: string;
   companyType?: string;
   companyAddress?: string;
   companyEmail?: string;
@@ -26,14 +23,11 @@ export interface IClient extends Document {
 
 const ClientSchema = new Schema<IClient>(
   {
-    name: { type: String, required: true },
-    description: { type: String, default: null },
     whatsappPhone: { type: String, default: null },
-    email: { type: String, default: null },
     isActive: { type: Boolean, default: true },
     // Profile fields
     adminName: { type: String, default: null },
-    companyName: { type: String, default: null },
+    companyName: { type: String, required: true },
     companyType: { type: String, default: null },
     companyAddress: { type: String, default: null },
     companyEmail: { type: String, default: null },

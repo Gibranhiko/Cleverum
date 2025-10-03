@@ -1,25 +1,6 @@
-import mongoose, { Schema, Model } from "mongoose";
+import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
-
-interface IClient {
-  _id: string;
-  name: string;
-  whatsappPhone?: string;
-  isActive: boolean;
-  botPort?: number;
-  botSessionName?: string;
-}
-
-const ClientSchema = new Schema<IClient>({
-  name: { type: String, required: true },
-  whatsappPhone: { type: String, default: null },
-  isActive: { type: Boolean, default: true },
-  botPort: { type: Number, default: null },
-  botSessionName: { type: String, default: null },
-});
-
-const Client: Model<IClient> = mongoose.models.Client || mongoose.model<IClient>("Client", ClientSchema);
 
 // Utility function to clean up bot session files
 export const cleanupBotSession = (sessionName: string) => {
@@ -46,20 +27,21 @@ export const cleanupBotSession = (sessionName: string) => {
 export const loadExistingBots = async (createBotInstance: (config: { id: string; name: string; port: number; phone: string; sessionName: string }) => Promise<any>) => {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    const clients = await Client.find({ isActive: true, botPort: { $ne: null } });
+    const db = mongoose.connection.db;
+    const clients = await db.collection('clients').find({ isActive: true, botPort: { $ne: null } }).toArray();
     for (const client of clients) {
       const config = {
         id: client._id.toString(),
-        name: client.name,
-        port: client.botPort!,
+        name: client.companyName,
+        port: client.botPort,
         phone: client.whatsappPhone,
-        sessionName: client.botSessionName!
+        sessionName: client.botSessionName
       };
       try {
         await createBotInstance(config);
-        console.log(`Loaded existing bot for ${client.name}`);
+        console.log(`Loaded existing bot for ${client.companyName}`);
       } catch (error) {
-        console.error(`Failed to load bot for ${client.name}:`, error);
+        console.error(`Failed to load bot for ${client.companyName}:`, error);
       }
     }
   } catch (error) {

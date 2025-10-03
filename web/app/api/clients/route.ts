@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     const newClient = await request.json();
 
 
-    const requiredFields = ["name"];
+    const requiredFields = ["companyName"];
     for (const field of requiredFields) {
       if (!newClient[field]) {
         return NextResponse.json(
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           id: savedClient._id.toString(),
-          name: savedClient.name,
+          name: savedClient.companyName,
           port: nextPort,
           phone: savedClient.whatsappPhone,
           sessionName

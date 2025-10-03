@@ -13,8 +13,6 @@ export const initializeSocket = () => {
       reconnectionDelay: 5000,
     });
 
-    console.log("Socket namespace:", socket);
-
     socket.on("connect", () => {
       console.log("✅ Flow socket connected to WebSocket server");
     });

@@ -7,15 +7,12 @@ import { useFileUpload } from "../hooks/useFileUpload";
 
 interface Client {
   _id: string;
-  name: string;
-  description?: string;
   whatsappPhone?: string;
-  email?: string;
   isActive: boolean;
   createdAt: string;
   // Profile fields
   adminName?: string;
-  companyName?: string;
+  companyName: string;
   companyType?: string;
   companyAddress?: string;
   companyEmail?: string;
@@ -53,10 +50,7 @@ export default function ClientFormModal({
     reset
   } = useForm({
     defaultValues: {
-      name: '',
-      description: '',
       whatsappPhone: '',
-      email: '',
       adminName: '',
       companyName: '',
       companyType: '',
@@ -82,10 +76,7 @@ export default function ClientFormModal({
   useEffect(() => {
     if (clientData && isEditing) {
       reset({
-        name: clientData.name || '',
-        description: clientData.description || '',
         whatsappPhone: clientData.whatsappPhone || '',
-        email: clientData.email || '',
         adminName: clientData.adminName || '',
         companyName: clientData.companyName || '',
         companyType: clientData.companyType || '',
@@ -99,10 +90,7 @@ export default function ClientFormModal({
     } else if (!isEditing) {
       // Reset to empty form for creating new clients
       reset({
-        name: '',
-        description: '',
         whatsappPhone: '',
-        email: '',
         adminName: '',
         companyName: '',
         companyType: '',
@@ -249,25 +237,25 @@ export default function ClientFormModal({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre del Cliente *
+                    Nombre de la Empresa *
                   </label>
                   <input
-                    {...register("name", { required: "Este campo es obligatorio" })}
+                    {...register("companyName", { required: "Este campo es obligatorio" })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  {errors.name && (
+                  {errors.companyName && (
                     <span className="text-red-500 text-sm mt-1 block">
-                      {String(errors.name.message)}
+                      {String(errors.companyName.message)}
                     </span>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email del Cliente
+                    Email de la Empresa
                   </label>
                   <input
-                    {...register("email", {
+                    {...register("companyEmail", {
                       pattern: {
                         value: /^\S+@\S+$/,
                         message: "Formato de email inválido",
@@ -276,9 +264,9 @@ export default function ClientFormModal({
                     type="email"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                  {errors.email && (
+                  {errors.companyEmail && (
                     <span className="text-red-500 text-sm mt-1 block">
-                      {String(errors.email.message)}
+                      {String(errors.companyEmail.message)}
                     </span>
                   )}
                 </div>
@@ -286,12 +274,11 @@ export default function ClientFormModal({
 
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descripción
+                  Tipo de Empresa
                 </label>
-                <textarea
-                  {...register("description")}
+                <input
+                  {...register("companyType")}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={3}
                 />
               </div>
 
