@@ -6,7 +6,7 @@ import ClientLayout from "./client-layout";
 export const metadata: Metadata = {
   title: 'Cleverum',
   icons: {
-    icon: '/favicon.ico',
+    icon: 'https://cleverum.nyc3.digitaloceanspaces.com/public/favicon.ico',
   },
 };
 
