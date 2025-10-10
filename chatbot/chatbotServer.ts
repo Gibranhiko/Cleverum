@@ -12,16 +12,17 @@ const app = express();
 app.use(express.json());
 app.use('/', botRoutes);
 
-export const runningBots = new Map(); // Track running bots
+// Track running bots
+export const runningBots = new Map(); 
 
 // Initialize reminder service
 const reminderService = new ReminderService();
 await reminderService.init();
 
 // Function to create and start a bot
-export const createBotInstance = async (config: { id: string; name: string; port: number; phone: string; sessionName: string }) => {
+export const createBotInstance = async (config: { id: string; name: string; port: number; sessionName: string }) => {
   try {
-    console.log(`🚀 Starting ${config.name}... with phone ${config.phone}`);
+    console.log(`🚀 Starting ${config.name}`);
 
     const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-4o");
 
@@ -40,7 +41,7 @@ export const createBotInstance = async (config: { id: string; name: string; port
     reminderService.setProvider(provider);
 
     const server = httpServer(config.port);
-    console.log(`✅ ${config.name} running at port ${config.port}`);
+    console.log(`✅ ${config.name} client running at port ${config.port}`);
 
     runningBots.set(config.id, { server, provider, config });
     return { server, provider };
