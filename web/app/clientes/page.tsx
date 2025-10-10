@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '../context/AppContext';
 import Navbar from '../components/navbar';
 import ClientFormModal from '../components/client-form-modal';
+import SessionBackupButton from '../components/session-backup-button';
 
 interface Client {
   _id: string;
@@ -313,6 +314,24 @@ export default function ClientsPage() {
                   </svg>
                 </div>
               )}
+            </div>
+
+            {/* Session Backup Section */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Sesión WhatsApp</span>
+                <span className="text-xs text-gray-500">Respaldo automático</span>
+              </div>
+              <SessionBackupButton
+                clientId={client._id}
+                clientName={client.companyName}
+                onBackupSuccess={() => {
+                  console.log(`Backup successful for ${client.companyName}`);
+                }}
+                onBackupError={(error) => {
+                  console.error(`Backup failed for ${client.companyName}:`, error);
+                }}
+              />
             </div>
 
             <div className="flex justify-between items-center">

@@ -141,4 +141,153 @@ router.get('/qr', async (req, res) => {
   proxyReq.end();
 });
 
+// API endpoint to get session data for backup
+router.post('/get-session-data', async (req, res) => {
+  try {
+    const { sessionFolderName } = req.body;
+    if (!sessionFolderName) {
+      return res.status(400).json({ error: 'Session folder name required' });
+    }
+
+    const fs = await import('fs');
+    const path = await import('path');
+    const sessionPath = path.join(process.cwd(), sessionFolderName);
+
+    if (!fs.existsSync(sessionPath)) {
+      return res.status(404).json({ error: 'Session folder not found' });
+    }
+
+    const sessionData: any = {};
+
+    // Read all JSON files in the session folder
+    const files = fs.readdirSync(sessionPath);
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        try {
+          const filePath = path.join(sessionPath, file);
+          const fileContent = fs.readFileSync(filePath, 'utf8');
+          const fileName = file.replace('.json', '');
+          sessionData[fileName] = JSON.parse(fileContent);
+        } catch (error) {
+          console.error(`Error reading ${file}:`, error);
+          // Continue with other files even if one fails
+        }
+      }
+    }
+
+    // Also include any other important files (non-JSON)
+    const importantFiles = ['app-state-sync-version.json', 'session-info.json'];
+    for (const file of importantFiles) {
+      if (files.includes(file)) {
+        try {
+          const filePath = path.join(sessionPath, file);
+          const fileContent = fs.readFileSync(filePath, 'utf8');
+          const fileName = file.replace('.json', '');
+          sessionData[fileName] = JSON.parse(fileContent);
+        } catch (error) {
+          console.error(`Error reading ${file}:`, error);
+        }
+      }
+    }
+
+    console.log(`📦 Session data collected for ${sessionFolderName}: ${Object.keys(sessionData).length} files`);
+
+    res.json({
+      sessionFolderName,
+      sessionData,
+      fileCount: Object.keys(sessionData).length,
+      collectedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Failed to get session data:', error);
+    res.status(500).json({ error: 'Failed to get session data' });
+  }
+});
+
+// API endpoint to restore session data from backup
+router.post('/restore-session-data', async (req, res) => {
+  try {
+    const { sessionFolderName, sessionData } = req.body;
+    if (!sessionFolderName || !sessionData) {
+      return res.status(400).json({ error: 'Session folder name and session data required' });
+    }
+
+    const fs = await import('fs');
+    const path = await import('path');
+    const sessionPath = path.join(process.cwd(), sessionFolderName);
+
+    // Create session folder if it doesn't exist
+    if (!fs.existsSync(sessionPath)) {
+      fs.mkdirSync(sessionPath, { recursive: true });
+    }
+
+    // Write each file from sessionData.sessionData
+    let filesRestored = 0;
+    for (const [fileName, fileContent] of Object.entries(sessionData.sessionData)) {
+      try {
+        const filePath = path.join(sessionPath, `${fileName}.json`);
+        fs.writeFileSync(filePath, JSON.stringify(fileContent, null, 2), 'utf8');
+        filesRestored++;
+      } catch (error) {
+        console.error(`Error writing ${fileName}:`, error);
+        // Continue with other files even if one fails
+      }
+    }
+
+    console.log(`📦 Session data restored for ${sessionFolderName}: ${filesRestored} files`);
+
+    res.json({
+      success: true,
+      sessionFolderName,
+      filesRestored,
+      restoredAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Failed to restore session data:', error);
+    res.status(500).json({ error: 'Failed to restore session data' });
+  }
+});
+
+// API endpoint to list all session folders (for debugging)
+router.get('/list-sessions', async (req, res) => {
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const sessionsDir = process.cwd();
+    
+    if (!fs.existsSync(sessionsDir)) {
+      return res.json({
+        message: 'Sessions directory not found',
+        sessions: [],
+        total: 0
+      });
+    }
+    
+    const allItems = fs.readdirSync(sessionsDir, { withFileTypes: true });
+    const sessionFolders = allItems
+      .filter(dirent => dirent.isDirectory() && dirent.name.startsWith('session-'))
+      .map(dirent => ({
+        name: dirent.name,
+        path: path.join(sessionsDir, dirent.name),
+        isBackup: dirent.name.includes('_backup_')
+      }));
+    
+    console.log(`📁 Found ${sessionFolders.length} session folders:`);
+    sessionFolders.forEach(folder => {
+      console.log(`  ${folder.isBackup ? '💾' : '📱'} ${folder.name}`);
+    });
+    
+    res.json({
+      message: 'Session folders listed successfully',
+      sessions: sessionFolders,
+      total: sessionFolders.length
+    });
+  } catch (error) {
+    console.error('Failed to list session folders:', error);
+    res.status(500).json({ error: 'Failed to list session folders' });
+  }
+});
+
 export default router;

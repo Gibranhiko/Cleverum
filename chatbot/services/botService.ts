@@ -22,29 +22,3 @@ export const cleanupBotSession = (sessionName: string) => {
     console.error(`Failed to cleanup session for ${sessionName}:`, error);
   }
 };
-
-// Function to load and start existing bots
-export const loadExistingBots = async (createBotInstance: (config: { id: string; name: string; port: number; phone: string; sessionName: string }) => Promise<any>) => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    const db = mongoose.connection.db;
-    const clients = await db.collection('clients').find({ isActive: true, botPort: { $ne: null } }).toArray();
-    for (const client of clients) {
-      const config = {
-        id: client._id.toString(),
-        name: client.companyName,
-        port: client.botPort,
-        phone: client.whatsappPhone,
-        sessionName: client.botSessionName
-      };
-      try {
-        await createBotInstance(config);
-        console.log(`Loaded existing bot for ${client.companyName}`);
-      } catch (error) {
-        console.error(`Failed to load bot for ${client.companyName}:`, error);
-      }
-    }
-  } catch (error) {
-    console.error('Failed to load existing bots:', error);
-  }
-};

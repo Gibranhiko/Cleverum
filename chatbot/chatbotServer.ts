@@ -6,7 +6,6 @@ import { BaileysProvider as Provider } from "@builderbot/provider-baileys";
 import flow from "./flows";
 import AIClass from "./services/ai";
 import ReminderService from "./services/reminder.service";
-import { loadExistingBots } from "./services/botService";
 import botRoutes from "./routes/botRoutes";
 
 const app = express();
@@ -57,6 +56,4 @@ export const createBotInstance = async (config: { id: string; name: string; port
 const PORT = process.env.CHATBOT_PORT || 4000;
 app.listen(PORT, async () => {
   console.log(`🤖 Cleverum Chatbot management server running on port ${PORT}`);
-  // Load existing bots
-  await loadExistingBots(createBotInstance);
 });
