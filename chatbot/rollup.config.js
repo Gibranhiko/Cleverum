@@ -6,7 +6,7 @@ export default {
     file: 'dist/app.js',
     format: 'esm',
   },
-  external: ['googleapis', 'openai', 'mongoose', 'express'],
+  external: ['googleapis', 'openai', 'mongoose', 'express', 'google-auth-library'],
   onwarn: (warning) => {
     if (warning.code === 'UNRESOLVED_IMPORT') return
   },
