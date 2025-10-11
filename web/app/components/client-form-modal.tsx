@@ -20,6 +20,9 @@ interface Client {
   instagramLink?: string;
   imageUrl?: string;
   useAi?: boolean;
+  // Google Calendar integration
+  googleCalendarKeyFileUrl?: string;
+  googleCalendarId?: string;
 }
 
 interface ClientFormModalProps {
@@ -59,7 +62,9 @@ export default function ClientFormModal({
       facebookLink: '',
       instagramLink: '',
       imageUrl: '',
-      useAi: false
+      useAi: false,
+      googleCalendarKeyFileUrl: '',
+      googleCalendarId: ''
     }
   });
 
@@ -71,6 +76,12 @@ export default function ClientFormModal({
     setImagePreview,
     validateImage,
   } = useFileUpload('', true);
+
+  const {
+    selectedFile: selectedKeyFile,
+    uploadErrorMessage: keyFileUploadErrorMessage,
+    handleFileSelection: handleKeyFileSelection,
+  } = useFileUpload('', false);
 
   // Reset form when clientData changes (for editing existing clients)
   useEffect(() => {
@@ -85,7 +96,9 @@ export default function ClientFormModal({
         facebookLink: clientData.facebookLink || '',
         instagramLink: clientData.instagramLink || '',
         imageUrl: clientData.imageUrl || '',
-        useAi: clientData.useAi || false
+        useAi: clientData.useAi || false,
+        googleCalendarKeyFileUrl: (clientData as any).googleCalendarKeyFileUrl || '',
+        googleCalendarId: (clientData as any).googleCalendarId || ''
       });
     } else if (!isEditing) {
       // Reset to empty form for creating new clients
@@ -99,7 +112,9 @@ export default function ClientFormModal({
         facebookLink: '',
         instagramLink: '',
         imageUrl: '',
-        useAi: false
+        useAi: false,
+        googleCalendarKeyFileUrl: '',
+        googleCalendarId: ''
       });
     }
   }, [clientData, isEditing, reset]);
@@ -116,6 +131,11 @@ export default function ClientFormModal({
   const onSubmit = async (data: any) => {
     if (!validateImage()) {
       return;
+    }
+
+    // Validate key file if selected
+    if (selectedKeyFile && selectedKeyFile.type !== 'application/json') {
+      return; // Error will be shown by the upload error message
     }
     setLoader("upload", true);
 
@@ -178,6 +198,51 @@ export default function ClientFormModal({
       } else {
         // Keep existing image or set to null
         data.imageUrl = data.imageUrl ?? null;
+      }
+
+      // Handle Google Calendar key file upload if a new file is selected
+      if (selectedKeyFile) {
+        // Validate file before upload
+        if (selectedKeyFile.type !== 'application/json') {
+          throw new Error('Solo se permiten archivos JSON para la clave de Google Calendar');
+        }
+
+        if (selectedKeyFile.size > 10 * 1024) { // 10KB limit for key files
+          throw new Error('El archivo de clave es demasiado grande (máximo 10KB)');
+        }
+
+        // Get the correct clientId
+        const keyFileClientId = isEditing ? clientData?._id : savedClient._id;
+        if (!keyFileClientId) {
+          throw new Error('Client ID not available for key file upload');
+        }
+
+        const formData = new FormData();
+        formData.append("file", selectedKeyFile);
+        formData.append("isGoogleCalendarKey", "true");
+        formData.append("clientId", keyFileClientId);
+
+        const keyUploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!keyUploadRes.ok) {
+          const errorText = await keyUploadRes.text();
+          console.error("Key file upload failed:", {
+            status: keyUploadRes.status,
+            statusText: keyUploadRes.statusText,
+            error: errorText
+          });
+          throw new Error(`Key file upload failed: ${keyUploadRes.status} ${keyUploadRes.statusText}`);
+        }
+
+        const keyResponseData = await keyUploadRes.json();
+        const { fileUrl } = keyResponseData;
+        data.googleCalendarKeyFileUrl = fileUrl;
+      } else {
+        // Keep existing key file URL or set to null
+        data.googleCalendarKeyFileUrl = data.googleCalendarKeyFileUrl ?? null;
       }
 
       // For editing or updating new client with imageUrl
@@ -368,6 +433,42 @@ export default function ClientFormModal({
                   uploadErrorMessage={uploadErrorMessage}
                   handleFileSelection={handleFileSelection}
                 />
+              </div>
+            </div>
+
+            {/* Google Calendar Integration */}
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Integración con Google Calendar</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Archivo de Clave de Servicio (JSON)
+                  </label>
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleKeyFileSelection}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    Sube el archivo JSON de clave de servicio de Google Calendar API
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ID del Calendario de Google
+                  </label>
+                  <input
+                    {...register("googleCalendarId")}
+                    placeholder="ej: primary o calendar-id@group.calendar.google.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    El ID del calendario donde se crearán los eventos de citas
+                  </p>
+                </div>
               </div>
             </div>
           </form>

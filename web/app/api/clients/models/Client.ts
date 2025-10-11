@@ -19,6 +19,9 @@ export interface IClient extends Document {
   // Bot configuration
   botPort?: number;
   botSessionName?: string;
+  // Google Calendar integration
+  googleCalendarKeyFileUrl?: string;
+  googleCalendarId?: string;
 }
 
 const ClientSchema = new Schema<IClient>(
@@ -38,6 +41,9 @@ const ClientSchema = new Schema<IClient>(
     // Bot configuration
     botPort: { type: Number, default: null },
     botSessionName: { type: String, default: null },
+    // Google Calendar integration
+    googleCalendarKeyFileUrl: { type: String, default: null },
+    googleCalendarId: { type: String, default: null },
   },
   { timestamps: true }
 );

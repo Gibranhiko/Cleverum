@@ -13,6 +13,11 @@ export async function POST(req: NextRequest) {
       folder = "uploads";
       const clientId = fields.clientId || "unknown";
       fileName = `company-logo-${clientId}.png`;
+    } else if (fields.isGoogleCalendarKey === "true") {
+      // Handle Google Calendar service account key files
+      folder = "google-calendar-keys";
+      const clientId = fields.clientId || "unknown";
+      fileName = `client-${clientId}-calendar-key.json`;
     } else if (fields.isProductForm === "true") {
       folder = "products";
       const providedProductId = fields.productId && fields.productId !== "null" ? fields.productId : null;
@@ -37,6 +42,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Invalid request: Missing form type" }, { status: 400 });
     }
 
+    // Determine content type based on file type
+    let contentType = "image/png";
+    if (fields.isGoogleCalendarKey === "true") {
+      contentType = "application/json";
+    }
+
     // Upload the file
     const uploadResult = await s3
       .upload({
@@ -44,7 +55,7 @@ export async function POST(req: NextRequest) {
         Key: `${folder}/${fileName}`,
         Body: file,
         ACL: "public-read",
-        ContentType: "image/png",
+        ContentType: contentType,
       })
       .promise();
 

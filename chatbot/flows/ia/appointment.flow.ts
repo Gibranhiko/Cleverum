@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { formatPrice } from "~/utils/order";
 import { sendOrder } from "~/utils/api";
 import { getSocket } from "~/utils/socket-connect";
+import { GoogleCalendarService } from "../../services/googleCalendar.service";
 
 // Read the prompt templates once
 const promptAppointmentPath = path.join("prompts", "/prompt-appointment.txt");
@@ -29,6 +30,7 @@ const generatePrompt = (template, history, businessData, products, todayIs) => {
     .replace("{BUSINESSDATA.companyType}", businessData.companyType)
     .replace("{PRODUCTS}", products);
 };
+
 
 const appointment = addKeyword(EVENTS.ACTION).addAction(
   async (_, { state, flowDynamic, extensions }) => {
@@ -94,6 +96,40 @@ const appointment = addKeyword(EVENTS.ACTION).addAction(
           } else {
             console.error("Socket not connected");
           }
+
+          // Create Google Calendar event
+          try {
+            const businessData = state.get(`currentClient_${clientId}`);
+            if (businessData?.googleCalendarKeyFileUrl && businessData?.googleCalendarId) {
+              const calendarService = new GoogleCalendarService(
+                businessData.googleCalendarId,
+                businessData.googleCalendarKeyFileUrl
+              );
+
+              // Check if the requested time is available
+              const isAvailable = await calendarService.checkAvailability(new Date(appointment.date));
+              if (!isAvailable) {
+                console.log('Requested time slot is not available in calendar');
+                // Still create the appointment but log the conflict
+              }
+
+              const eventId = await calendarService.createEvent(
+                `Cita: ${appointment.name}`,
+                `Servicio: ${appointment.service}\nTeléfono: ${appointment.phone}\nCliente: ${businessData.companyName}`,
+                new Date(appointment.date)
+              );
+
+              if (eventId) {
+                console.log('Google Calendar event created for appointment:', eventId);
+              }
+            } else {
+              console.log('Google Calendar not configured for this client');
+            }
+          } catch (calendarError) {
+            console.error('Error creating Google Calendar event:', calendarError);
+            // Don't fail the appointment if calendar fails
+          }
+
           await flowDynamic(
             "Tu cita ha sido agendada. Nos pondremos en contacto pronto."
           );
