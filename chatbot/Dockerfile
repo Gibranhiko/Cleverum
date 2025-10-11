@@ -19,9 +19,10 @@ RUN apk add --no-cache --virtual .gyp \
         make \
         g++ \
     && apk add --no-cache git \
+    && export NODE_OPTIONS="--max-old-space-size=4096" \
     && pnpm install && pnpm run build \
     && apk del .gyp
-
+    
 # ----------------------------
 # Deployment Stage
 # ----------------------------
