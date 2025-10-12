@@ -7,6 +7,7 @@ import flow from "./flows";
 import AIClass from "./services/ai";
 import ReminderService from "./services/reminder.service";
 import botRoutes from "./routes/botRoutes";
+import { loadExistingBots } from "./services/botService";
 
 const app = express();
 app.use(express.json());
@@ -57,4 +58,5 @@ export const createBotInstance = async (config: { id: string; name: string; port
 const PORT = process.env.CHATBOT_PORT || 4000;
 app.listen(PORT, async () => {
   console.log(`🤖 Cleverum Chatbot management server running on port ${PORT}`);
+  await loadExistingBots(createBotInstance);
 });
