@@ -1,4 +1,4 @@
-import { GoogleAuth, OAuth2Client } from "google-auth-library";
+import { GoogleAuth, OAuth2Client, AuthClient } from "google-auth-library";
 import { google } from "googleapis";
 import https from "https";
 import http from "http";
@@ -49,7 +49,7 @@ export class GoogleCalendarService {
     });
   }
 
-  private async createAuth(): Promise<GoogleAuth> {
+  private async createAuth(): Promise<GoogleAuth<AuthClient>> {
     const keyFileContent = await this.downloadKeyFile();
 
     // Create a temporary file or use the content directly
@@ -59,7 +59,7 @@ export class GoogleCalendarService {
       scopes: ["https://www.googleapis.com/auth/calendar"],
     });
 
-    return auth;
+    return auth as unknown as GoogleAuth<AuthClient>;
   }
 
   async createEvent(
@@ -72,12 +72,8 @@ export class GoogleCalendarService {
       const auth = await this.createAuth();
       const authClient = await auth.getClient();
 
-      // Type checking to ensure authClient is of the expected type
-      if (authClient instanceof OAuth2Client || authClient instanceof GoogleAuth) {
-        google.options({ auth: authClient });
-      } else {
-        throw new Error("Unsupported auth client type");
-      }
+      // Set auth for googleapis
+      google.options({ auth: authClient as any });
 
       const calendar = google.calendar({ version: "v3" });
       const startDateTime = new Date(date);
@@ -119,11 +115,7 @@ export class GoogleCalendarService {
       const auth = await this.createAuth();
       const authClient = await auth.getClient();
 
-      if (authClient instanceof OAuth2Client || authClient instanceof GoogleAuth) {
-        google.options({ auth: authClient });
-      } else {
-        throw new Error("Unsupported auth client type");
-      }
+      google.options({ auth: authClient as any });
 
       const calendar = google.calendar({ version: "v3" });
       const startDateTime = new Date(date);
