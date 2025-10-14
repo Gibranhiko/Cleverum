@@ -8,31 +8,45 @@ import AIClass from "./services/ai";
 import ReminderService from "./services/reminder.service";
 import botRoutes from "./routes/botRoutes";
 import { loadExistingBots } from "./services/botService";
+import path from "path";
+import fs from "fs";
 
 const app = express();
 app.use(express.json());
-app.use('/', botRoutes);
+app.use("/", botRoutes);
 
 // Track running bots
-export const runningBots = new Map(); 
+export const runningBots = new Map();
 
 // Initialize reminder service
 const reminderService = new ReminderService();
 await reminderService.init();
 
 // Function to create and start a bot
-export const createBotInstance = async (config: { id: string; name: string; port: number; sessionName: string }) => {
+export const createBotInstance = async (config: {
+  id: string;
+  name: string;
+  port: number;
+  sessionName: string;
+  phone: string;
+}) => {
   try {
     console.log(`🚀 Starting ${config.name}`);
-
     const ai = new AIClass(process.env.OPEN_API_KEY, "gpt-4o");
+    const sessionsRoot = path.join(process.cwd(), "bot_sessions");
+    // ensure base dir exists
+    if (!fs.existsSync(sessionsRoot))
+      fs.mkdirSync(sessionsRoot, { recursive: true });
 
-    const { httpServer, provider } = await createBot(
+    const provider = createProvider(Provider, {
+      name: path.join("bot_sessions", config.sessionName),
+      version: [2, 3000, 1025190524],
+    });
+
+    const { httpServer } = await createBot(
       {
         database: new Database(),
-        provider: createProvider(Provider, {
-          name: config.sessionName,
-        }),
+        provider: provider,
         flow: flow,
       },
       { extensions: { ai, clientId: config.id } }
@@ -51,8 +65,6 @@ export const createBotInstance = async (config: { id: string; name: string; port
     throw err;
   }
 };
-
-
 
 // Start the server
 const PORT = process.env.CHATBOT_PORT || 4000;

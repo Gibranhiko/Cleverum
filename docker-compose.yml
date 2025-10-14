@@ -37,6 +37,8 @@ services:
       context: ./chatbot
       dockerfile: Dockerfile
     container_name: cleverum-chatbot
+    volumes: 
+      - ./bot_sessions:/app/bot_sessions:rw
     restart: unless-stopped
     env_file:
       - ./chatbot/.env

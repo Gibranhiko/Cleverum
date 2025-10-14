@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     }
 
     // Assign session name
-    const sessionName = `session-${savedClient._id}`;
+    const sessionName = `${savedClient._id}`;
 
     // Update client with bot config
     savedClient.botPort = nextPort;
