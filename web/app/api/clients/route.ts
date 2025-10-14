@@ -230,7 +230,7 @@ export async function DELETE(request: Request) {
           }
         }
 
-        // Always perform cleanup of session files as backup
+        // Always perform cleanup of session files
         // This ensures files are cleaned up even if the bot stop API fails
         if (client.botSessionName) {
           try {
