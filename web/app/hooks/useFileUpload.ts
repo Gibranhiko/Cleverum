@@ -2,7 +2,9 @@ import { useState } from "react";
 
 export const useFileUpload = (
     initialPreviewUrl?: string,
-    isImageRequired: boolean = false
+    isImageRequired: boolean = false,
+    acceptedTypes: string[] = ["image/png"],
+    maxSizeKB: number = 500
   ) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(
@@ -13,18 +15,26 @@ export const useFileUpload = (
   const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type and size
-      if (file.type !== "image/png") {
-        setUploadErrorMessage("Only PNG files are allowed.");
+      // Validate file type
+      if (!acceptedTypes.includes(file.type)) {
+        const typeNames = acceptedTypes.map(type => type.split('/')[1].toUpperCase()).join(' or ');
+        setUploadErrorMessage(`Only ${typeNames} files are allowed.`);
         return;
       }
-      if (file.size > 500 * 1024) {
-        setUploadErrorMessage("File size must not exceed 500KB.");
+
+      // Validate file size
+      if (file.size > maxSizeKB * 1024) {
+        setUploadErrorMessage(`File size must not exceed ${maxSizeKB}KB.`);
         return;
       }
 
       setSelectedFile(file);
-      setImagePreview(URL.createObjectURL(file));
+
+      // Create preview for images only
+      if (file.type.startsWith('image/')) {
+        setImagePreview(URL.createObjectURL(file));
+      }
+
       setUploadErrorMessage(null); // Clear any previous errors
     }
   };

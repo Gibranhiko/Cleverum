@@ -63,7 +63,7 @@ export default function ClientFormModal({
       instagramLink: '',
       imageUrl: '',
       useAi: false,
-      googleCalendarKeyFileUrl: '',
+      googleCalendarKeyFileUrl: null,
       googleCalendarId: ''
     }
   });
@@ -81,7 +81,7 @@ export default function ClientFormModal({
     selectedFile: selectedKeyFile,
     uploadErrorMessage: keyFileUploadErrorMessage,
     handleFileSelection: handleKeyFileSelection,
-  } = useFileUpload('', false);
+  } = useFileUpload('', false, ['application/json'], 10);
 
   // Reset form when clientData changes (for editing existing clients)
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function ClientFormModal({
         instagramLink: clientData.instagramLink || '',
         imageUrl: clientData.imageUrl || '',
         useAi: clientData.useAi || false,
-        googleCalendarKeyFileUrl: (clientData as any).googleCalendarKeyFileUrl || '',
+        googleCalendarKeyFileUrl: (clientData as any).googleCalendarKeyFileUrl || null,
         googleCalendarId: (clientData as any).googleCalendarId || ''
       });
     } else if (!isEditing) {
@@ -113,7 +113,7 @@ export default function ClientFormModal({
         instagramLink: '',
         imageUrl: '',
         useAi: false,
-        googleCalendarKeyFileUrl: '',
+        googleCalendarKeyFileUrl: null,
         googleCalendarId: ''
       });
     }
@@ -133,10 +133,6 @@ export default function ClientFormModal({
       return;
     }
 
-    // Validate key file if selected
-    if (selectedKeyFile && selectedKeyFile.type !== 'application/json') {
-      return; // Error will be shown by the upload error message
-    }
     setLoader("upload", true);
 
     try {
@@ -197,20 +193,11 @@ export default function ClientFormModal({
         }
       } else {
         // Keep existing image or set to null
-        data.imageUrl = data.imageUrl ?? null;
+        data.imageUrl = data.imageUrl || null;
       }
 
       // Handle Google Calendar key file upload if a new file is selected
       if (selectedKeyFile) {
-        // Validate file before upload
-        if (selectedKeyFile.type !== 'application/json') {
-          throw new Error('Solo se permiten archivos JSON para la clave de Google Calendar');
-        }
-
-        if (selectedKeyFile.size > 10 * 1024) { // 10KB limit for key files
-          throw new Error('El archivo de clave es demasiado grande (máximo 10KB)');
-        }
-
         // Get the correct clientId
         const keyFileClientId = isEditing ? clientData?._id : savedClient._id;
         if (!keyFileClientId) {
@@ -240,16 +227,13 @@ export default function ClientFormModal({
         const keyResponseData = await keyUploadRes.json();
         const { fileUrl } = keyResponseData;
         data.googleCalendarKeyFileUrl = fileUrl;
-      } else {
-        // Keep existing key file URL or set to null
-        data.googleCalendarKeyFileUrl = data.googleCalendarKeyFileUrl ?? null;
       }
 
-      // For editing or updating new client with imageUrl
+      // For editing or updating new client with uploaded file URLs
       if (isEditing) {
         await onSave(data);
       } else {
-        // Update the newly created client with imageUrl
+        // Update the newly created client with uploaded file URLs
         const updateResponse = await fetch('/api/clients', {
           method: 'PUT',
           headers: {
@@ -263,7 +247,7 @@ export default function ClientFormModal({
 
         if (!updateResponse.ok) {
           const errorData = await updateResponse.json();
-          throw new Error(errorData.message || 'Error updating client with image');
+          throw new Error(errorData.message || 'Error updating client with uploaded files');
         }
       }
 
