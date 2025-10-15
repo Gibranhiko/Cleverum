@@ -231,10 +231,10 @@ class AIClass {
                                     name: { type: "string", description: "Customer's full name." },
                                     phone: { type: "string", description: "Customer's phone number." },
                                     service: { type: "string", description: "Service the customer wants to book." },
-                                    date: { 
-                                        type: "string", 
-                                        format: "date-time", 
-                                        description: "Scheduled date and time for the appointment."
+                                    date: {
+                                        type: "string",
+                                        format: "date-time",
+                                        description: "Scheduled date and time for the appointment in ISO 8601 format (e.g., 2025-10-16T10:00:00.000Z). Always interpret times as local Mexico City time (America/Mexico_City, UTC-6) and convert to UTC."
                                     }
                                 },
                                 required: ["name", "phone", "service", "date"]

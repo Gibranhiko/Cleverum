@@ -77,13 +77,25 @@ const appointment = addKeyword(EVENTS.ACTION).addAction(
           { role: "system", content: promptInfoDetermine },
         ]);
 
+        console.log("AI Appointment Response:", appointment);
+        console.log("Raw appointment.date:", appointment.date);
+
+        // Convert the appointment date to local Mexico City time if it's in UTC
+        let localDate = new Date(appointment.date);
+        if (appointment.date.includes('Z') || appointment.date.includes('+00:00')) {
+          // If the date is in UTC, convert to Mexico City time (UTC-6)
+          localDate = new Date(localDate.getTime() - (6 * 60 * 60 * 1000));
+        }
+
+        console.log("Converted local date:", localDate.toISOString());
+
         const appointmentData = {
           clientId,
           name: appointment.name,
           description: appointment.service,
           phone: appointment.phone,
           date: format(new Date(), "yyyy-MM-dd HH:mm"),
-          plannedDate: appointment.date,
+          plannedDate: localDate.toISOString(),
           status: false,
         };
 
