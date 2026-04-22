@@ -1,34 +1,15 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
-    "declaration": false,
-    "declarationMap": false,
+    "module": "CommonJS",
     "moduleResolution": "node",
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "sourceMap": false,
     "outDir": "./dist",
-    "baseUrl": "./",
-    "rootDir": "./",
-    "incremental": true,
+    "rootDir": "./src",
+    "strict": false,
     "skipLibCheck": true,
-    "paths": {
-      "~/*": ["./*"]
-    }
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "**/*.js",
-    "**/*.ts"
-, "eslint.config.js"  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "**e2e**",
-    "**mock**"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
