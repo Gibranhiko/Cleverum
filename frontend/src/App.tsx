@@ -3,6 +3,7 @@ import { AppProvider } from './context/AppContext'
 import AuthGuard from './components/AuthGuard'
 import DashboardLayout from './layouts/DashboardLayout'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
 import Clientes from './pages/Clientes'
 import Pedidos from './pages/Pedidos'
 import Productos from './pages/Productos'
@@ -10,6 +11,7 @@ import Leads from './pages/Leads'
 import Conversaciones from './pages/Conversaciones'
 import Reminders from './pages/Reminders'
 import Documentos from './pages/Documentos'
+import ConfigBot from './pages/ConfigBot'
 
 export default function App() {
   return (
@@ -25,7 +27,8 @@ export default function App() {
               </AuthGuard>
             }
           >
-            <Route index element={<Navigate to="/clientes" replace />} />
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="clientes" element={<Clientes />} />
             <Route path="pedidos" element={<Pedidos />} />
             <Route path="productos" element={<Productos />} />
@@ -33,8 +36,9 @@ export default function App() {
             <Route path="conversaciones" element={<Conversaciones />} />
             <Route path="reminders" element={<Reminders />} />
             <Route path="documentos" element={<Documentos />} />
+            <Route path="config" element={<ConfigBot />} />
           </Route>
-          <Route path="*" element={<Navigate to="/clientes" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AppProvider>
     </BrowserRouter>

@@ -3,6 +3,7 @@ import express from 'express'
 import { verifyWebhook } from './webhook/verify'
 import { handleWebhook } from './webhook/handler'
 import botsRouter from './routes/bots'
+import documentsRouter from './routes/documents'
 import { startReminderCron } from './services/reminder'
 
 const app = express()
@@ -14,6 +15,9 @@ app.post('/webhook', handleWebhook)
 
 // Bot management API
 app.use('/bots', botsRouter)
+
+// Document indexing API
+app.use('/documents', documentsRouter)
 
 // Health check for Railway
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }))

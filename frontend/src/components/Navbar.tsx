@@ -1,9 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Users, ShoppingBag, Package, UserCheck, Bell, MessageSquare, Clock, FileText, LogOut } from 'lucide-react'
+import { Users, ShoppingBag, Package, UserCheck, Bell, MessageSquare, Clock, FileText, LogOut, LayoutDashboard, Settings } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useApp } from '../context/AppContext'
 
 const links = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/clientes', label: 'Clientes', icon: Users },
   { to: '/pedidos', label: 'Pedidos', icon: ShoppingBag },
   { to: '/productos', label: 'Productos', icon: Package },
@@ -11,6 +12,7 @@ const links = [
   { to: '/conversaciones', label: 'Conversaciones', icon: MessageSquare },
   { to: '/reminders', label: 'Reminders', icon: Clock },
   { to: '/documentos', label: 'Documentos', icon: FileText },
+  { to: '/config', label: 'Config Bot', icon: Settings },
 ]
 
 export default function Navbar() {

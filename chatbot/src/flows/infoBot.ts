@@ -4,6 +4,7 @@ import { ChatCompletionMessageParam } from 'openai/resources/chat'
 import { Session, getSession, updateSession, appendToHistory } from '../lib/session'
 import { sendText, sendButtons } from '../lib/whatsapp'
 import { ai } from '../services/ai'
+import { retrieve } from '../services/rag'
 import { GoogleCalendarService } from '../services/googleCalendar'
 
 const APPOINTMENT_COMPLETE = 'CITA_CONFIRMADA'
@@ -17,6 +18,7 @@ export interface BotContext {
   from: string
   client: any
   session: Session
+  botConfig?: any
 }
 
 export async function handleInfoBot(ctx: BotContext) {
@@ -43,8 +45,14 @@ export async function handleInfoBot(ctx: BotContext) {
     return startAppointmentFlow(ctx)
   }
 
-  // consultar_empresa or hablar → AI conversation
-  const talker = loadPrompt('prompt-talker.txt')
+  // consultar_empresa or hablar → AI conversation with RAG context
+  const chunks = await retrieve(text, clientId).catch(() => [] as string[])
+  const ragContext = chunks.length > 0
+    ? `Información real de la empresa:\n\n${chunks.join('\n\n')}`
+    : ''
+
+  const basePrompt = ctx.botConfig?.system_prompt || loadPrompt('prompt-talker.txt')
+  const talker = basePrompt
     .replace('{BUSINESSDATA.companyName}', client.company_name ?? '')
     .replace('{BUSINESSDATA.companyAddress}', client.company_address ?? '')
     .replace('{BUSINESSDATA.whatsappPhone}', client.whatsapp_phone ?? '')
@@ -52,6 +60,7 @@ export async function handleInfoBot(ctx: BotContext) {
     .replace('{BUSINESSDATA.facebookLink}', client.facebook_link ?? '')
     .replace('{BUSINESSDATA.instagramLink}', client.instagram_link ?? '')
     .replace('{HISTORY}', historyText)
+    .replace('{RAG_CONTEXT}', ragContext)
 
   const chatMessages: ChatCompletionMessageParam[] = [
     { role: 'system', content: talker },

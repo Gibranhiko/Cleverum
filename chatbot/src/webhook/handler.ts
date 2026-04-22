@@ -10,6 +10,8 @@ const COMMANDS = new Set(['botoff', 'status', 'boton'])
 
 // Client cache keyed by wa_phone_number_id
 const clientCache = new Map<string, { client: any; expires: number }>()
+// BotConfig cache keyed by client_id
+const botConfigCache = new Map<string, { config: any; expires: number }>()
 const CACHE_TTL = 5 * 60 * 1000
 
 async function getCachedClient(phoneNumberId: string) {
@@ -23,6 +25,20 @@ async function getCachedClient(phoneNumberId: string) {
     .single()
 
   if (data) clientCache.set(phoneNumberId, { client: data, expires: Date.now() + CACHE_TTL })
+  return data ?? null
+}
+
+async function getCachedBotConfig(clientId: string) {
+  const cached = botConfigCache.get(clientId)
+  if (cached && cached.expires > Date.now()) return cached.config
+
+  const { data } = await supabase
+    .from('bot_configs')
+    .select('*')
+    .eq('client_id', clientId)
+    .single()
+
+  botConfigCache.set(clientId, { config: data ?? null, expires: Date.now() + CACHE_TTL })
   return data ?? null
 }
 
@@ -87,7 +103,8 @@ async function processMessage(message: any, phoneNumberId: string) {
 
   await appendToHistory(client.id, from, 'user', text)
 
-  const ctx = { text, from, client, session }
+  const botConfig = await getCachedBotConfig(client.id)
+  const ctx = { text, from, client, session, botConfig }
 
   switch (client.bot_type) {
     case 'informativo': return handleInfoBot(ctx)

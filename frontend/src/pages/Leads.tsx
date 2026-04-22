@@ -5,11 +5,16 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { UserCheck, RefreshCw } from 'lucide-react'
+import { UserCheck, RefreshCw, Download } from 'lucide-react'
 
 interface Cliente {
   id: string
   company_name: string
+}
+
+interface HistoryMsg {
+  role: 'user' | 'assistant'
+  content: string
 }
 
 interface Lead {
@@ -23,6 +28,7 @@ interface Lead {
   timeline: string
   status: 'new' | 'contacted' | 'qualified' | 'lost' | 'won'
   notes: string
+  raw_conversation: HistoryMsg[] | null
   created_at: string
 }
 
@@ -38,6 +44,29 @@ const statusOptions: Lead['status'][] = ['new', 'contacted', 'qualified', 'lost'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-MX', { dateStyle: 'short' })
+}
+
+function exportCSV(leads: Lead[]) {
+  const headers = ['Nombre', 'Empresa', 'Teléfono', 'Necesidad', 'Presupuesto', 'Timeline', 'Estado', 'Fecha']
+  const escape = (v: string) => `"${(v ?? '').replace(/"/g, '""')}"`
+  const rows = leads.map(l => [
+    escape(l.customer_name),
+    escape(l.company),
+    escape(l.customer_phone),
+    escape(l.need),
+    escape(l.budget_range),
+    escape(l.timeline),
+    escape(statusConfig[l.status]?.label ?? l.status),
+    escape(formatDate(l.created_at)),
+  ].join(','))
+  const csv = [headers.join(','), ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 export default function Leads() {
@@ -134,6 +163,9 @@ export default function Leads() {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" onClick={() => exportCSV(filtered)} disabled={filtered.length === 0}>
+            <Download size={15} className="mr-1.5" />Exportar CSV
+          </Button>
           <Button variant="outline" size="icon" onClick={fetchLeads} disabled={loading}>
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </Button>
@@ -198,7 +230,7 @@ export default function Leads() {
       </div>
 
       <Dialog open={!!detalle} onOpenChange={() => setDetalle(null)}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalle del lead</DialogTitle>
           </DialogHeader>
@@ -242,6 +274,21 @@ export default function Leads() {
                   onSave={notes => updateNotes(detalle.id, notes)}
                 />
               </div>
+
+              {detalle.raw_conversation && detalle.raw_conversation.length > 0 && (
+                <div className="space-y-2 pt-2 border-t">
+                  <p className="text-muted-foreground font-medium">Conversación completa</p>
+                  <div className="space-y-2 max-h-64 overflow-y-auto rounded-lg border p-3 bg-muted/30">
+                    {detalle.raw_conversation.map((msg, i) => (
+                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
+                        <div className={`max-w-[85%] rounded-xl px-3 py-1.5 text-xs ${msg.role === 'user' ? 'bg-background border' : 'bg-primary text-primary-foreground'}`}>
+                          {msg.content}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import supabase from '../lib/supabase'
+import { sendText } from '../lib/whatsapp'
+import { appendToHistory } from '../lib/session'
 import { invalidateClientCache } from '../webhook/handler'
 
 const router = Router()
@@ -46,6 +48,31 @@ router.post('/:clientId/takeover', async (req, res) => {
     .update({ human_takeover: active ?? true })
     .eq('client_id', clientId)
     .eq('phone_number', phone_number)
+
+  res.json({ ok: true })
+})
+
+// Send a message as the agent (human takeover mode)
+router.post('/:clientId/send', async (req, res) => {
+  const { clientId } = req.params
+  const { phone_number, message } = req.body
+
+  if (!phone_number || !message) {
+    return res.status(400).json({ error: 'phone_number and message are required' })
+  }
+
+  const { data: client } = await supabase
+    .from('clients')
+    .select('wa_phone_number_id, wa_access_token')
+    .eq('id', clientId)
+    .single()
+
+  if (!client?.wa_phone_number_id || !client?.wa_access_token) {
+    return res.status(400).json({ error: 'Client has no WhatsApp credentials configured' })
+  }
+
+  await sendText(client.wa_phone_number_id, client.wa_access_token, phone_number, message)
+  await appendToHistory(clientId, phone_number, 'assistant', message)
 
   res.json({ ok: true })
 })

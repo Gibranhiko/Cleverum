@@ -2,6 +2,7 @@ import supabase from '../lib/supabase'
 import { Session, updateSession, appendToHistory } from '../lib/session'
 import { sendText } from '../lib/whatsapp'
 import { ai } from '../services/ai'
+import { retrieve } from '../services/rag'
 import { ChatCompletionMessageParam } from 'openai/resources/chat'
 
 export interface BotContext {
@@ -9,6 +10,7 @@ export interface BotContext {
   from: string
   client: any
   session: Session
+  botConfig?: any
 }
 
 const SYSTEM_PROMPT = `Eres un agente de ventas experto para {COMPANY_NAME}.
@@ -43,9 +45,15 @@ export async function handleLeadsBot(ctx: BotContext) {
   }
 
   // Continue conversation
-  const systemPrompt = SYSTEM_PROMPT
+  const chunks = await retrieve(text, clientId).catch(() => [] as string[])
+  const ragContext = chunks.length > 0
+    ? `Información real sobre los servicios de la empresa:\n\n${chunks.join('\n\n')}\n\n`
+    : ''
+
+  const basePrompt = ctx.botConfig?.system_prompt || SYSTEM_PROMPT
+  const systemPrompt = basePrompt
     .replace('{COMPANY_NAME}', client.company_name ?? '')
-    .replace('{RAG_CONTEXT}', '') // F4 fills this
+    .replace('{RAG_CONTEXT}', ragContext)
     .replace('{HISTORY}', history.map(m => `${m.role}: ${m.content}`).join('\n'))
 
   const messages: ChatCompletionMessageParam[] = [

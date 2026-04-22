@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Trash2, FileText, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, FileText, ChevronRight, RefreshCw } from 'lucide-react'
+
+const CHATBOT_URL = import.meta.env.VITE_CHATBOT_URL ?? 'http://localhost:4000'
 
 interface Cliente {
   id: string
@@ -45,6 +47,10 @@ export default function Documentos() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
+  // Indexing state
+  const [indexingId, setIndexingId] = useState<string | null>(null)
+  const [indexError, setIndexError] = useState<string | null>(null)
+
   useEffect(() => {
     supabase
       .from('clients')
@@ -71,7 +77,6 @@ export default function Documentos() {
 
     if (!docData) { setDocs([]); setLoading(false); return }
 
-    // Fetch chunk counts
     const { data: chunkData } = await supabase
       .from('document_chunks')
       .select('document_id')
@@ -82,8 +87,29 @@ export default function Documentos() {
       countMap[c.document_id] = (countMap[c.document_id] ?? 0) + 1
     }
 
-    setDocs(docData.map(d => ({ ...d, chunk_count: countMap[d.id] ?? 0 })) as Documento[])
+    const withCounts = docData.map(d => ({ ...d, chunk_count: countMap[d.id] ?? 0 })) as Documento[]
+    setDocs(withCounts)
+    setSelected(prev => prev ? (withCounts.find(d => d.id === prev.id) ?? null) : null)
     setLoading(false)
+  }
+
+  async function runIndexing(documentId: string) {
+    setIndexingId(documentId)
+    setIndexError(null)
+    try {
+      const res = await fetch(`${CHATBOT_URL}/documents/${clienteId}/index?documentId=${documentId}`, {
+        method: 'POST',
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `HTTP ${res.status}`)
+      }
+    } catch (err: any) {
+      setIndexError(`Error al indexar: ${err?.message ?? 'Error desconocido'}`)
+    } finally {
+      setIndexingId(null)
+      fetchDocs()
+    }
   }
 
   function openNew() {
@@ -98,20 +124,24 @@ export default function Documentos() {
     if (!formContent.trim()) { setFormError('El contenido es requerido'); return }
     setSaving(true)
     setFormError('')
-    const { error } = await supabase.from('documents').insert({
-      client_id: clienteId,
-      title: formTitle.trim(),
-      content: formContent.trim(),
-    })
+
+    const { data, error } = await supabase
+      .from('documents')
+      .insert({ client_id: clienteId, title: formTitle.trim(), content: formContent.trim() })
+      .select('id')
+      .single()
+
     setSaving(false)
     if (error) { setFormError(error.message); return }
     setModalOpen(false)
-    fetchDocs()
+    await fetchDocs()
+    if (data?.id) runIndexing(data.id)
   }
 
   async function handleDelete() {
     if (!deleteId) return
     setDeleting(true)
+    await supabase.from('document_chunks').delete().eq('document_id', deleteId)
     await supabase.from('documents').delete().eq('id', deleteId)
     if (selected?.id === deleteId) setSelected(null)
     setDeleteId(null)
@@ -119,7 +149,7 @@ export default function Documentos() {
     fetchDocs()
   }
 
-  const selectedCliente = clientes.find(c => c.id === clienteId)
+  const isIndexing = indexingId !== null
 
   return (
     <div className="space-y-6">
@@ -131,7 +161,7 @@ export default function Documentos() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={clienteId} onValueChange={v => { setClienteId(v); setSelected(null) }}>
+          <Select value={clienteId} onValueChange={v => { setClienteId(v); setSelected(null); setIndexError(null) }}>
             <SelectTrigger className="w-52">
               <SelectValue placeholder="Seleccionar cliente" />
             </SelectTrigger>
@@ -144,7 +174,7 @@ export default function Documentos() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={openNew} disabled={!clienteId}>
+          <Button onClick={openNew} disabled={!clienteId || isIndexing}>
             <Plus size={16} className="mr-1.5" />Nuevo documento
           </Button>
         </div>
@@ -157,10 +187,9 @@ export default function Documentos() {
         </div>
       )}
 
-      {selectedCliente && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-          Los documentos se indexan automáticamente al guardarlos cuando el backend del chatbot esté desplegado (Fase 3).
-          Por ahora puedes crear y organizar el contenido.
+      {indexError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {indexError}
         </div>
       )}
 
@@ -186,9 +215,11 @@ export default function Documentos() {
                   <p className="text-xs text-muted-foreground mt-0.5">{formatDate(d.created_at)}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                  {(d.chunk_count ?? 0) > 0
-                    ? <Badge variant="secondary" className="text-xs">{d.chunk_count} chunks</Badge>
-                    : <Badge variant="outline" className="text-xs text-muted-foreground">Sin indexar</Badge>}
+                  {indexingId === d.id
+                    ? <Badge variant="secondary" className="text-xs animate-pulse">Indexando...</Badge>
+                    : (d.chunk_count ?? 0) > 0
+                      ? <Badge variant="secondary" className="text-xs">{d.chunk_count} chunks</Badge>
+                      : <Badge variant="outline" className="text-xs text-muted-foreground">Sin indexar</Badge>}
                   <ChevronRight size={14} className="text-muted-foreground" />
                 </div>
               </div>
@@ -213,14 +244,26 @@ export default function Documentos() {
                     {(selected.chunk_count ?? 0) > 0 && ` · ${selected.chunk_count} chunks indexados`}
                   </p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setDeleteId(selected.id)}
-                >
-                  <Trash2 size={15} />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => runIndexing(selected.id)}
+                    disabled={isIndexing}
+                  >
+                    <RefreshCw size={14} className={`mr-1.5 ${indexingId === selected.id ? 'animate-spin' : ''}`} />
+                    {indexingId === selected.id ? 'Indexando...' : 'Re-indexar'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleteId(selected.id)}
+                    disabled={isIndexing}
+                  >
+                    <Trash2 size={15} />
+                  </Button>
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto p-4">
                 <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
