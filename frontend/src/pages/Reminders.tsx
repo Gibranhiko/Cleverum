@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Separator } from '@/components/ui/separator'
 import { Plus, Pencil, Trash2, Bell, BellOff } from 'lucide-react'
+import { toast } from 'sonner'
 import { formatDate } from '@/lib/formatters'
+import ReminderModal, { ReminderForEdit } from '@/components/ReminderModal'
 
 interface Cliente { id: string; company_name: string }
 
@@ -26,17 +25,7 @@ interface Reminder {
   created_at: string
 }
 
-interface ReminderForm {
-  message: string
-  phone_numbers: string
-  frequency: string
-  hour: string
-  minute: string
-}
-
-const EMPTY_FORM: ReminderForm = { message: '', phone_numbers: '', frequency: 'daily', hour: '9', minute: '0' }
 const FREQ_LABEL: Record<string, string> = { daily: 'Diario', weekly: 'Semanal', monthly: 'Mensual' }
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 8)
 
 function ftime(h: number, m: number) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
@@ -48,10 +37,7 @@ export default function Reminders() {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
-  const [editId, setEditId] = useState<string | null>(null)
-  const [form, setForm] = useState<ReminderForm>(EMPTY_FORM)
-  const [error, setError] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [editReminder, setEditReminder] = useState<ReminderForEdit | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
@@ -82,62 +68,30 @@ export default function Reminders() {
   }
 
   function openNew() {
-    setEditId(null)
-    setForm(EMPTY_FORM)
-    setError('')
+    setEditReminder(null)
     setModalOpen(true)
   }
 
   function openEdit(r: Reminder) {
-    setEditId(r.id)
-    setForm({
-      message: r.message,
-      phone_numbers: r.phone_numbers.join(', '),
-      frequency: r.frequency,
-      hour: String(r.hour),
-      minute: String(r.minute),
-    })
-    setError('')
+    setEditReminder({ id: r.id, message: r.message, phone_numbers: r.phone_numbers, frequency: r.frequency, hour: r.hour, minute: r.minute })
     setModalOpen(true)
-  }
-
-  function setF(field: keyof ReminderForm, value: string) {
-    setForm(prev => ({ ...prev, [field]: value }))
-  }
-
-  async function handleSave() {
-    if (!form.message.trim()) { setError('El mensaje es requerido'); return }
-    setSaving(true)
-    setError('')
-    const phones = form.phone_numbers.split(',').map(p => p.trim()).filter(Boolean)
-    const payload = {
-      client_id: clienteId,
-      message: form.message.trim(),
-      phone_numbers: phones,
-      frequency: form.frequency,
-      hour: parseInt(form.hour),
-      minute: parseInt(form.minute),
-    }
-    const { error: e } = editId
-      ? await supabase.from('reminders').update(payload).eq('id', editId)
-      : await supabase.from('reminders').insert(payload)
-    setSaving(false)
-    if (e) { setError(e.message); return }
-    setModalOpen(false)
-    fetchReminders()
   }
 
   async function handleDelete() {
     if (!deleteId) return
     setDeleting(true)
-    await supabase.from('reminders').delete().eq('id', deleteId)
+    const { error } = await supabase.from('reminders').delete().eq('id', deleteId)
     setDeleteId(null)
     setDeleting(false)
+    if (error) { toast.error('Error al eliminar el reminder'); return }
+    toast.success('Reminder eliminado')
     fetchReminders()
   }
 
   async function toggleActive(id: string, current: boolean) {
-    await supabase.from('reminders').update({ active: !current }).eq('id', id)
+    const { error } = await supabase.from('reminders').update({ active: !current }).eq('id', id)
+    if (error) { toast.error('Error al cambiar estado'); return }
+    toast.success(current ? 'Reminder desactivado' : 'Reminder activado')
     fetchReminders()
   }
 
@@ -183,7 +137,18 @@ export default function Reminders() {
             {!clienteId ? (
               <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Selecciona un cliente.</TableCell></TableRow>
             ) : loading ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">Cargando...</TableCell></TableRow>
+              <>
+                {[...Array(3)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="h-4 w-48 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-16 bg-muted rounded-full animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-10 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-20 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-20 bg-muted rounded animate-pulse" /></TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : reminders.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No hay reminders. Crea el primero.</TableCell></TableRow>
             ) : reminders.map(r => (
@@ -199,13 +164,13 @@ export default function Reminders() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => toggleActive(r.id, r.active)} title={r.active ? 'Desactivar' : 'Activar'}>
+                    <Button variant="ghost" size="icon" aria-label={r.active ? 'Desactivar reminder' : 'Activar reminder'} onClick={() => toggleActive(r.id, r.active)}>
                       {r.active
                         ? <Bell size={15} className="text-emerald-500" />
                         : <BellOff size={15} className="text-muted-foreground" />}
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEdit(r)}><Pencil size={15} /></Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteId(r.id)}>
+                    <Button variant="ghost" size="icon" aria-label="Editar reminder" onClick={() => openEdit(r)}><Pencil size={15} /></Button>
+                    <Button variant="ghost" size="icon" aria-label="Eliminar reminder" className="text-destructive hover:text-destructive" onClick={() => setDeleteId(r.id)}>
                       <Trash2 size={15} />
                     </Button>
                   </div>
@@ -216,75 +181,16 @@ export default function Reminders() {
         </Table>
       </div>
 
-      {/* Modal crear / editar */}
-      <Dialog open={modalOpen} onOpenChange={() => setModalOpen(false)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editId ? 'Editar reminder' : 'Nuevo reminder'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label>Mensaje *</Label>
-              <textarea
-                value={form.message}
-                onChange={e => setF('message', e.target.value)}
-                placeholder="Ej. Recuerda que mañana tenemos promoción especial 🎉"
-                rows={4}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Teléfonos (separados por coma)</Label>
-              <Input
-                value={form.phone_numbers}
-                onChange={e => setF('phone_numbers', e.target.value)}
-                placeholder="+52 55 1234 5678, +52 55 9876 5432"
-              />
-              <p className="text-xs text-muted-foreground">Dejar vacío para enviar a todos los contactos activos del cliente.</p>
-            </div>
-            <Separator />
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>Frecuencia</Label>
-                <Select value={form.frequency} onValueChange={v => setF('frequency', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Diario</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="monthly">Mensual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Hora</Label>
-                <Select value={form.hour} onValueChange={v => setF('hour', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {HOURS.map(h => (
-                      <SelectItem key={h} value={String(h)}>{String(h).padStart(2, '0')}:00</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Minuto</Label>
-                <Select value={form.minute} onValueChange={v => setF('minute', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">:00</SelectItem>
-                    <SelectItem value="30">:30</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReminderModal
+        open={modalOpen}
+        clienteId={clienteId}
+        reminder={editReminder}
+        onClose={() => setModalOpen(false)}
+        onSaved={() => {
+          toast.success(editReminder ? 'Reminder actualizado' : 'Reminder creado')
+          fetchReminders()
+        }}
+      />
 
       {/* Confirmar eliminación */}
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>

@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { UserCheck, RefreshCw, Download } from 'lucide-react'
+import { toast } from 'sonner'
 import { formatDate } from '@/lib/formatters'
+import LeadDetailModal from '@/components/LeadDetailModal'
+
+const PAGE_SIZE = 15
 
 interface Cliente {
   id: string
@@ -74,6 +77,9 @@ export default function Leads() {
   const [loading, setLoading] = useState(false)
   const [detalle, setDetalle] = useState<Lead | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [version, setVersion] = useState(0)
 
   useEffect(() => {
     supabase
@@ -91,7 +97,10 @@ export default function Leads() {
   useEffect(() => {
     if (!clienteId) return
     fetchLeads()
+  }, [clienteId, page, filterStatus, version])
 
+  useEffect(() => {
+    if (!clienteId) return
     const channel = supabase
       .channel(`leads-${clienteId}`)
       .on('postgres_changes', {
@@ -99,35 +108,54 @@ export default function Leads() {
         schema: 'public',
         table: 'leads',
         filter: `client_id=eq.${clienteId}`,
-      }, () => fetchLeads())
+      }, () => { setPage(0); setVersion(v => v + 1) })
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [clienteId])
 
   async function fetchLeads() {
     setLoading(true)
-    const { data } = await supabase
+    const from = page * PAGE_SIZE
+    let query = supabase
+      .from('leads')
+      .select('*', { count: 'exact' })
+      .eq('client_id', clienteId)
+      .order('created_at', { ascending: false })
+    if (filterStatus !== 'all') {
+      query = query.eq('status', filterStatus)
+    }
+    const { data, count } = await query.range(from, from + PAGE_SIZE - 1)
+    setLeads((data ?? []) as Lead[])
+    setTotal(count ?? 0)
+    setLoading(false)
+  }
+
+  async function exportAllLeads() {
+    let query = supabase
       .from('leads')
       .select('*')
       .eq('client_id', clienteId)
       .order('created_at', { ascending: false })
-    setLeads((data ?? []) as Lead[])
-    setLoading(false)
+    if (filterStatus !== 'all') {
+      query = query.eq('status', filterStatus)
+    }
+    const { data } = await query
+    exportCSV((data ?? []) as Lead[])
   }
 
   async function updateStatus(id: string, status: Lead['status']) {
-    await supabase.from('leads').update({ status }).eq('id', id)
+    const { error } = await supabase.from('leads').update({ status }).eq('id', id)
+    if (error) { toast.error('Error al actualizar el estado'); return }
+    toast.success('Estado actualizado')
     fetchLeads()
     if (detalle?.id === id) setDetalle(prev => prev ? { ...prev, status } : null)
   }
 
   async function updateNotes(id: string, notes: string) {
-    await supabase.from('leads').update({ notes }).eq('id', id)
+    const { error } = await supabase.from('leads').update({ notes }).eq('id', id)
+    if (!error) toast.success('Notas guardadas')
     fetchLeads()
   }
-
-  const filtered = filterStatus === 'all' ? leads : leads.filter(l => l.status === filterStatus)
 
   return (
     <div className="space-y-6">
@@ -135,12 +163,11 @@ export default function Leads() {
         <div>
           <h2 className="text-2xl font-semibold">Leads</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {leads.filter(l => l.status === 'new').length} lead{leads.filter(l => l.status === 'new').length !== 1 ? 's' : ''} nuevo{leads.filter(l => l.status === 'new').length !== 1 ? 's' : ''}
-            {' · '}{leads.length} total
+            {total} lead{total !== 1 ? 's' : ''}{filterStatus !== 'all' ? ` · ${statusConfig[filterStatus as Lead['status']]?.label ?? filterStatus}` : ' en total'}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={clienteId} onValueChange={setClienteId}>
+          <Select value={clienteId} onValueChange={v => { setClienteId(v); setPage(0) }}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Cliente" />
             </SelectTrigger>
@@ -150,7 +177,7 @@ export default function Leads() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={v => { setFilterStatus(v); setPage(0) }}>
             <SelectTrigger className="w-36">
               <SelectValue />
             </SelectTrigger>
@@ -161,10 +188,10 @@ export default function Leads() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => exportCSV(filtered)} disabled={filtered.length === 0}>
+          <Button variant="outline" onClick={exportAllLeads} disabled={total === 0}>
             <Download size={15} className="mr-1.5" />Exportar CSV
           </Button>
-          <Button variant="outline" size="icon" onClick={fetchLeads} disabled={loading}>
+          <Button variant="outline" size="icon" aria-label="Refrescar leads" onClick={fetchLeads} disabled={loading}>
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </Button>
         </div>
@@ -191,19 +218,27 @@ export default function Leads() {
                 </TableCell>
               </TableRow>
             ) : loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
-                  Cargando...
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
+              <>
+                {[...Array(4)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="h-4 w-28 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-36 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-20 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-muted rounded-full animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-10 bg-muted rounded animate-pulse" /></TableCell>
+                  </TableRow>
+                ))}
+              </>
+            ) : leads.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                   <UserCheck size={32} className="mx-auto mb-2 opacity-30" />
                   No hay leads{filterStatus !== 'all' ? ' con este estado' : ''}.
                 </TableCell>
               </TableRow>
-            ) : filtered.map(l => (
+            ) : leads.map(l => (
               <TableRow key={l.id}>
                 <TableCell>
                   <p className="font-medium text-sm">{l.customer_name || '—'}</p>
@@ -225,97 +260,23 @@ export default function Leads() {
             ))}
           </TableBody>
         </Table>
+        {total > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-2.5 border-t text-sm text-muted-foreground">
+            <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} de {total}</span>
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>Anterior</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= total}>Siguiente</Button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <Dialog open={!!detalle} onOpenChange={() => setDetalle(null)}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalle del lead</DialogTitle>
-          </DialogHeader>
-          {detalle && (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                <span className="text-muted-foreground">Nombre</span>
-                <span className="font-medium">{detalle.customer_name || '—'}</span>
-                <span className="text-muted-foreground">Teléfono</span>
-                <span>{detalle.customer_phone || '—'}</span>
-                <span className="text-muted-foreground">Empresa</span>
-                <span>{detalle.company || '—'}</span>
-                <span className="text-muted-foreground">Necesidad</span>
-                <span>{detalle.need || '—'}</span>
-                <span className="text-muted-foreground">Presupuesto</span>
-                <span>{detalle.budget_range || '—'}</span>
-                <span className="text-muted-foreground">Timeline</span>
-                <span>{detalle.timeline || '—'}</span>
-                <span className="text-muted-foreground">Fecha</span>
-                <span>{formatDate(detalle.created_at)}</span>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="text-muted-foreground">Estado</p>
-                <Select value={detalle.status} onValueChange={v => updateStatus(detalle.id, v as Lead['status'])}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map(s => (
-                      <SelectItem key={s} value={s}>{statusConfig[s].label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="text-muted-foreground">Notas</p>
-                <NoteEditor
-                  initial={detalle.notes}
-                  onSave={notes => updateNotes(detalle.id, notes)}
-                />
-              </div>
-
-              {detalle.raw_conversation && detalle.raw_conversation.length > 0 && (
-                <div className="space-y-2 pt-2 border-t">
-                  <p className="text-muted-foreground font-medium">Conversación completa</p>
-                  <div className="space-y-2 max-h-64 overflow-y-auto rounded-lg border p-3 bg-muted/30">
-                    {detalle.raw_conversation.map((msg, i) => (
-                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
-                        <div className={`max-w-[85%] rounded-xl px-3 py-1.5 text-xs ${msg.role === 'user' ? 'bg-background border' : 'bg-primary text-primary-foreground'}`}>
-                          {msg.content}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
-
-function NoteEditor({ initial, onSave }: { initial: string; onSave: (v: string) => void }) {
-  const [value, setValue] = useState(initial || '')
-  const [saved, setSaved] = useState(true)
-
-  return (
-    <div className="space-y-2">
-      <textarea
-        value={value}
-        onChange={e => { setValue(e.target.value); setSaved(false) }}
-        rows={4}
-        placeholder="Agrega notas sobre este lead..."
-        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+      <LeadDetailModal
+        lead={detalle}
+        onClose={() => setDetalle(null)}
+        onUpdateStatus={updateStatus}
+        onUpdateNotes={updateNotes}
       />
-      <Button
-        size="sm"
-        variant={saved ? 'outline' : 'default'}
-        onClick={() => { onSave(value); setSaved(true) }}
-        disabled={saved}
-      >
-        {saved ? 'Guardado' : 'Guardar notas'}
-      </Button>
     </div>
   )
 }

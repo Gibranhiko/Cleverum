@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { CHATBOT_URL, chatbotHeaders } from '@/lib/config'
 import { timeAgo } from '@/lib/formatters'
-import { Switch } from '@/components/ui/switch'
-import { AlertTriangle, MessageSquare, ShoppingCart, Users, TrendingUp } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { TrendingUp } from 'lucide-react'
+import { toast } from 'sonner'
+import BotCard, { BotCardData } from '@/components/BotCard'
 
 interface Analytics {
   client_id: string
@@ -17,40 +19,12 @@ interface Analytics {
   last_activity: string | null
 }
 
-interface BotCard {
-  id: string
-  company_name: string
-  bot_type: string
-  whatsapp_phone: string
-  bot_active: boolean
-  last_message_at?: string
-  active_today?: number
-  orders_today?: number
-  leads_week?: number
-}
-
-const botTypeLabel: Record<string, string> = {
-  informativo: 'Informativo',
-  catalogo: 'Catálogo',
-  leads: 'Leads',
-}
-
-const botTypeBadgeClass: Record<string, string> = {
-  informativo: 'bg-blue-100 text-blue-700',
-  catalogo: 'bg-green-100 text-green-700',
-  leads: 'bg-purple-100 text-purple-700',
-}
-
-function isStale(iso?: string) {
-  if (!iso) return true
-  return Date.now() - new Date(iso).getTime() > 24 * 60 * 60 * 1000
-}
-
 export default function Dashboard() {
-  const [bots, setBots] = useState<BotCard[]>([])
+  const [bots, setBots] = useState<BotCardData[]>([])
   const [analytics, setAnalytics] = useState<Analytics[]>([])
   const [loading, setLoading] = useState(true)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAnalytics()
@@ -71,6 +45,8 @@ export default function Dashboard() {
 
   async function fetchBots() {
     setLoading(true)
+    setFetchError(null)
+    try {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
@@ -130,7 +106,11 @@ export default function Dashboard() {
       orders_today: orderCount[c.id] ?? 0,
       leads_week: leadsCount[c.id] ?? 0,
     })))
-    setLoading(false)
+    } catch {
+      setFetchError('Error al cargar el dashboard. Verifica la conexión.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function toggleBot(botId: string, current: boolean) {
@@ -138,10 +118,14 @@ export default function Dashboard() {
     try {
       await fetch(`${CHATBOT_URL}/bots/${botId}/toggle`, { method: 'PUT', headers: chatbotHeaders })
       setBots(prev => prev.map(b => b.id === botId ? { ...b, bot_active: !current } : b))
+      toast.success(current ? 'Bot desactivado' : 'Bot activado')
     } catch {
-      // fallback: update DB directly
-      await supabase.from('clients').update({ bot_active: !current }).eq('id', botId)
-      setBots(prev => prev.map(b => b.id === botId ? { ...b, bot_active: !current } : b))
+      const { error } = await supabase.from('clients').update({ bot_active: !current }).eq('id', botId)
+      if (error) { toast.error('Error al cambiar estado del bot') }
+      else {
+        setBots(prev => prev.map(b => b.id === botId ? { ...b, bot_active: !current } : b))
+        toast.success(current ? 'Bot desactivado' : 'Bot activado')
+      }
     } finally {
       setTogglingId(null)
     }
@@ -154,66 +138,51 @@ export default function Dashboard() {
         <p className="text-sm text-muted-foreground mt-0.5">Estado de todos los bots activos</p>
       </div>
 
-      {loading ? (
-        <div className="text-sm text-muted-foreground">Cargando...</div>
+      {fetchError ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-center justify-between">
+          {fetchError}
+          <Button variant="ghost" size="sm" onClick={() => { fetchAnalytics(); fetchBots() }}>Reintentar</Button>
+        </div>
+      ) : loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-5 space-y-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-4 w-36 bg-muted rounded animate-pulse" />
+                  <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+                </div>
+                <div className="h-5 w-16 bg-muted rounded-full animate-pulse" />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-20 bg-muted rounded animate-pulse" />
+                <div className="h-5 w-9 bg-muted rounded-full animate-pulse" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-muted/50 px-3 py-2 space-y-1.5">
+                  <div className="h-3 w-16 bg-muted rounded animate-pulse mx-auto" />
+                  <div className="h-6 w-8 bg-muted rounded animate-pulse mx-auto" />
+                </div>
+                <div className="rounded-lg bg-muted/50 px-3 py-2 space-y-1.5">
+                  <div className="h-3 w-16 bg-muted rounded animate-pulse mx-auto" />
+                  <div className="h-6 w-8 bg-muted rounded animate-pulse mx-auto" />
+                </div>
+              </div>
+              <div className="h-8 bg-muted/50 rounded-lg animate-pulse" />
+            </div>
+          ))}
+        </div>
       ) : bots.length === 0 ? (
         <div className="text-sm text-muted-foreground">No hay clientes activos.</div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {bots.map(bot => (
-            <div key={bot.id} className="rounded-xl border bg-card p-5 space-y-4 shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">{bot.company_name}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{bot.whatsapp_phone || '—'}</p>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${botTypeBadgeClass[bot.bot_type] ?? 'bg-gray-100 text-gray-600'}`}>
-                  {botTypeLabel[bot.bot_type] ?? bot.bot_type}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Bot activo</span>
-                <Switch
-                  checked={bot.bot_active}
-                  disabled={togglingId === bot.id}
-                  onCheckedChange={() => toggleBot(bot.id, bot.bot_active)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="rounded-lg bg-muted/50 px-3 py-2">
-                  <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-                    <MessageSquare size={12} />
-                    <span className="text-xs">Activos hoy</span>
-                  </div>
-                  <p className="text-xl font-semibold">{bot.active_today}</p>
-                </div>
-
-                {bot.bot_type === 'catalogo' ? (
-                  <div className="rounded-lg bg-muted/50 px-3 py-2">
-                    <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-                      <ShoppingCart size={12} />
-                      <span className="text-xs">Pedidos hoy</span>
-                    </div>
-                    <p className="text-xl font-semibold">{bot.orders_today}</p>
-                  </div>
-                ) : (
-                  <div className="rounded-lg bg-muted/50 px-3 py-2">
-                    <div className="flex items-center justify-center gap-1 text-muted-foreground mb-0.5">
-                      <Users size={12} />
-                      <span className="text-xs">Leads 7d</span>
-                    </div>
-                    <p className="text-xl font-semibold">{bot.leads_week}</p>
-                  </div>
-                )}
-              </div>
-
-              <div className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${isStale(bot.last_message_at) ? 'bg-yellow-50 text-yellow-700' : 'bg-muted/50 text-muted-foreground'}`}>
-                {isStale(bot.last_message_at) && <AlertTriangle size={12} className="shrink-0" />}
-                <span>Último mensaje: {timeAgo(bot.last_message_at)}</span>
-              </div>
-            </div>
+            <BotCard
+              key={bot.id}
+              bot={bot}
+              toggling={togglingId === bot.id}
+              onToggle={() => toggleBot(bot.id, bot.bot_active)}
+            />
           ))}
         </div>
       )}
@@ -237,7 +206,7 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {analytics.map(a => (
-                  <tr key={a.client_id} className="border-b last:border-b-0 hover:bg-muted/20">
+                  <tr key={a.client_id} className="border-b last:border-b-0 hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3 font-medium">{a.company_name}</td>
                     <td className="px-4 py-3 text-right">{a.unique_users}</td>
                     <td className="px-4 py-3 text-right">{a.orders_last_7d}</td>

@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Trash2, FileText, ChevronRight, RefreshCw } from 'lucide-react'
+import { Plus, FileText, ChevronRight, Search } from 'lucide-react'
+import { toast } from 'sonner'
 import { CHATBOT_URL, chatbotHeaders } from '@/lib/config'
 import { formatDate } from '@/lib/formatters'
+import DocumentViewer from '@/components/DocumentViewer'
 
 interface Cliente {
   id: string
@@ -33,6 +35,7 @@ export default function Documentos() {
   const [clienteId, setClienteId] = useState('')
   const [docs, setDocs] = useState<Documento[]>([])
   const [loading, setLoading] = useState(false)
+  const [docSearch, setDocSearch] = useState('')
   const [selected, setSelected] = useState<Documento | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -102,8 +105,11 @@ export default function Documentos() {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `HTTP ${res.status}`)
       }
+      toast.success('Documento indexado correctamente')
     } catch (err: any) {
-      setIndexError(`Error al indexar: ${err?.message ?? 'Error desconocido'}`)
+      const msg = `Error al indexar: ${err?.message ?? 'Error desconocido'}`
+      setIndexError(msg)
+      toast.error(msg)
     } finally {
       setIndexingId(null)
       fetchDocs()
@@ -131,6 +137,7 @@ export default function Documentos() {
 
     setSaving(false)
     if (error) { setFormError(error.message); return }
+    toast.success('Documento guardado, iniciando indexado...')
     setModalOpen(false)
     await fetchDocs()
     if (data?.id) runIndexing(data.id)
@@ -140,10 +147,12 @@ export default function Documentos() {
     if (!deleteId) return
     setDeleting(true)
     await supabase.from('document_chunks').delete().eq('document_id', deleteId)
-    await supabase.from('documents').delete().eq('id', deleteId)
+    const { error } = await supabase.from('documents').delete().eq('id', deleteId)
     if (selected?.id === deleteId) setSelected(null)
     setDeleteId(null)
     setDeleting(false)
+    if (error) { toast.error('Error al eliminar el documento'); return }
+    toast.success('Documento eliminado')
     fetchDocs()
   }
 
@@ -193,19 +202,38 @@ export default function Documentos() {
 
       <div className="flex gap-4 min-h-[400px]">
         {/* Lista de documentos */}
-        <div className="w-72 shrink-0 rounded-lg border bg-card overflow-y-auto">
+        <div className="w-72 shrink-0 rounded-lg border bg-card flex flex-col overflow-hidden">
+          <div className="p-2 border-b shrink-0">
+            <div className="relative">
+              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar documento..."
+                value={docSearch}
+                onChange={e => setDocSearch(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="p-4 text-sm text-muted-foreground text-center">Cargando...</div>
-          ) : docs.length === 0 ? (
+            <div className="p-3 space-y-2">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="space-y-1.5 px-1 py-2 border-b last:border-b-0">
+                  <div className="h-3.5 w-36 bg-muted rounded animate-pulse" />
+                  <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : docs.filter(d => !docSearch.trim() || d.title.toLowerCase().includes(docSearch.toLowerCase())).length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-muted-foreground text-sm p-4 text-center">
               <FileText size={28} className="mb-2 opacity-30" />
               Sin documentos. Crea el primero.
             </div>
-          ) : docs.map(d => (
+          ) : docs.filter(d => !docSearch.trim() || d.title.toLowerCase().includes(docSearch.toLowerCase())).map(d => (
             <button
               key={d.id}
               onClick={() => setSelected(d)}
-              className={`w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-muted/50 transition-colors ${selected?.id === d.id ? 'bg-muted' : ''}`}
+              className={`w-full text-left px-3 py-2.5 border-b last:border-b-0 hover:bg-muted/50 transition-colors cursor-pointer ${selected?.id === d.id ? 'bg-muted' : ''}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -223,53 +251,17 @@ export default function Documentos() {
               </div>
             </button>
           ))}
+          </div>
         </div>
 
         {/* Vista previa del documento */}
         <div className="flex-1 rounded-lg border bg-card flex flex-col min-w-0">
-          {!selected ? (
-            <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground">
-              <FileText size={40} className="mb-3 opacity-20" />
-              <p className="text-sm">Selecciona un documento para ver su contenido</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-                <div>
-                  <p className="font-medium">{selected.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatDate(selected.created_at)} · {selected.content.length.toLocaleString()} caracteres
-                    {(selected.chunk_count ?? 0) > 0 && ` · ${selected.chunk_count} chunks indexados`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => runIndexing(selected.id)}
-                    disabled={isIndexing}
-                  >
-                    <RefreshCw size={14} className={`mr-1.5 ${indexingId === selected.id ? 'animate-spin' : ''}`} />
-                    {indexingId === selected.id ? 'Indexando...' : 'Re-indexar'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setDeleteId(selected.id)}
-                    disabled={isIndexing}
-                  >
-                    <Trash2 size={15} />
-                  </Button>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed">
-                  {selected.content}
-                </pre>
-              </div>
-            </>
-          )}
+          <DocumentViewer
+            doc={selected}
+            indexingId={indexingId}
+            onReindex={runIndexing}
+            onDelete={setDeleteId}
+          />
         </div>
       </div>
 

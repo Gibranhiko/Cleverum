@@ -2,11 +2,15 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import ProductoModal from '@/components/ProductoModal'
-import { Plus, Pencil, Trash2, Package } from 'lucide-react'
+import { Plus, Pencil, Trash2, Package, Search } from 'lucide-react'
+import { toast } from 'sonner'
+
+const PAGE_SIZE = 15
 
 interface Cliente {
   id: string
@@ -30,6 +34,9 @@ export default function Productos() {
   const [clienteId, setClienteId] = useState<string>('')
   const [productos, setProductos] = useState<Producto[]>([])
   const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editProducto, setEditProducto] = useState<Producto | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -52,25 +59,33 @@ export default function Productos() {
   useEffect(() => {
     if (!clienteId) return
     fetchProductos()
-  }, [clienteId])
+  }, [clienteId, page, search])
 
   async function fetchProductos() {
     setLoading(true)
-    const { data } = await supabase
+    const from = page * PAGE_SIZE
+    let query = supabase
       .from('products')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('client_id', clienteId)
       .order('category')
+    if (search.trim()) {
+      query = query.or(`name.ilike.%${search.trim()}%,category.ilike.%${search.trim()}%`)
+    }
+    const { data, count } = await query.range(from, from + PAGE_SIZE - 1)
     setProductos(data ?? [])
+    setTotal(count ?? 0)
     setLoading(false)
   }
 
   async function handleDelete() {
     if (!deleteId) return
     setDeleting(true)
-    await supabase.from('products').delete().eq('id', deleteId)
+    const { error } = await supabase.from('products').delete().eq('id', deleteId)
     setDeleteId(null)
     setDeleting(false)
+    if (error) { toast.error('Error al eliminar el producto'); return }
+    toast.success('Producto eliminado')
     fetchProductos()
   }
 
@@ -86,7 +101,7 @@ export default function Productos() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={clienteId} onValueChange={setClienteId}>
+          <Select value={clienteId} onValueChange={v => { setClienteId(v); setPage(0); setSearch('') }}>
             <SelectTrigger className="w-52">
               <SelectValue placeholder="Seleccionar cliente" />
             </SelectTrigger>
@@ -106,6 +121,23 @@ export default function Productos() {
             Nuevo producto
           </Button>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="relative max-w-xs w-full">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre o categoría..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(0) }}
+            className="pl-8"
+          />
+        </div>
+        {search && (
+          <button onClick={() => { setSearch(''); setPage(0) }} className="text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+            Limpiar
+          </button>
+        )}
       </div>
 
       {selectedCliente && selectedCliente.bot_type !== 'catalogo' && (
@@ -134,11 +166,18 @@ export default function Productos() {
                 </TableCell>
               </TableRow>
             ) : loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                  Cargando...
-                </TableCell>
-              </TableRow>
+              <>
+                {[...Array(4)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="h-10 w-10 bg-muted rounded-md animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-36 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-muted rounded-full animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-16 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-40 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-16 bg-muted rounded animate-pulse" /></TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : productos.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
@@ -153,6 +192,7 @@ export default function Productos() {
                     <img
                       src={p.image_url}
                       alt={p.name}
+                      loading="lazy"
                       className="h-10 w-10 rounded-md object-cover border"
                     />
                   ) : (
@@ -177,6 +217,7 @@ export default function Productos() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="Editar producto"
                       onClick={() => { setEditProducto(p); setModalOpen(true) }}
                     >
                       <Pencil size={15} />
@@ -184,6 +225,7 @@ export default function Productos() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="Eliminar producto"
                       className="text-destructive hover:text-destructive"
                       onClick={() => setDeleteId(p.id)}
                     >
@@ -195,6 +237,15 @@ export default function Productos() {
             ))}
           </TableBody>
         </Table>
+        {total > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-2.5 border-t text-sm text-muted-foreground">
+            <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} de {total}</span>
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>Anterior</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= total}>Siguiente</Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {clienteId && (
@@ -203,7 +254,10 @@ export default function Productos() {
           clientId={clienteId}
           producto={editProducto}
           onClose={() => setModalOpen(false)}
-          onSaved={fetchProductos}
+          onSaved={() => {
+            toast.success(editProducto ? 'Producto actualizado' : 'Producto creado')
+            fetchProductos()
+          }}
         />
       )}
 

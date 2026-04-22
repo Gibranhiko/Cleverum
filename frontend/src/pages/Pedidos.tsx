@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ShoppingBag, CheckCircle, Circle, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 import { formatDateTime } from '@/lib/formatters'
 
 interface Cliente {
@@ -104,7 +105,9 @@ export default function Pedidos() {
   }
 
   async function toggleStatus(id: string, current: boolean) {
-    await supabase.from('orders').update({ status: !current }).eq('id', id)
+    const { error } = await supabase.from('orders').update({ status: !current }).eq('id', id)
+    if (error) { toast.error('Error al actualizar el pedido'); return }
+    toast.success(current ? 'Pedido reabierto' : 'Pedido completado')
     fetchPedidos()
   }
 
@@ -132,7 +135,7 @@ export default function Pedidos() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" onClick={fetchPedidos} disabled={loading}>
+          <Button variant="outline" size="icon" aria-label="Refrescar pedidos" onClick={fetchPedidos} disabled={loading}>
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </Button>
         </div>
@@ -159,11 +162,19 @@ export default function Pedidos() {
                 </TableCell>
               </TableRow>
             ) : loading ? (
-              <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
-                  Cargando...
-                </TableCell>
-              </TableRow>
+              <>
+                {[...Array(4)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="h-4 w-4 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-28 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-muted rounded-full animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-14 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-32 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-32 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-10 bg-muted rounded animate-pulse" /></TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : pedidos.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
@@ -174,14 +185,9 @@ export default function Pedidos() {
             ) : pedidos.map(p => (
               <TableRow key={p.id} className={!p.status ? 'bg-amber-50/50' : ''}>
                 <TableCell>
-                  <button
-                    onClick={() => toggleStatus(p.id, p.status)}
-                    title={p.status ? 'Completado — click para reabrir' : 'Pendiente — click para completar'}
-                  >
-                    {p.status
-                      ? <CheckCircle size={18} className="text-emerald-500" />
-                      : <Circle size={18} className="text-amber-500" />}
-                  </button>
+                  {p.status
+                    ? <CheckCircle size={18} className="text-emerald-500" />
+                    : <Circle size={18} className="text-amber-500" />}
                 </TableCell>
                 <TableCell>
                   <p className="font-medium text-sm">{p.customer_name || '—'}</p>

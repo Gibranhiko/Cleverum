@@ -25,7 +25,7 @@ export default function Navbar() {
   }
 
   return (
-    <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col">
+    <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col shadow-[2px_0_8px_0_rgba(0,0,0,0.05)]">
       <div className="px-4 py-5 border-b border-gray-200">
         <h1 className="text-lg font-semibold text-gray-900">Cleverum</h1>
         <p className="text-xs text-gray-500">Panel admin</p>
@@ -39,7 +39,7 @@ export default function Navbar() {
             className={({ isActive }) =>
               `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? 'bg-indigo-50 text-indigo-700 font-medium'
+                  ? 'bg-violet-50 text-violet-700 font-medium'
                   : 'text-gray-600 hover:bg-gray-100'
               }`
             }
@@ -52,13 +52,13 @@ export default function Navbar() {
 
       <div className="px-2 py-4 border-t border-gray-200 space-y-0.5">
         <button
-          onClick={() => { clearNotifications(); navigate('/pedidos') }}
+          onClick={clearNotifications}
           className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 transition-colors"
         >
           <Bell size={16} />
           Notificaciones
           {notifications > 0 && (
-            <span className="ml-auto bg-indigo-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            <span className="ml-auto bg-violet-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {notifications}
             </span>
           )}

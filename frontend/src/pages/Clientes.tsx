@@ -6,6 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import ClienteModal from '@/components/ClienteModal'
 import { Plus, Pencil, Trash2, Bot } from 'lucide-react'
+import { toast } from 'sonner'
+
+const PAGE_SIZE = 15
 
 interface Cliente {
   id: string
@@ -40,6 +43,8 @@ const botTypeColor: Record<string, 'default' | 'secondary' | 'outline'> = {
 export default function Clientes() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const [total, setTotal] = useState(0)
   const [modalOpen, setModalOpen] = useState(false)
   const [editCliente, setEditCliente] = useState<Cliente | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -47,27 +52,34 @@ export default function Clientes() {
 
   async function fetchClientes() {
     setLoading(true)
-    const { data } = await supabase
+    const from = page * PAGE_SIZE
+    const { data, count } = await supabase
       .from('clients')
-      .select('*')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
+      .range(from, from + PAGE_SIZE - 1)
     setClientes(data ?? [])
+    setTotal(count ?? 0)
     setLoading(false)
   }
 
-  useEffect(() => { fetchClientes() }, [])
+  useEffect(() => { fetchClientes() }, [page])
 
   async function handleDelete() {
     if (!deleteId) return
     setDeleting(true)
-    await supabase.from('clients').delete().eq('id', deleteId)
+    const { error } = await supabase.from('clients').delete().eq('id', deleteId)
     setDeleteId(null)
     setDeleting(false)
+    if (error) { toast.error('Error al eliminar el cliente'); return }
+    toast.success('Cliente eliminado')
     fetchClientes()
   }
 
   async function toggleBot(id: string, current: boolean) {
-    await supabase.from('clients').update({ bot_active: !current }).eq('id', id)
+    const { error } = await supabase.from('clients').update({ bot_active: !current }).eq('id', id)
+    if (error) { toast.error('Error al cambiar estado del bot'); return }
+    toast.success(current ? 'Bot desactivado' : 'Bot activado')
     fetchClientes()
   }
 
@@ -100,11 +112,18 @@ export default function Clientes() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                  Cargando...
-                </TableCell>
-              </TableRow>
+              <>
+                {[...Array(4)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="h-4 w-32 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-5 w-20 bg-muted rounded-full animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-28 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-24 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-4 bg-muted rounded animate-pulse" /></TableCell>
+                    <TableCell><div className="h-4 w-16 bg-muted rounded animate-pulse" /></TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : clientes.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
@@ -128,6 +147,8 @@ export default function Clientes() {
                   <button
                     onClick={() => toggleBot(c.id, c.bot_active)}
                     title={c.bot_active ? 'Bot activo — click para desactivar' : 'Bot inactivo — click para activar'}
+                    aria-label={c.bot_active ? 'Desactivar bot' : 'Activar bot'}
+                    className="cursor-pointer"
                   >
                     <Bot
                       size={18}
@@ -140,6 +161,7 @@ export default function Clientes() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="Editar cliente"
                       onClick={() => { setEditCliente(c); setModalOpen(true) }}
                     >
                       <Pencil size={15} />
@@ -147,6 +169,7 @@ export default function Clientes() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      aria-label="Eliminar cliente"
                       className="text-destructive hover:text-destructive"
                       onClick={() => setDeleteId(c.id)}
                     >
@@ -158,13 +181,25 @@ export default function Clientes() {
             ))}
           </TableBody>
         </Table>
+        {total > PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-2.5 border-t text-sm text-muted-foreground">
+            <span>{page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} de {total}</span>
+            <div className="flex items-center gap-1.5">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 0}>Anterior</Button>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={(page + 1) * PAGE_SIZE >= total}>Siguiente</Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <ClienteModal
         open={modalOpen}
         cliente={editCliente}
         onClose={() => setModalOpen(false)}
-        onSaved={fetchClientes}
+        onSaved={() => {
+          toast.success(editCliente ? 'Cliente actualizado' : 'Cliente creado')
+          fetchClientes()
+        }}
       />
 
       {/* Confirmar eliminación */}

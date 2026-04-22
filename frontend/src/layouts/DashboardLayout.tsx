@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from '../components/Navbar'
+import { Toaster } from '@/components/ui/sonner'
 
 export default function DashboardLayout() {
   return (
@@ -8,6 +9,7 @@ export default function DashboardLayout() {
       <main className="flex-1 p-6 overflow-auto">
         <Outlet />
       </main>
+      <Toaster />
     </div>
   )
 }
