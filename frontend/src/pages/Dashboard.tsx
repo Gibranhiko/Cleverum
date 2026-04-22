@@ -5,7 +5,8 @@ import { timeAgo } from '@/lib/formatters'
 import { Button } from '@/components/ui/button'
 import { TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
-import BotCard, { BotCardData } from '@/components/BotCard'
+import BotCard from '@/components/BotCard'
+import type { BotCardData } from '@/components/BotCard'
 
 interface Analytics {
   client_id: string

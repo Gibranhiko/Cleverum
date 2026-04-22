@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Plus, Pencil, Trash2, Bell, BellOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatDate } from '@/lib/formatters'
-import ReminderModal, { ReminderForEdit } from '@/components/ReminderModal'
+import ReminderModal from '@/components/ReminderModal'
+import type { ReminderForEdit } from '@/components/ReminderModal'
 
 interface Cliente { id: string; company_name: string }
 

@@ -6,7 +6,8 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { RefreshCw, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
-import ChatPanel, { Session } from '@/components/ChatPanel'
+import ChatPanel from '@/components/ChatPanel'
+import type { Session } from '@/components/ChatPanel'
 import SessionList from '@/components/SessionList'
 
 interface Cliente { id: string; company_name: string }
