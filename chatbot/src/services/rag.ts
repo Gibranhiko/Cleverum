@@ -53,6 +53,11 @@ export async function indexDocument(documentId: string, content: string, clientI
   return rows.length
 }
 
+export async function getRagContext(query: string, clientId: string, prefix = 'Información real de la empresa:'): Promise<string> {
+  const chunks = await retrieve(query, clientId).catch(() => [] as string[])
+  return chunks.length > 0 ? `${prefix}\n\n${chunks.join('\n\n')}` : ''
+}
+
 export async function retrieve(query: string, clientId: string, threshold = 0.75, count = 4): Promise<string[]> {
   const queryEmbedding = await embed(query)
 

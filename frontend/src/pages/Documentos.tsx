@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { Plus, Trash2, FileText, ChevronRight, RefreshCw } from 'lucide-react'
-
-const CHATBOT_URL = import.meta.env.VITE_CHATBOT_URL ?? 'http://localhost:4000'
+import { CHATBOT_URL, chatbotHeaders } from '@/lib/config'
+import { formatDate } from '@/lib/formatters'
 
 interface Cliente {
   id: string
@@ -27,9 +27,6 @@ interface Documento {
   chunk_count?: number
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('es-MX', { dateStyle: 'medium' })
-}
 
 export default function Documentos() {
   const [clientes, setClientes] = useState<Cliente[]>([])
@@ -99,6 +96,7 @@ export default function Documentos() {
     try {
       const res = await fetch(`${CHATBOT_URL}/documents/${clienteId}/index?documentId=${documentId}`, {
         method: 'POST',
+        headers: chatbotHeaders,
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))

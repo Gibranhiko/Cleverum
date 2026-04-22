@@ -21,9 +21,11 @@ export class GoogleCalendarService {
   }
 
   private downloadKeyFile(): Promise<string> {
+    if (!this.keyFileUrl.startsWith('https://')) {
+      return Promise.reject(new Error('google_calendar_key_url must use HTTPS'))
+    }
     return new Promise((resolve, reject) => {
-      const client = this.keyFileUrl.startsWith('https:') ? https : http
-      client.get(this.keyFileUrl, res => {
+      https.get(this.keyFileUrl, res => {
         let data = ''
         res.on('data', chunk => (data += chunk))
         res.on('end', () => {

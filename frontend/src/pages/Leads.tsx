@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { UserCheck, RefreshCw, Download } from 'lucide-react'
+import { formatDate } from '@/lib/formatters'
 
 interface Cliente {
   id: string
@@ -42,9 +43,6 @@ const statusConfig: Record<Lead['status'], { label: string; variant: 'default' |
 
 const statusOptions: Lead['status'][] = ['new', 'contacted', 'qualified', 'lost', 'won']
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('es-MX', { dateStyle: 'short' })
-}
 
 function exportCSV(leads: Lead[]) {
   const headers = ['Nombre', 'Empresa', 'Teléfono', 'Necesidad', 'Presupuesto', 'Timeline', 'Estado', 'Fecha']

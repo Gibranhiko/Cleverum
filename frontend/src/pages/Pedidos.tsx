@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ShoppingBag, CheckCircle, Circle, RefreshCw } from 'lucide-react'
+import { formatDateTime } from '@/lib/formatters'
 
 interface Cliente {
   id: string
@@ -42,10 +43,6 @@ const deliveryLabel: Record<string, string> = {
   dine_in: 'En local',
 }
 
-function formatDate(iso: string | null) {
-  if (!iso) return '—'
-  return new Date(iso).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })
-}
 
 function formatCurrency(n: number | null) {
   if (n == null) return '—'
@@ -196,8 +193,8 @@ export default function Pedidos() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-sm font-medium">{formatCurrency(p.total)}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{formatDate(p.created_at)}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{formatDate(p.planned_date)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{formatDateTime(p.created_at)}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{formatDateTime(p.planned_date)}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" onClick={() => setDetalle(p)}>
                     Ver
@@ -241,11 +238,11 @@ export default function Pedidos() {
                 <span className="text-muted-foreground">Total</span>
                 <span className="font-semibold">{formatCurrency(detalle.total)}</span>
                 <span className="text-muted-foreground">Fecha pedido</span>
-                <span>{formatDate(detalle.created_at)}</span>
+                <span>{formatDateTime(detalle.created_at)}</span>
                 {detalle.planned_date && (
                   <>
                     <span className="text-muted-foreground">Entrega planeada</span>
-                    <span>{formatDate(detalle.planned_date)}</span>
+                    <span>{formatDateTime(detalle.planned_date)}</span>
                   </>
                 )}
                 <span className="text-muted-foreground">Estado</span>

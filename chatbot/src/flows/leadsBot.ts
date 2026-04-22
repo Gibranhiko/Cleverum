@@ -1,17 +1,10 @@
 import supabase from '../lib/supabase'
-import { Session, updateSession, appendToHistory } from '../lib/session'
+import { updateSession, appendToHistory } from '../lib/session'
 import { sendText } from '../lib/whatsapp'
 import { ai } from '../services/ai'
-import { retrieve } from '../services/rag'
+import { getRagContext } from '../services/rag'
 import { ChatCompletionMessageParam } from 'openai/resources/chat'
-
-export interface BotContext {
-  text: string
-  from: string
-  client: any
-  session: Session
-  botConfig?: any
-}
+import { BotContext } from '../types'
 
 const SYSTEM_PROMPT = `Eres un agente de ventas experto para {COMPANY_NAME}.
 Tu objetivo es calificar prospectos de forma conversacional y natural.
@@ -45,10 +38,7 @@ export async function handleLeadsBot(ctx: BotContext) {
   }
 
   // Continue conversation
-  const chunks = await retrieve(text, clientId).catch(() => [] as string[])
-  const ragContext = chunks.length > 0
-    ? `Información real sobre los servicios de la empresa:\n\n${chunks.join('\n\n')}\n\n`
-    : ''
+  const ragContext = await getRagContext(text, clientId, 'Información real sobre los servicios de la empresa:')
 
   const basePrompt = ctx.botConfig?.system_prompt || SYSTEM_PROMPT
   const systemPrompt = basePrompt

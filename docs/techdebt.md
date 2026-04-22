@@ -271,16 +271,16 @@ export const logger = {
 
 | ID | Issue | Prioridad | Antes de prod |
 |---|---|---|---|
-| TD-01 | Auth en endpoints /bots/* | CRÍTICA | ✅ Sí |
-| TD-02 | Pedidos sin customer_name/total | ALTA | ✅ Sí |
-| TD-03 | Reminders vacíos no envían | ALTA | ✅ Sí |
-| TD-04 | whatsapp.ts traga errores | ALTA | ✅ Sí |
-| TD-05 | Google Calendar key sin HTTPS | ALTA | ✅ Sí |
-| TD-06 | BotContext duplicado x3 | MEDIA | No |
-| TD-07 | RAG context logic duplicada | MEDIA | No |
-| TD-08 | CHATBOT_URL duplicado x3 | MEDIA | No |
-| TD-09 | formatDate / timeAgo duplicados | MEDIA | No |
-| TD-10 | wa_phone_number_id en /status | MEDIA | No |
-| TD-11 | Tipos `any` en backend | MEDIA | No |
-| TD-12 | Sin rate limiting en webhook | BAJA | No |
-| TD-13 | Sin logger estructurado | BAJA | No |
+| TD-01 | Auth en endpoints /bots/* | CRÍTICA | ✅ Resuelto |
+| TD-02 | Pedidos sin customer_name/total | ALTA | ✅ Resuelto |
+| TD-03 | Reminders vacíos no envían | ALTA | ✅ Resuelto |
+| TD-04 | whatsapp.ts traga errores | ALTA | ✅ Resuelto |
+| TD-05 | Google Calendar key sin HTTPS | ALTA | ✅ Resuelto |
+| TD-06 | BotContext duplicado x3 | MEDIA | ✅ Resuelto |
+| TD-07 | RAG context logic duplicada | MEDIA | ✅ Resuelto |
+| TD-08 | CHATBOT_URL duplicado x3 | MEDIA | ✅ Resuelto |
+| TD-09 | formatDate / timeAgo duplicados | MEDIA | ✅ Resuelto |
+| TD-10 | wa_phone_number_id en /status | MEDIA | ✅ Resuelto |
+| TD-11 | Tipos `any` en backend | MEDIA | ✅ Resuelto |
+| TD-12 | Sin rate limiting en webhook | BAJA | ✅ Resuelto |
+| TD-13 | Sin logger estructurado | BAJA | ✅ Resuelto |

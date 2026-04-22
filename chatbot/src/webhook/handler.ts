@@ -5,13 +5,14 @@ import { sendText } from '../lib/whatsapp'
 import { handleInfoBot } from '../flows/infoBot'
 import { handleCatalogBot } from '../flows/catalogBot'
 import { handleLeadsBot } from '../flows/leadsBot'
+import { ClientRow, BotConfigRow } from '../types'
 
 const COMMANDS = new Set(['botoff', 'status', 'boton'])
 
 // Client cache keyed by wa_phone_number_id
-const clientCache = new Map<string, { client: any; expires: number }>()
+const clientCache = new Map<string, { client: ClientRow; expires: number }>()
 // BotConfig cache keyed by client_id
-const botConfigCache = new Map<string, { config: any; expires: number }>()
+const botConfigCache = new Map<string, { config: BotConfigRow | null; expires: number }>()
 const CACHE_TTL = 5 * 60 * 1000
 
 async function getCachedClient(phoneNumberId: string) {
@@ -114,7 +115,7 @@ async function processMessage(message: any, phoneNumberId: string) {
   }
 }
 
-async function handleCommand(cmd: string, from: string, client: any) {
+async function handleCommand(cmd: string, from: string, client: ClientRow) {
   const { id: clientId, wa_phone_number_id: pid, wa_access_token: token } = client
   const session = await getSession(clientId, from)
 

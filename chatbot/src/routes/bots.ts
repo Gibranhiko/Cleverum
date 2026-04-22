@@ -29,7 +29,7 @@ router.put('/:clientId/toggle', async (req, res) => {
 router.get('/status', async (_req, res) => {
   const { data } = await supabase
     .from('clients')
-    .select('id, company_name, bot_type, bot_active, whatsapp_phone, wa_phone_number_id')
+    .select('id, company_name, bot_type, bot_active, whatsapp_phone')
     .eq('is_active', true)
     .order('company_name')
 

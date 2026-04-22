@@ -41,7 +41,16 @@ async function runReminders() {
     const client = reminder.clients as any
     if (!client?.wa_phone_number_id || !client?.wa_access_token) continue
 
-    for (const phone of reminder.phone_numbers ?? []) {
+    let recipients: string[] = reminder.phone_numbers ?? []
+    if (recipients.length === 0) {
+      const { data: sessions } = await supabase
+        .from('conversation_sessions')
+        .select('phone_number')
+        .eq('client_id', reminder.client_id)
+      recipients = (sessions ?? []).map((s: any) => s.phone_number)
+    }
+
+    for (const phone of recipients) {
       await sendText(client.wa_phone_number_id, client.wa_access_token, phone, reminder.message)
     }
 

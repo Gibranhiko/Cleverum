@@ -1,24 +1,17 @@
 import fs from 'fs'
 import path from 'path'
 import { ChatCompletionMessageParam } from 'openai/resources/chat'
-import { Session, getSession, updateSession, appendToHistory } from '../lib/session'
+import { getSession, updateSession, appendToHistory } from '../lib/session'
 import { sendText, sendButtons } from '../lib/whatsapp'
 import { ai } from '../services/ai'
-import { retrieve } from '../services/rag'
+import { getRagContext } from '../services/rag'
 import { GoogleCalendarService } from '../services/googleCalendar'
+import { BotContext } from '../types'
 
 const APPOINTMENT_COMPLETE = 'CITA_CONFIRMADA'
 
 function loadPrompt(name: string): string {
   return fs.readFileSync(path.join(__dirname, '..', 'prompts', name), 'utf-8')
-}
-
-export interface BotContext {
-  text: string
-  from: string
-  client: any
-  session: Session
-  botConfig?: any
 }
 
 export async function handleInfoBot(ctx: BotContext) {
@@ -46,10 +39,7 @@ export async function handleInfoBot(ctx: BotContext) {
   }
 
   // consultar_empresa or hablar → AI conversation with RAG context
-  const chunks = await retrieve(text, clientId).catch(() => [] as string[])
-  const ragContext = chunks.length > 0
-    ? `Información real de la empresa:\n\n${chunks.join('\n\n')}`
-    : ''
+  const ragContext = await getRagContext(text, clientId)
 
   const basePrompt = ctx.botConfig?.system_prompt || loadPrompt('prompt-talker.txt')
   const talker = basePrompt

@@ -2,17 +2,16 @@ import axios from 'axios'
 
 const BASE = 'https://graph.facebook.com/v19.0'
 
-async function send(phoneNumberId: string, token: string, body: object) {
-  try {
-    await axios.post(`${BASE}/${phoneNumberId}/messages`, body, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    })
-  } catch (err: any) {
-    console.error('[WA] Send error:', err.response?.data ?? err.message)
-  }
+async function send(phoneNumberId: string, token: string, body: object): Promise<void> {
+  await axios.post(`${BASE}/${phoneNumberId}/messages`, body, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  }).catch((err: any) => {
+    const detail = err.response?.data?.error?.message ?? err.message
+    throw new Error(`[WA] Send failed: ${detail}`)
+  })
 }
 
 export function sendText(phoneNumberId: string, token: string, to: string, text: string) {

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { CHATBOT_URL, chatbotHeaders } from '@/lib/config'
+import { timeAgo } from '@/lib/formatters'
 import { Switch } from '@/components/ui/switch'
 import { AlertTriangle, MessageSquare, ShoppingCart, Users, TrendingUp } from 'lucide-react'
 
@@ -14,8 +16,6 @@ interface Analytics {
   leads_last_7d: number
   last_activity: string | null
 }
-
-const CHATBOT_URL = import.meta.env.VITE_CHATBOT_URL ?? 'http://localhost:4000'
 
 interface BotCard {
   id: string
@@ -39,17 +39,6 @@ const botTypeBadgeClass: Record<string, string> = {
   informativo: 'bg-blue-100 text-blue-700',
   catalogo: 'bg-green-100 text-green-700',
   leads: 'bg-purple-100 text-purple-700',
-}
-
-function formatRelative(iso?: string) {
-  if (!iso) return 'Nunca'
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60_000)
-  if (mins < 1) return 'Hace un momento'
-  if (mins < 60) return `Hace ${mins} min`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `Hace ${hrs}h`
-  return `Hace ${Math.floor(hrs / 24)}d`
 }
 
 function isStale(iso?: string) {
@@ -147,7 +136,7 @@ export default function Dashboard() {
   async function toggleBot(botId: string, current: boolean) {
     setTogglingId(botId)
     try {
-      await fetch(`${CHATBOT_URL}/bots/${botId}/toggle`, { method: 'PUT' })
+      await fetch(`${CHATBOT_URL}/bots/${botId}/toggle`, { method: 'PUT', headers: chatbotHeaders })
       setBots(prev => prev.map(b => b.id === botId ? { ...b, bot_active: !current } : b))
     } catch {
       // fallback: update DB directly
@@ -222,7 +211,7 @@ export default function Dashboard() {
 
               <div className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${isStale(bot.last_message_at) ? 'bg-yellow-50 text-yellow-700' : 'bg-muted/50 text-muted-foreground'}`}>
                 {isStale(bot.last_message_at) && <AlertTriangle size={12} className="shrink-0" />}
-                <span>Último mensaje: {formatRelative(bot.last_message_at)}</span>
+                <span>Último mensaje: {timeAgo(bot.last_message_at)}</span>
               </div>
             </div>
           ))}
@@ -254,7 +243,7 @@ export default function Dashboard() {
                     <td className="px-4 py-3 text-right">{a.orders_last_7d}</td>
                     <td className="px-4 py-3 text-right">{a.leads_last_7d}</td>
                     <td className="px-4 py-3 text-right text-muted-foreground">
-                      {a.last_activity ? formatRelative(a.last_activity) : 'Nunca'}
+                      {a.last_activity ? timeAgo(a.last_activity) : 'Nunca'}
                     </td>
                   </tr>
                 ))}

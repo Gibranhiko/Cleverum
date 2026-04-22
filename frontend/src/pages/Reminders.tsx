@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { Plus, Pencil, Trash2, Bell, BellOff } from 'lucide-react'
+import { formatDate } from '@/lib/formatters'
 
 interface Cliente { id: string; company_name: string }
 
@@ -194,7 +195,7 @@ export default function Reminders() {
                   {r.phone_numbers.length > 0 ? `${r.phone_numbers.length} número${r.phone_numbers.length !== 1 ? 's' : ''}` : 'Todos'}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {r.last_sent ? new Date(r.last_sent).toLocaleDateString('es-MX') : 'Nunca'}
+                  {r.last_sent ? formatDate(r.last_sent) : 'Nunca'}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">

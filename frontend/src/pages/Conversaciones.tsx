@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { UserCheck, Bot, RefreshCw, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react'
-
-const CHATBOT_URL = import.meta.env.VITE_CHATBOT_URL ?? 'http://localhost:4000'
+import { CHATBOT_URL, chatbotHeaders } from '@/lib/config'
+import { timeAgo } from '@/lib/formatters'
 
 interface Cliente { id: string; company_name: string }
 
@@ -29,15 +29,6 @@ interface Session {
   last_message_at: string
 }
 
-function timeAgo(iso: string) {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'ahora'
-  if (mins < 60) return `hace ${mins}m`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `hace ${hrs}h`
-  return `hace ${Math.floor(hrs / 24)}d`
-}
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -128,7 +119,7 @@ export default function Conversaciones() {
     try {
       const res = await fetch(`${CHATBOT_URL}/bots/${clienteId}/send`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: chatbotHeaders,
         body: JSON.stringify({ phone_number: selected.phone_number, message: replyText.trim() }),
       })
       if (!res.ok) {

@@ -1,15 +1,9 @@
 import supabase from '../lib/supabase'
-import { Session, getSession, updateSession, appendToHistory } from '../lib/session'
+import { getSession, updateSession, appendToHistory } from '../lib/session'
 import { sendText, sendList, sendButtons, sendImage } from '../lib/whatsapp'
 import { ai } from '../services/ai'
 import { ChatCompletionMessageParam } from 'openai/resources/chat'
-
-export interface BotContext {
-  text: string
-  from: string
-  client: any
-  session: Session
-}
+import { BotContext } from '../types'
 
 interface CartItem {
   id: string
@@ -19,6 +13,7 @@ interface CartItem {
 
 interface CartState {
   items: CartItem[]
+  customer_name?: string
   delivery_type?: string
   address?: string
 }
@@ -34,6 +29,8 @@ export async function handleCatalogBot(ctx: BotContext) {
       return handleCategorySelection(ctx)
     case 'product_selected':
       return handleProductAction(ctx)
+    case 'customer_name':
+      return handleCustomerName(ctx)
     case 'checkout':
       return handleDeliveryType(ctx)
     case 'address':
@@ -199,12 +196,23 @@ async function startCheckout(ctx: BotContext, cart: CartState) {
     return showCategoryMenu(ctx)
   }
 
+  await sendText(pid, token, from, '¿Cuál es tu nombre completo para el pedido?')
+  await updateSession(clientId, from, { flow_step: 'customer_name' })
+}
+
+async function handleCustomerName(ctx: BotContext) {
+  const { text, from, client, session } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  const state = (session.state ?? {}) as Record<string, any>
+  const cart: CartState = state.cart ?? { items: [] }
+
+  cart.customer_name = text.trim()
+  await updateSession(clientId, from, { state: { ...state, cart }, flow_step: 'checkout' })
+
   await sendButtons(pid, token, from, '¿Cómo deseas recibir tu pedido?', [
     { id: 'delivery', title: '🛵 A domicilio' },
     { id: 'pickup', title: '🏪 Para recoger' },
   ])
-
-  await updateSession(clientId, from, { flow_step: 'checkout' })
 }
 
 async function handleDeliveryType(ctx: BotContext) {
@@ -283,6 +291,7 @@ async function handleConfirmation(ctx: BotContext) {
 
   const { error } = await supabase.from('orders').insert({
     client_id: clientId,
+    customer_name: cart.customer_name ?? null,
     customer_phone: from,
     items: cart.items.map(i => ({ name: i.name, category: i.category })),
     delivery_type: cart.delivery_type,

@@ -1,23 +1,33 @@
 import 'dotenv/config'
 import express from 'express'
+import rateLimit from 'express-rate-limit'
 import { verifyWebhook } from './webhook/verify'
 import { handleWebhook } from './webhook/handler'
 import botsRouter from './routes/bots'
 import documentsRouter from './routes/documents'
+import { requireApiKey } from './middleware/auth'
 import { startReminderCron } from './services/reminder'
 
 const app = express()
 app.use(express.json())
 
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests' },
+})
+
 // WhatsApp Cloud API webhook
 app.get('/webhook', verifyWebhook)
-app.post('/webhook', handleWebhook)
+app.post('/webhook', webhookLimiter, handleWebhook)
 
-// Bot management API
-app.use('/bots', botsRouter)
+// Bot management API (requires ADMIN_API_KEY header)
+app.use('/bots', requireApiKey, botsRouter)
 
-// Document indexing API
-app.use('/documents', documentsRouter)
+// Document indexing API (requires ADMIN_API_KEY header)
+app.use('/documents', requireApiKey, documentsRouter)
 
 // Health check for Railway
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }))
