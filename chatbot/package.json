@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --exec tsx src/index.ts",
-    "build": "tsc",
+    "build": "tsc && cp -r src/prompts dist/prompts",
     "start": "node dist/index.js"
   },
   "dependencies": {
