@@ -1,192 +1,208 @@
-**Cleverum Application**
+# Cleverum
 
-This is a combined chatbot and client admin application built with Next.js, WebSockets, and a custom AI chatbot powered by OpenAI's GPT-4o-mini. It connects to a MongoDB database to manage interactions and includes AI-driven responses for customer engagement.
-
----
-
-**Features**
-
-- **Chatbot**: Built using `@builderbot/bot` with a custom AI implementation to handle customer interactions.
-- **Admin Client**: A Next.js app for managing customer interactions and chatbot analytics.
-- **WebSocket**: Real-time updates via `socket.io`.
-- **Secure Authentication**: Uses JSON Web Tokens (JWT) for authentication.
-- **MongoDB Integration**: Manages customer interactions and chatbot learning data.
-- **Role-Based File Processing**: Uploads and processes role-based files with AI matching.
-- **QR Code Service**: Generates QR codes for dynamic AI service access.
-- **Cloud Storage**: Stores images and assets on Digital Ocean Spaces.
+Internal operator panel for managing WhatsApp chatbots for multiple business clients. Not a SaaS — single admin user, no public signup.
 
 ---
 
-**Prerequisites**
+## What it does
 
-- Node.js v18 or above
-- MongoDB
-- OpenAI API Key
-- Two `.env` files, one for the chatbot and one for the web client, containing:
-  
-  **Chatbot `.env` file:**
-  - `NODE_ENV`
-  - `BOT_PORT`
-  - `OPEN_API_KEY`
-  - `CHATBOT_SECRET_KEY`
-  - `WEB_PUBLIC_URL`
-  - `BOT_PUBLIC_URL`
-  
-  **Web Client `.env` file:**
-  - `NODE_ENV`
-  - `WEB_PORT`
-  - `MONGODB_URI`
-  - `DB_NAME`
-  - `JWT_SECRET_KEY`
-  - `CHATBOT_SECRET_KEY`
-  - `BOT_PUBLIC_URL`
-  - `WEB_PUBLIC_URL`
-  - `DO_ENDPOINT`
-  - `DO_ACCESS_KEY_ID`
-  - `DO_SECRET_ACCESS_KEY`
-  - `DO_BUCKET_NAME`
+Cleverum lets one operator configure and manage AI-powered WhatsApp bots for different business clients. Each client gets their own WhatsApp number and one of three bot types:
+
+- **informativo** — answers questions about the business using a RAG knowledge base + books appointments via Google Calendar
+- **catalogo** — product catalog via WhatsApp native UI (List Messages + Buttons), handles orders end-to-end
+- **leads** — conversational AI that qualifies prospects and saves them to a CRM
+
+The admin panel provides real-time visibility into orders, leads, active conversations, and lets agents take over any conversation from the bot.
 
 ---
 
-**Installation**
+## Stack
 
-Clone the repository:
-```sh
-git clone https://github.com/your-repo/cleverum.git
-cd cleverum
+| Layer | Technology |
+|---|---|
+| Frontend | Vite + React 18 + TypeScript + TailwindCSS v4 + shadcn/ui |
+| Backend | Express + TypeScript |
+| Database | Supabase (PostgreSQL + pgvector + Auth + Storage + Realtime) |
+| AI | OpenAI gpt-4o (chat, intent, tools API) + text-embedding-3-small (RAG embeddings) |
+| Messaging | WhatsApp Cloud API (Meta official) |
+| Calendar | Google Calendar API (per-client service account) |
+| Deploy | Railway (frontend + chatbot) |
+
+No Docker. No WebSockets. No MongoDB.
+
+---
+
+## Monorepo structure
+
+```
+Cleverum/
+├── frontend/        ← Vite + React SPA (admin panel)
+│   └── src/
+│       ├── pages/   ← Clientes, Productos, Pedidos, Leads, Conversaciones, Reminders, Documentos
+│       ├── components/
+│       └── lib/     ← Supabase client, helpers
+├── chatbot/         ← Express webhook handler (WhatsApp Cloud API)
+│   └── src/
+│       ├── flows/   ← infoBot.ts, catalogBot.ts, leadsBot.ts
+│       ├── services/  ← ai.ts, rag.ts, reminder.ts, googleCalendar.ts
+│       ├── webhook/   ← handler.ts, verify.ts
+│       ├── routes/    ← bots.ts, documents.ts
+│       ├── lib/       ← supabase.ts, whatsapp.ts, session.ts
+│       └── prompts/   ← .txt prompt files (copied to dist at build)
+├── supabase/
+│   └── migrations/  ← 001_initial_schema.sql
+├── docs/
+│   ├── architecture.md
+│   ├── devplan.md
+│   └── techdebt-whatsapp.md
+├── CLAUDE.md        ← AI coding assistant briefing
+└── package.json     ← workspaces: [frontend, chatbot]
 ```
 
-Install dependencies:
-```sh
+---
+
+## Running locally
+
+```bash
+# Install all dependencies (root + workspaces)
 npm install
-```
 
-Install the `sharp` library for the chatbot:
-```sh
-npm install --cpu=wasm32 sharp
-```
-
-Set up environment variables:
-Create the `.env` files in the appropriate directories and add the required variables.
-
----
-
-**Running the Application**
-
-To start the application in development mode:
-```sh
+# Start both frontend (port 5173) and chatbot (port 4000) in parallel
 npm run dev
+
+# Or individually
+npm run dev:frontend
+npm run dev:bot
 ```
-This will start both the Next.js admin client and the chatbot service with WebSocket integration.
 
-### Multi-Client Setup
+### Required env files
 
-The application now supports multiple clients with complete data isolation and automatic session-based redirection:
-
-#### Session-Based Redirection
-- **Automatic Login Detection**: When you have a valid JWT session, you're automatically redirected to `/clientes` on app load/refresh
-- **Middleware Protection**: Server-side middleware checks for valid tokens and redirects authenticated users
-- **Fallback Client-Side Check**: JavaScript validation ensures redirection even if middleware fails
-- **Seamless Experience**: No more landing on the home page after login/refresh
-
-#### Multi-Client Management
-1. **Login** with your username and password (no clientId required)
-2. **Auto-redirect** to `/clientes` if authenticated
-3. **Create clients** via the "Clientes" menu
-4. **Select a client** to manage their data
-5. **Switch between clients** using the dropdown in the navbar
-6. Each client has:
-   - Isolated orders, products, and profiles
-   - Independent chatbot sessions
-   - Separate WebSocket notifications
-   - Unique data storage
-
-#### Authentication Flow
+**`chatbot/.env`**
 ```
-User visits / → Middleware checks JWT → Redirect to /clientes if valid
-                     ↓
-User logs in → Store JWT in cookies + localStorage → Redirect to /clientes
-                     ↓
-User refreshes → Client-side check → Stay on /clientes or redirect
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+WHATSAPP_WEBHOOK_SECRET=
+ADMIN_API_KEY=
+PORT=4000
+CORS_ORIGIN=http://localhost:5173
 ```
+
+**`frontend/.env`**
+```
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_CHATBOT_URL=http://localhost:4000
+VITE_ADMIN_API_KEY=
+```
+
+WhatsApp credentials (`wa_phone_number_id`, `wa_access_token`) are stored **per client** in the `clients` table — not as env vars. This allows one backend to serve multiple WhatsApp numbers.
 
 ---
 
-**Production**
-
-For a production environment, set `NODE_ENV=production` in your `.env` files, then run:
-```sh
-npm run build
-npm start
-```
-
----
-
-**Deploying with Docker**
-
-To deploy the application using Docker:
-
-1. Build the Docker images:
-   ```sh
-   docker-compose build
-   ```
-
-2. Start the containers:
-   ```sh
-   docker-compose up -d
-   ```
-
-3. To check logs:
-   ```sh
-   docker-compose logs -f
-   ```
-
-4. To stop the containers:
-   ```sh
-   docker-compose down
-   ```
-
-Make sure to update the `.env` files with your production credentials before deploying.
-
----
-
-**Application Structure**
+## Architecture overview
 
 ```
-/web                 # Next.js client admin interface
-/chatbot             # AI chatbot service
-  ├── chatbotServer.ts   # Main chatbot server
-  ├── intents/          # Chatbot intent handling
-  ├── services/        # API service integrations
-  ├── models/         # AI response models
-/server              # Express-like API handling (if needed)
-.env                 # Environment variables
-package.json         # Project dependencies
+Operator browser
+      │ HTTPS
+      ▼
+Frontend — Railway
+  Vite SPA (frontend/src/)
+  /clientes /productos /pedidos /leads /conversaciones /reminders /documentos
+      │
+      │ Supabase JS SDK (anon key + RLS)
+      ▼
+Supabase
+  PostgreSQL │ Auth │ Storage (products, documents) │ Realtime │ pgvector
+      ▲
+      │ service role (bypasses RLS)
+      │
+Chatbot — Railway
+  Express webhook handler (chatbot/src/)
+  POST /webhook  ← WhatsApp Cloud API (Meta)
+  GET  /webhook  (Meta verification)
+  /bots/*        (management API, requires x-api-key)
+  /documents/*   (RAG indexing, requires x-api-key)
+      │
+      ├── OpenAI (gpt-4o + text-embedding-3-small)
+      └── Google Calendar API
 ```
 
 ---
 
-**API Endpoints**
+## How incoming messages are routed
 
-- `/api/getqr` → Serves dynamically generated QR codes.
-- WebSocket: Real-time customer interactions via `socket.io`.
-
----
-
-**Technologies Used**
-
-- **Next.js**: Client admin interface.
-- **Socket.IO**: Real-time communication.
-- **MongoDB**: Database for storing AI interactions.
-- **OpenAI GPT-4o-mini**: AI chatbot engine.
-- **BuilderBot**: Custom chatbot framework.
-- **JWT Authentication**: Secure access control.
-- **Digital Ocean Spaces**: Cloud storage for images and assets.
-- **Docker**: Containerized deployment.
+1. Meta sends `POST /webhook` with a `phone_number_id` in the payload
+2. Handler looks up the client in `clients` table by `wa_phone_number_id` (5-min cache)
+3. Checks `client.bot_active` and the session's `human_takeover` / `bot_disabled_for_user` flags
+4. Routes to `infoBot`, `catalogBot`, or `leadsBot` based on `client.bot_type`
 
 ---
 
-**License**
+## Bot API endpoints
 
-This project is licensed under the MIT License.
+All `/bots/*` and `/documents/*` routes require header: `x-api-key: <ADMIN_API_KEY>`
 
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | Health check |
+| GET | `/webhook` | Meta webhook verification |
+| POST | `/webhook` | Incoming WhatsApp messages |
+| GET | `/bots/status` | All clients + bot status |
+| PUT | `/bots/:clientId/toggle` | Toggle bot on/off |
+| POST | `/bots/:clientId/takeover` | Enable/disable human takeover for a session |
+| POST | `/bots/:clientId/send` | Send message as agent (requires active 24h window) |
+| PUT | `/bots/:clientId/credentials` | Update WhatsApp credentials |
+| POST | `/documents/:clientId/index` | Index a document into pgvector (RAG) |
+
+---
+
+## Deployment
+
+Both services run on Railway, deployed from the same GitHub repo.
+
+| Service | Root dir | Build | Start |
+|---|---|---|---|
+| chatbot | `chatbot/` | `npm run build` (`tsc` + copy prompts) | `node dist/index.js` |
+| frontend | repo root | `npm run build --workspace=frontend` | `npx serve frontend/dist -l $PORT` |
+
+Each service has a `railway.json` at its root defining the build and start commands.
+
+### Required Railway env vars
+
+**Chatbot service:**
+```
+SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY,
+WHATSAPP_WEBHOOK_SECRET, ADMIN_API_KEY, CORS_ORIGIN
+```
+
+**Frontend service:**
+```
+VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_CHATBOT_URL, VITE_ADMIN_API_KEY
+```
+
+### WhatsApp webhook setup (Meta)
+
+1. Deploy chatbot to Railway — get the public URL
+2. Meta Developer Console → your app → WhatsApp → Configuration
+3. Set callback URL: `https://<chatbot-url>/webhook`
+4. Set verify token: value of `WHATSAPP_WEBHOOK_SECRET`
+5. Subscribe to the `messages` field
+6. Add your phone number as a test recipient
+
+---
+
+## Database
+
+Managed by Supabase. Migration at `supabase/migrations/001_initial_schema.sql`.
+
+Key tables: `clients`, `products`, `orders`, `leads`, `conversation_sessions`, `reminders`, `documents`, `document_chunks`, `bot_configs`
+
+RLS is enabled on all tables. The frontend uses the anon key (RLS enforced). The chatbot uses the service role key (bypasses RLS — intentional, bots need to write without auth context).
+
+---
+
+## License
+
+Private — internal use only.
