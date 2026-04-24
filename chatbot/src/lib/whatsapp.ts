@@ -1,16 +1,26 @@
 import axios from 'axios'
 
-const BASE = 'https://graph.facebook.com/v19.0'
+const API_VERSION = process.env.WHATSAPP_API_VERSION ?? 'v20.0'
+const BASE = `https://graph.facebook.com/${API_VERSION}`
 
-async function send(phoneNumberId: string, token: string, body: object): Promise<void> {
+export class WhatsAppWindowError extends Error {
+  constructor(to: string) {
+    super(`[WA] 24h window expired for ${to}`)
+    this.name = 'WhatsAppWindowError'
+  }
+}
+
+async function send(phoneNumberId: string, token: string, body: Record<string, unknown> & { to?: string }): Promise<void> {
   await axios.post(`${BASE}/${phoneNumberId}/messages`, body, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   }).catch((err: any) => {
-    const detail = err.response?.data?.error?.message ?? err.message
-    throw new Error(`[WA] Send failed: ${detail}`)
+    const metaError = err.response?.data?.error
+    if (metaError?.code === 131047) throw new WhatsAppWindowError(body.to ?? 'unknown')
+    const detail = metaError?.message ?? err.message
+    throw new Error(`[WA] Send failed (code ${metaError?.code ?? 'unknown'}): ${detail}`)
   })
 }
 

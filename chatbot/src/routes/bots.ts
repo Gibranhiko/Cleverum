@@ -71,6 +71,21 @@ router.post('/:clientId/send', async (req, res) => {
     return res.status(400).json({ error: 'Client has no WhatsApp credentials configured' })
   }
 
+  const { data: session } = await supabase
+    .from('conversation_sessions')
+    .select('last_message_at')
+    .eq('client_id', clientId)
+    .eq('phone_number', phone_number)
+    .single()
+
+  const lastMsg = session?.last_message_at ? new Date(session.last_message_at).getTime() : 0
+  if (Date.now() - lastMsg > 23.5 * 3600 * 1000) {
+    return res.status(400).json({
+      error: 'WINDOW_EXPIRED',
+      message: 'Han pasado más de 24h desde el último mensaje del usuario. No es posible enviar texto libre.',
+    })
+  }
+
   await sendText(client.wa_phone_number_id, client.wa_access_token, phone_number, message)
   await appendToHistory(clientId, phone_number, 'assistant', message)
 

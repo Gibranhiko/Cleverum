@@ -164,6 +164,71 @@ class AIService {
       { ready: false, missing: 'insufficient data' }
     )
   }
+
+  isOptOutIntent(text: string, history: { role: string; content: string }[]) {
+    const context = history.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: 'system',
+        content:
+          'Determine if the user explicitly wants to permanently stop receiving messages from this bot. ' +
+          'Return false if they are cancelling an order, asking a question, or using opt-out words in a different context. ' +
+          'Only return true if the intent is clearly to unsubscribe or stop all bot messages.',
+      },
+      {
+        role: 'user',
+        content: context ? `Conversation context:\n${context}\n\nLatest message: ${text}` : text,
+      },
+    ]
+    return this.callTool<{ is_opt_out: boolean }>(
+      messages,
+      'fn_detect_opt_out',
+      {
+        description: 'Detect if the user wants to permanently stop receiving messages',
+        parameters: {
+          type: 'object',
+          properties: {
+            is_opt_out: {
+              type: 'boolean',
+              description: 'True only if user clearly wants to unsubscribe from all bot messages',
+            },
+          },
+          required: ['is_opt_out'],
+        },
+      },
+      { is_opt_out: false }
+    )
+  }
+
+  isOptOutConfirmation(text: string) {
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: 'system',
+        content:
+          'The user was just asked to confirm they want to stop receiving messages. ' +
+          'Determine if their reply is a confirmation (yes) or a rejection (no).',
+      },
+      { role: 'user', content: text },
+    ]
+    return this.callTool<{ confirmed: boolean }>(
+      messages,
+      'fn_confirm_opt_out',
+      {
+        description: 'Determine if the user confirmed or rejected the opt-out request',
+        parameters: {
+          type: 'object',
+          properties: {
+            confirmed: {
+              type: 'boolean',
+              description: 'True if user said yes/confirmed, false if they said no/rejected',
+            },
+          },
+          required: ['confirmed'],
+        },
+      },
+      { confirmed: false }
+    )
+  }
 }
 
 export const ai = new AIService()

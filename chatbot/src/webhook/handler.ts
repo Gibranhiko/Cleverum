@@ -5,9 +5,21 @@ import { sendText } from '../lib/whatsapp'
 import { handleInfoBot } from '../flows/infoBot'
 import { handleCatalogBot } from '../flows/catalogBot'
 import { handleLeadsBot } from '../flows/leadsBot'
+import { ai } from '../services/ai'
 import { ClientRow, BotConfigRow } from '../types'
 
 const COMMANDS = new Set(['botoff', 'status', 'boton'])
+
+const OPT_OUT_SIGNALS = [
+  'stop', 'unsubscribe', 'darme de baja', 'darse de baja',
+  'dejar de recibir', 'no quiero mensajes', 'ya no quiero mensajes',
+  'cancelar mensajes', 'cancelar suscripcion', 'cancelar suscripción',
+]
+
+function mightBeOptOut(text: string): boolean {
+  const lower = text.toLowerCase()
+  return OPT_OUT_SIGNALS.some(s => lower.includes(s))
+}
 
 // Client cache keyed by wa_phone_number_id
 const clientCache = new Map<string, { client: ClientRow; expires: number }>()
@@ -56,6 +68,17 @@ export async function handleWebhook(req: Request, res: Response) {
 
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
+        if (change.field === 'phone_number_quality_update') {
+          const { display_phone_number, event, current_limit } = change.value ?? {}
+          console.warn(`[Meta Quality] ${display_phone_number}: event=${event}, limit=${current_limit}`)
+          continue
+        }
+
+        if (change.field === 'account_alerts') {
+          console.error('[Meta Alert]', JSON.stringify(change.value))
+          continue
+        }
+
         if (change.field !== 'messages') continue
         const value = change.value
         const phoneNumberId: string = value.metadata?.phone_number_id
@@ -75,10 +98,11 @@ export async function handleWebhook(req: Request, res: Response) {
 async function processMessage(message: any, phoneNumberId: string) {
   const from: string = message.from
   let text = ''
+  const isInteractive = message.type === 'interactive'
 
   if (message.type === 'text') {
     text = message.text?.body ?? ''
-  } else if (message.type === 'interactive') {
+  } else if (isInteractive) {
     const it = message.interactive
     if (it.type === 'button_reply') text = it.button_reply.id
     else if (it.type === 'list_reply') text = it.list_reply.id
@@ -102,6 +126,26 @@ async function processMessage(message: any, phoneNumberId: string) {
   if (session.bot_disabled_for_user) return
   if (session.human_takeover) return
 
+  // Handle pending opt-out confirmation
+  if (session.flow_step === 'opt_out_confirm') {
+    return handleOptOutConfirmation(text, from, client, session)
+  }
+
+  // AI-driven opt-out detection — only runs on plain text with signal words (not button taps)
+  if (!isInteractive && mightBeOptOut(text)) {
+    const { is_opt_out } = await ai.isOptOutIntent(text, session.history ?? [])
+    if (is_opt_out) {
+      await updateSession(client.id, from, { flow_step: 'opt_out_confirm' })
+      await sendText(
+        client.wa_phone_number_id,
+        client.wa_access_token,
+        from,
+        'Entiendo que quieres darte de baja 🙏\n\n¿Confirmas que ya no deseas recibir mensajes de este número?\n\nResponde *Sí* para confirmar o *No* para continuar.'
+      )
+      return
+    }
+  }
+
   await appendToHistory(client.id, from, 'user', text)
 
   const botConfig = await getCachedBotConfig(client.id)
@@ -112,6 +156,33 @@ async function processMessage(message: any, phoneNumberId: string) {
     case 'catalogo':    return handleCatalogBot(ctx)
     case 'leads':       return handleLeadsBot(ctx)
     default: console.warn(`[Webhook] Unknown bot_type: ${client.bot_type}`)
+  }
+}
+
+async function handleOptOutConfirmation(text: string, from: string, client: ClientRow, session: any) {
+  const { id: clientId, wa_phone_number_id: pid, wa_access_token: token } = client
+  const { confirmed } = await ai.isOptOutConfirmation(text)
+
+  if (confirmed) {
+    await updateSession(clientId, from, { bot_disabled_for_user: true, flow_step: null, current_flow: null })
+    await sendText(pid, token, from,
+      'Listo, te damos de baja ✅\n\nYa no recibirás mensajes de este número. Si cambias de opinión en el futuro, escribe *HOLA*.'
+    )
+    return
+  }
+
+  // Not confirmed — clear the pending state and resume normal routing
+  await updateSession(clientId, from, { flow_step: null })
+  await sendText(pid, token, from, 'No hay problema, continuamos 😊')
+
+  await appendToHistory(clientId, from, 'user', text)
+  const botConfig = await getCachedBotConfig(clientId)
+  const ctx = { text, from, client, session: { ...session, flow_step: null }, botConfig }
+
+  switch (client.bot_type) {
+    case 'informativo': return handleInfoBot(ctx)
+    case 'catalogo':    return handleCatalogBot(ctx)
+    case 'leads':       return handleLeadsBot(ctx)
   }
 }
 
