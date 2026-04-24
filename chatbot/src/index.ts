@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import express from 'express'
+import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import { verifyWebhook } from './webhook/verify'
 import { handleWebhook } from './webhook/handler'
@@ -9,6 +10,13 @@ import { requireApiKey } from './middleware/auth'
 import { startReminderCron } from './services/reminder'
 
 const app = express()
+
+const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(',')
+app.use(cors({
+  origin: allowedOrigins,
+  allowedHeaders: ['Content-Type', 'x-api-key'],
+}))
+
 app.use(express.json())
 
 const webhookLimiter = rateLimit({
