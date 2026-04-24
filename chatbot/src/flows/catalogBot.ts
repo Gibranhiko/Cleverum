@@ -1,8 +1,6 @@
 import supabase from '../lib/supabase'
 import { getSession, updateSession, appendToHistory } from '../lib/session'
 import { sendText, sendList, sendButtons, sendImage } from '../lib/whatsapp'
-import { ai } from '../services/ai'
-import { ChatCompletionMessageParam } from 'openai/resources/chat'
 import { BotContext } from '../types'
 
 interface CartItem {
@@ -246,11 +244,7 @@ async function handleAddress(ctx: BotContext) {
   const state = (session.state ?? {}) as Record<string, any>
   const cart: CartState = state.cart ?? { items: [] }
 
-  const messages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: 'Format and return the delivery address from the user message. Return just the formatted address, nothing else.' },
-    { role: 'user', content: text },
-  ]
-  const address = (await ai.createChat(messages)) || text
+  const address = text.trim()
   cart.address = address
 
   await updateSession(clientId, from, { state: { ...state, cart }, flow_step: 'confirming' })

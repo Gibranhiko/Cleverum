@@ -6,6 +6,10 @@ import { getRagContext } from '../services/rag'
 import { ChatCompletionMessageParam } from 'openai/resources/chat'
 import { BotContext } from '../types'
 
+const LEAD_LISTO = 'LEAD_LISTO'
+
+const TOKEN_INSTRUCTION = `\nCuando hayas recolectado: nombre completo, empresa, necesidad principal, presupuesto aproximado y timeline — muestra un breve resumen de lo recolectado e incluye el token exacto ${LEAD_LISTO} al final de tu mensaje. No lo incluyas antes de tener todos los campos.`
+
 const SYSTEM_PROMPT = `Eres un agente de ventas experto para {COMPANY_NAME}.
 Tu objetivo es calificar prospectos de forma conversacional y natural.
 Haz preguntas para entender: nombre completo, empresa, necesidad principal, presupuesto aproximado y timeline deseado.
@@ -13,7 +17,8 @@ No hagas todas las preguntas de golpe — ve de una en una, de manera natural.
 Sé amable, profesional y conciso. No inventes información.
 {RAG_CONTEXT}
 Historial de la conversación:
-{HISTORY}`
+{HISTORY}
+${TOKEN_INSTRUCTION}`
 
 export async function handleLeadsBot(ctx: BotContext) {
   const { text, from, client, session } = ctx
@@ -26,21 +31,13 @@ export async function handleLeadsBot(ctx: BotContext) {
     return
   }
 
-  // After enough exchanges, check if ready to capture
-  if (history.length >= 6) {
-    const readinessMessages: ChatCompletionMessageParam[] = [
-      { role: 'system', content: 'Evaluate the following conversation and determine if we have enough info to qualify this lead.' },
-      ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-    ]
-
-    const { ready } = await ai.isLeadReady(readinessMessages)
-    if (ready) return captureLead(ctx)
-  }
-
   // Continue conversation
   const ragContext = await getRagContext(text, clientId, 'Información real sobre los servicios de la empresa:')
 
-  const basePrompt = ctx.botConfig?.system_prompt || SYSTEM_PROMPT
+  const basePrompt = (ctx.botConfig?.system_prompt
+    ? ctx.botConfig.system_prompt + TOKEN_INSTRUCTION
+    : SYSTEM_PROMPT)
+
   const systemPrompt = basePrompt
     .replace('{COMPANY_NAME}', client.company_name ?? '')
     .replace('{RAG_CONTEXT}', ragContext)
@@ -53,6 +50,11 @@ export async function handleLeadsBot(ctx: BotContext) {
   ]
 
   const response = await ai.createChat(messages, 0.3)
+
+  if (response.includes(LEAD_LISTO)) {
+    return captureLead(ctx)
+  }
+
   if (response) {
     await sendText(pid, token, from, response)
     await appendToHistory(clientId, from, 'assistant', response)
