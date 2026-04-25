@@ -29,8 +29,12 @@ function key(clientId: string, phone: string) {
 export async function getSession(clientId: string, phone: string): Promise<Session> {
   const k = key(clientId, phone)
   const cached = cache.get(k)
-  if (cached && cached.expires > Date.now()) return cached.session
+  if (cached && cached.expires > Date.now()) {
+    console.log(`[Session] cache hit ${phone}`)
+    return cached.session
+  }
 
+  console.log(`[Session] cache miss ${phone} — fetching from DB`)
   const { data, error } = await supabase
     .from('conversation_sessions')
     .upsert(

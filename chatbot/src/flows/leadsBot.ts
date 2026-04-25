@@ -25,6 +25,8 @@ export async function handleLeadsBot(ctx: BotContext) {
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
   const history = session.history ?? []
 
+  console.log(`[LeadsBot] from=${from} flow_step=${session.flow_step ?? 'qualifying'} history=${history.length}`)
+
   if (session.flow_step === 'captured') {
     await sendText(pid, token, from,
       'Ya tenemos tu información registrada. Nuestro equipo te contactará pronto. ¡Gracias! 🙏')
@@ -52,6 +54,7 @@ export async function handleLeadsBot(ctx: BotContext) {
   const response = await ai.createChat(messages, 0.3)
 
   if (response.includes(LEAD_LISTO)) {
+    console.log(`[LeadsBot] LEAD_LISTO token detected — capturing lead for ${from}`)
     return captureLead(ctx)
   }
 
@@ -90,7 +93,11 @@ async function captureLead(ctx: BotContext) {
     status: 'new',
   })
 
-  if (error) console.error('[LeadsBot] Insert error:', error)
+  if (error) {
+    console.error('[LeadsBot] Lead insert error:', error)
+  } else {
+    console.log(`[LeadsBot] Lead saved for ${from} name="${lead.name}" need="${lead.need}"`)
+  }
 
   const name = lead.name ? `, ${lead.name}` : ''
   await sendText(pid, token, from,

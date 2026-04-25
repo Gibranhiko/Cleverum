@@ -33,6 +33,7 @@ export async function handleInfoBot(ctx: BotContext) {
   ]
 
   const { intent } = await ai.determineIntent(intentMessages)
+  console.log(`[InfoBot] intent="${intent}" text="${text.slice(0, 50)}"`)
 
   if (intent === 'agendar_cita') {
     return startAppointmentFlow(ctx)
@@ -40,6 +41,7 @@ export async function handleInfoBot(ctx: BotContext) {
 
   // consultar_empresa or hablar → AI conversation with RAG context
   const ragContext = await getRagContext(text, clientId)
+  console.log(`[InfoBot] RAG context length=${ragContext.length}`)
 
   const basePrompt = ctx.botConfig?.system_prompt || loadPrompt('prompt-talker.txt')
   const talker = basePrompt
@@ -110,6 +112,7 @@ async function runAppointmentAI(ctx: BotContext) {
   const response = await ai.createChat(messages)
 
   if (response.includes(APPOINTMENT_COMPLETE)) {
+    console.log(`[InfoBot] CITA_CONFIRMADA token detected — finishing appointment for ${from}`)
     await appendToHistory(clientId, from, 'user', text)
     return finishAppointment(ctx)
   }
