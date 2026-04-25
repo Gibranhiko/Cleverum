@@ -34,7 +34,8 @@ export async function handleLeadsBot(ctx: BotContext) {
   }
 
   // Continue conversation
-  const ragContext = await getRagContext(text, clientId, 'Información real sobre los servicios de la empresa:')
+  const ragQuery = `${text} ${client.company_name ?? ''}`
+  const ragContext = await getRagContext(ragQuery, clientId, 'Información real sobre los servicios de la empresa:')
 
   const basePrompt = (ctx.botConfig?.system_prompt
     ? ctx.botConfig.system_prompt + TOKEN_INSTRUCTION
