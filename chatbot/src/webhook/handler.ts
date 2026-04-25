@@ -60,11 +60,21 @@ export function invalidateClientCache(phoneNumberId: string) {
 }
 
 export async function handleWebhook(req: Request, res: Response) {
+  console.log('[Webhook] POST hit')
   res.sendStatus(200) // acknowledge immediately — Meta requires < 5s
 
   try {
     const body = req.body
-    if (body.object !== 'whatsapp_business_account') return
+
+    if (!body || typeof body !== 'object') {
+      console.error('[Webhook] Empty or non-JSON body — is express.json() missing?')
+      return
+    }
+
+    if (body.object !== 'whatsapp_business_account') {
+      console.warn('[Webhook] Unexpected object type:', body.object)
+      return
+    }
 
     for (const entry of body.entry ?? []) {
       for (const change of entry.changes ?? []) {
@@ -79,11 +89,24 @@ export async function handleWebhook(req: Request, res: Response) {
           continue
         }
 
-        if (change.field !== 'messages') continue
+        if (change.field !== 'messages') {
+          console.log('[Webhook] Skipping non-messages field:', change.field)
+          continue
+        }
+
         const value = change.value
         const phoneNumberId: string = value.metadata?.phone_number_id
+        const messages = value.messages ?? []
 
-        for (const message of value.messages ?? []) {
+        if (messages.length === 0) {
+          console.log('[Webhook] Change has no messages (status update only)')
+          continue
+        }
+
+        console.log(`[Webhook] ${messages.length} message(s) for phone_number_id=${phoneNumberId}`)
+
+        for (const message of messages) {
+          console.log(`[Webhook] Processing type=${message.type} from=${message.from}`)
           await processMessage(message, phoneNumberId).catch(err =>
             console.error('[Webhook] processMessage error:', err)
           )
@@ -117,14 +140,24 @@ async function processMessage(message: any, phoneNumberId: string) {
     console.warn(`[Webhook] No client for phone_number_id: ${phoneNumberId}`)
     return
   }
+  console.log(`[Webhook] Client found: ${client.company_name} (bot_type=${client.bot_type} bot_active=${client.bot_active})`)
 
   const textLower = text.trim().toLowerCase()
   if (COMMANDS.has(textLower)) return handleCommand(textLower, from, client)
-  if (!client.bot_active) return
+  if (!client.bot_active) {
+    console.warn('[Webhook] Bot is inactive for this client — message ignored')
+    return
+  }
 
   const session = await getSession(client.id, from)
-  if (session.bot_disabled_for_user) return
-  if (session.human_takeover) return
+  if (session.bot_disabled_for_user) {
+    console.warn(`[Webhook] Bot disabled for user ${from}`)
+    return
+  }
+  if (session.human_takeover) {
+    console.warn(`[Webhook] Human takeover active for ${from}`)
+    return
+  }
 
   // Handle pending opt-out confirmation
   if (session.flow_step === 'opt_out_confirm') {

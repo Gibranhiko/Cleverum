@@ -86,10 +86,14 @@ router.post('/:clientId/send', async (req, res) => {
     })
   }
 
-  await sendText(client.wa_phone_number_id, client.wa_access_token, phone_number, message)
-  await appendToHistory(clientId, phone_number, 'assistant', message)
-
-  res.json({ ok: true })
+  try {
+    await sendText(client.wa_phone_number_id, client.wa_access_token, phone_number, message)
+    await appendToHistory(clientId, phone_number, 'assistant', message)
+    res.json({ ok: true })
+  } catch (err: any) {
+    console.error('[Bots/send] WhatsApp error:', err.message)
+    res.status(502).json({ error: err.message })
+  }
 })
 
 // Update WhatsApp credentials
