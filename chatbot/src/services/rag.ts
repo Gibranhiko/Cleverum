@@ -73,5 +73,7 @@ export async function retrieve(query: string, clientId: string, threshold = 0.75
     return []
   }
 
-  return (data ?? []).map((row: { content: string }) => row.content)
+  const results = (data ?? []).map((row: { content: string }) => row.content)
+  console.log(`[RAG] query="${query.slice(0, 50)}" clientId=${clientId} threshold=${threshold} → ${results.length} chunks found`)
+  return results
 }

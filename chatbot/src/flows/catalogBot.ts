@@ -17,7 +17,8 @@ interface CartState {
 }
 
 export async function handleCatalogBot(ctx: BotContext) {
-  const { session } = ctx
+  const { session, from } = ctx
+  console.log(`[CatalogBot] from=${from} flow_step=${session.flow_step ?? 'idle'}`)
 
   switch (session.flow_step) {
     case null:
@@ -294,11 +295,12 @@ async function handleConfirmation(ctx: BotContext) {
   })
 
   if (error) {
-    console.error('[CatalogBot] Order error:', error)
+    console.error('[CatalogBot] Order insert error:', error)
     await sendText(pid, token, from, 'Hubo un error al registrar tu pedido. Intenta de nuevo.')
     return
   }
 
+  console.log(`[CatalogBot] Order created for ${from} items=${cart.items.length} delivery=${cart.delivery_type}`)
   await sendText(pid, token, from,
     '✅ ¡Pedido registrado! Nuestro equipo lo recibirá en breve y se pondrá en contacto contigo. ¡Gracias! 🎉')
   await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })

@@ -11,11 +11,14 @@ export class WhatsAppWindowError extends Error {
 }
 
 async function send(phoneNumberId: string, token: string, body: Record<string, unknown> & { to?: string }): Promise<void> {
+  const type = body.type as string ?? 'unknown'
   await axios.post(`${BASE}/${phoneNumberId}/messages`, body, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
+  }).then(() => {
+    console.log(`[WA] sent type=${type} to=${body.to}`)
   }).catch((err: any) => {
     const metaError = err.response?.data?.error
     if (metaError?.code === 131047) throw new WhatsAppWindowError(body.to ?? 'unknown')

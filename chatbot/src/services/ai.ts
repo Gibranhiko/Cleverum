@@ -12,6 +12,7 @@ class AIService {
   }
 
   async createChat(messages: ChatCompletionMessageParam[], temperature = 0): Promise<string> {
+    const t0 = Date.now()
     try {
       const completion = await this.openai.chat.completions.create({
         model: this.model,
@@ -19,9 +20,11 @@ class AIService {
         temperature,
         max_tokens: 512,
       })
-      return completion.choices[0].message.content ?? ''
+      const result = completion.choices[0].message.content ?? ''
+      console.log(`[AI] createChat ${Date.now() - t0}ms tokens=${completion.usage?.total_tokens ?? '?'}`)
+      return result
     } catch (err) {
-      console.error('[AI] createChat error:', err)
+      console.error(`[AI] createChat error (${Date.now() - t0}ms):`, err)
       return ''
     }
   }
@@ -32,6 +35,7 @@ class AIService {
     toolDef: object,
     fallback: T
   ): Promise<T> {
+    const t0 = Date.now()
     try {
       const completion = await this.openai.chat.completions.create({
         model: this.model,
@@ -42,9 +46,11 @@ class AIService {
       })
       const args = completion.choices[0]?.message?.tool_calls?.[0]?.function?.arguments
       if (!args) throw new Error('No tool args')
-      return JSON.parse(args) as T
+      const result = JSON.parse(args) as T
+      console.log(`[AI] ${toolName} ${Date.now() - t0}ms → ${JSON.stringify(result)}`)
+      return result
     } catch (err) {
-      console.error(`[AI] ${toolName} error:`, err)
+      console.error(`[AI] ${toolName} error (${Date.now() - t0}ms):`, err)
       return fallback
     }
   }
