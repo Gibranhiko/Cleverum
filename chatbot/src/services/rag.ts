@@ -58,7 +58,7 @@ export async function getRagContext(query: string, clientId: string, prefix = 'I
   return chunks.length > 0 ? `${prefix}\n\n${chunks.join('\n\n')}` : ''
 }
 
-export async function retrieve(query: string, clientId: string, threshold = 0.75, count = 4): Promise<string[]> {
+export async function retrieve(query: string, clientId: string, threshold = 0.5, count = 4): Promise<string[]> {
   const queryEmbedding = await embed(query)
 
   const { data, error } = await supabase.rpc('match_chunks', {
