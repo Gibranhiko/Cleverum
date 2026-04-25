@@ -67,7 +67,10 @@ export async function getSession(clientId: string, phone: string): Promise<Sessi
 
 export async function updateSession(clientId: string, phone: string, updates: Partial<Session>) {
   const k = key(clientId, phone)
-  cache.delete(k)
+  const cached = cache.get(k)
+  if (cached) {
+    cache.set(k, { session: { ...cached.session, ...updates }, expires: Date.now() + TTL })
+  }
 
   await supabase
     .from('conversation_sessions')
