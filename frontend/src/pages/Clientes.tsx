@@ -24,6 +24,7 @@ interface Cliente {
   wa_phone_number_id: string
   wa_access_token: string
   google_calendar_id: string
+  google_calendar_key_url: string
   bot_active: boolean
   is_active: boolean
 }
