@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,6 +52,7 @@ interface Props {
 export default function ClienteModal({ open, cliente, onClose, onSaved }: Props) {
   const [form, setForm] = useState<Cliente>(empty)
   const [keyFile, setKeyFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -191,18 +192,25 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
                 </div>
                 <div className="space-y-1.5">
                   <Label>Service Account JSON</Label>
-                  {form.google_calendar_key_url && !keyFile && (
-                    <p className="text-xs text-green-600">✓ Clave configurada — sube un nuevo archivo para reemplazarla</p>
-                  )}
-                  <Input
+                  <input
+                    ref={fileInputRef}
                     type="file"
                     accept=".json"
+                    className="hidden"
                     onChange={e => setKeyFile(e.target.files?.[0] ?? null)}
-                    className="cursor-pointer"
                   />
-                  {keyFile && (
-                    <p className="text-xs text-muted-foreground">{keyFile.name}</p>
-                  )}
+                  <div
+                    className="flex items-center gap-3 rounded-md border border-input px-3 py-2 text-sm cursor-pointer hover:bg-accent"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <span className="text-muted-foreground">
+                      {keyFile
+                        ? keyFile.name
+                        : form.google_calendar_key_url
+                          ? '✓ Clave configurada — clic para reemplazar'
+                          : 'Seleccionar archivo .json'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </>
