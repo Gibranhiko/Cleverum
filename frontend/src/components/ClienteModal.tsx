@@ -21,6 +21,7 @@ interface Cliente {
   wa_phone_number_id: string
   wa_access_token: string
   google_calendar_id: string
+  google_calendar_key_url: string
   bot_active: boolean
 }
 
@@ -37,6 +38,7 @@ const empty: Cliente = {
   wa_phone_number_id: '',
   wa_access_token: '',
   google_calendar_id: '',
+  google_calendar_key_url: '',
   bot_active: true,
 }
 
@@ -49,11 +51,13 @@ interface Props {
 
 export default function ClienteModal({ open, cliente, onClose, onSaved }: Props) {
   const [form, setForm] = useState<Cliente>(empty)
+  const [keyFile, setKeyFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
     setForm(cliente ?? empty)
+    setKeyFile(null)
     setError('')
   }, [cliente, open])
 
@@ -70,13 +74,31 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
     setError('')
 
     const payload = { ...form }
+    let clientId = form.id
 
-    const { error } = form.id
-      ? await supabase.from('clients').update(payload).eq('id', form.id)
-      : await supabase.from('clients').insert(payload)
+    if (form.id) {
+      const { error: updateError } = await supabase.from('clients').update(payload).eq('id', form.id)
+      if (updateError) { setLoading(false); setError(updateError.message); return }
+    } else {
+      const { data, error: insertError } = await supabase.from('clients').insert(payload).select().single()
+      if (insertError || !data) { setLoading(false); setError(insertError?.message ?? 'Error al guardar'); return }
+      clientId = data.id
+    }
+
+    if (keyFile && clientId) {
+      const path = `${clientId}/service-account.json`
+      const { error: uploadError } = await supabase.storage
+        .from('calendar-keys')
+        .upload(path, keyFile, { upsert: true })
+      if (uploadError) {
+        setLoading(false)
+        setError(`Cliente guardado pero falló la subida del JSON: ${uploadError.message}`)
+        return
+      }
+      await supabase.from('clients').update({ google_calendar_key_url: path }).eq('id', clientId)
+    }
 
     setLoading(false)
-    if (error) { setError(error.message); return }
     onSaved()
     onClose()
   }
@@ -162,9 +184,26 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
             <>
               <Separator />
               <p className="text-sm font-medium text-muted-foreground">Google Calendar</p>
-              <div className="space-y-1.5">
-                <Label>Calendar ID</Label>
-                <Input value={form.google_calendar_id} onChange={e => set('google_calendar_id', e.target.value)} placeholder="ID del calendario de Google" />
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Calendar ID</Label>
+                  <Input value={form.google_calendar_id} onChange={e => set('google_calendar_id', e.target.value)} placeholder="ID del calendario de Google" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Service Account JSON</Label>
+                  {form.google_calendar_key_url && !keyFile && (
+                    <p className="text-xs text-green-600">✓ Clave configurada — sube un nuevo archivo para reemplazarla</p>
+                  )}
+                  <Input
+                    type="file"
+                    accept=".json"
+                    onChange={e => setKeyFile(e.target.files?.[0] ?? null)}
+                    className="cursor-pointer"
+                  />
+                  {keyFile && (
+                    <p className="text-xs text-muted-foreground">{keyFile.name}</p>
+                  )}
+                </div>
               </div>
             </>
           )}

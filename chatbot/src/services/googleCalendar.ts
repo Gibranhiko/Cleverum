@@ -1,6 +1,5 @@
 import { google } from 'googleapis'
-import https from 'https'
-import http from 'http'
+import supabase from '../lib/supabase'
 
 const TIMEZONE = 'America/Mexico_City'
 
@@ -13,31 +12,25 @@ export interface CalendarEvent {
 
 export class GoogleCalendarService {
   private calendarId: string
-  private keyFileUrl: string
+  private keyFilePath: string
 
-  constructor(calendarId: string, keyFileUrl: string) {
+  constructor(calendarId: string, keyFilePath: string) {
     this.calendarId = calendarId
-    this.keyFileUrl = keyFileUrl
+    this.keyFilePath = keyFilePath
   }
 
-  private downloadKeyFile(): Promise<string> {
-    if (!this.keyFileUrl.startsWith('https://')) {
-      return Promise.reject(new Error('google_calendar_key_url must use HTTPS'))
+  private async downloadKeyFile(): Promise<string> {
+    const { data, error } = await supabase.storage
+      .from('calendar-keys')
+      .download(this.keyFilePath)
+
+    if (error || !data) {
+      throw new Error(`Failed to download calendar key: ${error?.message}`)
     }
-    return new Promise((resolve, reject) => {
-      https.get(this.keyFileUrl, res => {
-        let data = ''
-        res.on('data', chunk => (data += chunk))
-        res.on('end', () => {
-          try {
-            JSON.parse(data)
-            resolve(data)
-          } catch {
-            reject(new Error('Invalid key file JSON'))
-          }
-        })
-      }).on('error', reject)
-    })
+
+    const text = await data.text()
+    JSON.parse(text) // validates JSON before using it
+    return text
   }
 
   private async getAuth() {
