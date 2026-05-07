@@ -1,5 +1,9 @@
 # Devplan — Bot type `servicios`
 
+> ## ✅ COMPLETADO
+> Los 16 tickets de los 4 epics (A: DB, B: Backend bot, C: Frontend admin, D: Test & Deploy)
+> están implementados, deployed y validados en producción con DTR.
+
 > Cuarto bot type para negocios de servicios (talleres, salones, mecánicos, veterinarias).
 > Filosofía: WhatsApp nativo (List Messages + Reply Buttons) por default, IA solo donde
 > aporta valor real (FAQ con RAG, parsing de problemas en texto libre).

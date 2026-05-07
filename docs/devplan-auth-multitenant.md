@@ -1,5 +1,10 @@
 # Devplan — Auth multi-tenant (super admin + users con páginas configurables)
 
+> ## ✅ COMPLETADO
+> Los 10 tickets (E-01 → E-10) están implementados, deployed y validados con test de
+> aislamiento (E-09) — un user de DTR confirmado solo puede ver su client_id y sus
+> páginas asignadas.
+
 > Refactor para pasar de single-admin a hybrid multi-tenant.
 > Dos roles: `super_admin` (Cleverum, único) y `user` (cliente final atado a un `client_id`).
 > Cada `user` tiene un array `allowed_pages` que define qué pestañas ve.

@@ -1,7 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Instrument+Serif:ital@0;1&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+@keyframes fadeUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes orbBreathe {
+  0%, 100% { transform: scale(1);    opacity: 0.38; }
+  50%      { transform: scale(1.15); opacity: 0.6;  }
+}
+
+@keyframes orbBreatheReverse {
+  0%, 100% { transform: scale(1.15); opacity: 0.6;  }
+  50%      { transform: scale(1);    opacity: 0.38; }
+}
+
+@keyframes btnShine {
+  0%   { left: -100%; }
+  60%  { left: 100%; }
+  100% { left: 100%; }
+}
+
+.font-serif-display {
+  font-family: 'Instrument Serif', 'Plus Jakarta Sans', serif;
+  font-style: italic;
+}
 
 @custom-variant dark (&:is(.dark *));
 

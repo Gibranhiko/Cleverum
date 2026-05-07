@@ -21,6 +21,7 @@ export interface UserProfile {
 interface AppContextType {
   session: Session | null
   profile: UserProfile | null
+  profileError: string | null
   loading: boolean
   isPasswordRecovery: boolean
   clearPasswordRecovery: () => void
@@ -29,6 +30,7 @@ interface AppContextType {
   notifications: number
   clearNotifications: () => void
   signOut: () => Promise<void>
+  retryProfile: () => Promise<void>
 }
 
 const AppContext = createContext<AppContextType | null>(null)
@@ -36,6 +38,7 @@ const AppContext = createContext<AppContextType | null>(null)
 export function AppProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profileError, setProfileError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
@@ -47,6 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     async function resolveSessionAndProfile(s: Session | null) {
       if (cancelled) return
       setSession(s)
+      setProfileError(null)
       if (!s) {
         setProfile(null)
         setLoading(false)
@@ -56,11 +60,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .from('user_profiles')
         .select('id, role, client_id, allowed_pages, full_name')
         .eq('id', s.user.id)
-        .single()
+        .maybeSingle()
       if (cancelled) return
-      if (error || !data) {
-        console.warn('[AppContext] No profile found for user', s.user.id, error)
+      if (error) {
+        // Error real de fetch (red, RLS, etc.) — distinguir de "no hay row"
+        console.error('[AppContext] Profile fetch error', error)
         setProfile(null)
+        setProfileError(error.message)
+      } else if (!data) {
+        // Fetch OK, pero el usuario no tiene profile — caso "cuenta sin configurar"
+        console.warn('[AppContext] No profile found for user', s.user.id)
+        setProfile(null)
+        setProfileError(null)
       } else {
         setProfile(data as UserProfile)
       }
@@ -125,10 +136,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setIsPasswordRecovery(false)
   }
 
+  async function retryProfile() {
+    if (!session) return
+    setLoading(true)
+    setProfileError(null)
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('id, role, client_id, allowed_pages, full_name')
+      .eq('id', session.user.id)
+      .maybeSingle()
+    if (error) setProfileError(error.message)
+    else if (data) setProfile(data as UserProfile)
+    setLoading(false)
+  }
+
   return (
     <AppContext.Provider value={{
       session,
       profile,
+      profileError,
       loading,
       isPasswordRecovery,
       clearPasswordRecovery: () => setIsPasswordRecovery(false),
@@ -137,6 +163,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       notifications,
       clearNotifications: () => setNotifications(0),
       signOut,
+      retryProfile,
     }}>
       {children}
     </AppContext.Provider>
