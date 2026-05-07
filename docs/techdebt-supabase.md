@@ -1,5 +1,9 @@
 # Cleverum — Tech Debt: Supabase / Backend Performance
 
+> ## ✅ COMPLETADO
+> Todos los 3 tickets (SB-01 → SB-03) de este documento están resueltos.
+> Se mantiene como referencia histórica.
+
 > Tickets identificados durante desarrollo y pruebas de integración.
 > Ordenados por impacto en rendimiento y estabilidad.
 

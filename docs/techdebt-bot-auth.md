@@ -1,5 +1,9 @@
 # Cleverum — Tech Debt: Bot `servicios` + Auth multi-tenant
 
+> ## ✅ COMPLETADO
+> Todos los 12 tickets (BOT-01 → BOT-07, AUTH-01 → AUTH-03, API-01 → API-02) están resueltos.
+> Se mantiene como referencia histórica de la review post-implementación.
+
 > Hallazgos de la revisión post-implementación (2026-05-07).
 > Ordenados por severidad. Cada ticket es independiente y se puede atacar en orden de prioridad.
 
@@ -15,12 +19,12 @@
 | BOT-02 | Folio regex hijacking en mensajes con texto libre | ALTA | `chatbot/src/flows/servicesBot.ts` | ✅ Resuelto |
 | BOT-03 | Botón "Modificar" intake borra todo el state pero comentario dice lo contrario | ALTA | `chatbot/src/flows/servicesBot.ts` | ✅ Resuelto |
 | BOT-04 | `awaiting_confirm` rechaza confirmaciones por texto libre | ALTA | `chatbot/src/flows/servicesBot.ts` | ✅ Resuelto |
-| API-01 | Backend admin no valida `allowed_pages` contra catálogo permitido | MEDIA | `chatbot/src/routes/admin.ts` | ⏳ Pendiente |
-| API-02 | PATCH puede demotear al último `super_admin` y brickear el sistema | MEDIA | `chatbot/src/routes/admin.ts` | ⏳ Pendiente |
-| BOT-05 | Status query acepta cualquier texto cuando flow=`awaiting_folio` | MEDIA | `chatbot/src/flows/servicesBot.ts` | ⏳ Pendiente |
-| BOT-06 | Faltan `appendToHistory` en prompts del intake | BAJA | `chatbot/src/flows/servicesBot.ts` | ⏳ Pendiente |
-| AUTH-03 | "Cuenta sin configurar" se muestra en errores transitorios de fetch | BAJA | `frontend/src/components/AuthGuard.tsx` | ⏳ Pendiente |
-| BOT-07 | Status flow no limpia `session.state` al cerrar | BAJA | `chatbot/src/flows/servicesBot.ts` | ⏳ Pendiente |
+| API-01 | Backend admin no valida `allowed_pages` contra catálogo permitido | MEDIA | `chatbot/src/routes/admin.ts` | ✅ Resuelto |
+| API-02 | PATCH puede demotear al último `super_admin` y brickear el sistema | MEDIA | `chatbot/src/routes/admin.ts` | ✅ Resuelto |
+| BOT-05 | Status query acepta cualquier texto cuando flow=`awaiting_folio` | MEDIA | `chatbot/src/flows/servicesBot.ts` | ✅ Resuelto |
+| BOT-06 | Faltan `appendToHistory` en prompts del intake | BAJA | `chatbot/src/flows/servicesBot.ts` | ✅ Resuelto |
+| AUTH-03 | "Cuenta sin configurar" se muestra en errores transitorios de fetch | BAJA | `frontend/src/components/AuthGuard.tsx` | ✅ Resuelto |
+| BOT-07 | Status flow no limpia `session.state` al cerrar | BAJA | `chatbot/src/flows/servicesBot.ts` | ✅ Resuelto |
 
 ---
 

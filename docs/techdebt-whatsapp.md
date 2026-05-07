@@ -1,5 +1,10 @@
 # Cleverum — Tech Debt: WhatsApp Ban Risk
 
+> ## ✅ COMPLETADO
+> Todos los 10 tickets (WA-01 → WA-10) de este documento están resueltos.
+> Para el siguiente nivel de compliance (templates outbound, throttling, monitoring) ver
+> `docs/whatsapp-compliance.md`.
+
 > Generated from full codebase audit focused on Meta WhatsApp Cloud API compliance.
 > Resolve tickets in order — they are sequenced by risk level and dependency.
 

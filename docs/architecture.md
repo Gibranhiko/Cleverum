@@ -1,6 +1,7 @@
 # Cleverum — System Architecture
 
-> Current as of: F3 complete (WhatsApp Cloud API backend rewritten)
+> Current as of: F5 + Auth multi-tenant + Bot servicios complete
+> Last update: 2026-05-07
 
 ---
 
@@ -8,36 +9,48 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         OPERATOR BROWSER                            │
-│                    (single admin user, no public)                   │
+│           USERS                                                      │
+│  • Cleverum operator (super_admin) — sees all clients                │
+│  • Per-client users (role=user) — see only their own data,           │
+│    pages controlled by allowed_pages                                 │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │ HTTPS
                                ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    FRONTEND — Cloudflare Pages                      │
+│                    FRONTEND — Railway                               │
 │              Vite + React SPA  (frontend/src/)                      │
 │                                                                     │
-│  /clientes    /productos   /pedidos    /leads                       │
-│  /conversaciones  /reminders  /documentos                           │
+│  Public:        /login   /reset-password   /no-access               │
+│  Authenticated: /dashboard                                          │
+│  Super_admin:   /clientes  /usuarios  /config                       │
+│  Per-page ACL:  /tickets  /servicios  /pedidos  /productos          │
+│                 /leads    /conversaciones  /reminders  /documentos  │
 └──────────────────┬──────────────────────────────────────────────────┘
-                   │ Supabase JS SDK (anon key + RLS)
+                   │ Supabase JS SDK (anon key + RLS multi_tenant_access)
+                   │ + Bearer token to chatbot for /admin/*
                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         SUPABASE                                    │
 │                                                                     │
-│  PostgreSQL DB   │  Auth (email/pass)  │  Storage (products, docs)  │
+│  PostgreSQL DB   │  Auth (email/pass)  │  Storage (4 buckets)       │
 │  Realtime        │  pgvector (RAG)     │  Row Level Security        │
+│                                                                     │
+│  Helper SECURITY DEFINER functions used by all RLS policies:        │
+│  • current_user_role()      — reads user_profiles by auth.uid()     │
+│  • current_user_client_id() — reads user_profiles by auth.uid()     │
 └────────┬─────────────────────────────────────────┬──────────────────┘
          │ service role (bypasses RLS)             │ anon key (RLS)
          ▼                                         ▼
 ┌─────────────────────────┐            ┌──────────────────────────────┐
 │  CHATBOT — Railway      │            │   FRONTEND reads/writes      │
-│  Express webhook handler│            │   all tables via RLS policy  │
-│  (chatbot/src/)         │            └──────────────────────────────┘
-│                         │
-│  POST /webhook ←── Meta │◄────── WhatsApp users (multiple clients)
-│  GET  /webhook (verify) │
-│  /bots/* (management)   │
+│  Express webhook handler│            │   tables via RLS policy      │
+│  (chatbot/src/)         │            │   (filtered by client_id     │
+│                         │            │    for non-super_admin)      │
+│  POST /webhook ←─ Meta  │◄────────── └──────────────────────────────┘
+│  GET  /webhook (verify) │            WhatsApp users (multiple
+│  /bots/*  (legacy mgmt) │            clients, per-client numbers)
+│  /documents/* (RAG)     │
+│  /admin/users (CRUD)    │
 └────────┬────────────────┘
          │
     ┌────┴──────────────────────┐
@@ -54,6 +67,20 @@
 
 ## Database schema
 
+### `user_profiles` (auth multi-tenant)
+Maps `auth.users` to a role and (for non-super_admin) a `client_id` + page allowlist.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK FK → auth.users | Cascade delete from auth.users |
+| role | text | `super_admin` \| `user` |
+| client_id | uuid FK → clients | Required for `user`, null for `super_admin` |
+| allowed_pages | text[] | Page keys the user can see in the panel |
+| full_name | text | |
+| created_at | timestamptz | |
+
+CHECK constraints enforce: super_admin has null client_id, user has non-null client_id.
+
 ### `clients`
 Central table. Each row is one business client with its own WhatsApp number and bot.
 
@@ -66,18 +93,58 @@ Central table. Each row is one business client with its own WhatsApp number and 
 | company_address | text | |
 | admin_name | text | |
 | whatsapp_phone | text | Display number |
-| bot_type | text | `informativo` \| `catalogo` \| `leads` |
-| use_ai | boolean | Legacy flag, kept for compatibility |
+| bot_type | text | `informativo` \| `catalogo` \| `leads` \| `servicios` |
 | facebook_link | text | |
 | instagram_link | text | |
 | image_url | text | Supabase Storage URL |
-| google_calendar_key_url | text | URL to service account JSON in Supabase Storage |
-| google_calendar_id | text | Calendar ID |
+| google_calendar_key_url | text | Path inside `calendar-keys` bucket |
+| google_calendar_id | text | |
 | **wa_phone_number_id** | text | Meta phone number ID — used to route incoming webhooks |
 | **wa_access_token** | text | Meta access token for this client |
 | **bot_active** | boolean | Global on/off switch for the bot |
+| **ticket_prefix** | text | 2-5 chars A-Z, used in folios for `servicios` bot |
+| **ticket_counter** | int | Legacy from sequential folios; unused since random folios introduced |
 | is_active | boolean | Soft delete for the client account |
 | created_at / updated_at | timestamptz | |
+
+### `services` (bot servicios)
+Catalog of services the business offers. Rendered as List Message in the bot when user
+asks "Servicios y precios".
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| client_id | uuid FK | |
+| name | text | |
+| description | text | |
+| category | text | Used to group in WA list sections |
+| price_amount | numeric(10,2) | Optional |
+| price_label | text | "Desde $500" / "Según diagnóstico" — overrides price_amount in display |
+| estimated_duration | text | "2-3 días" |
+| is_active | boolean | |
+| display_order | int | |
+
+### `tickets` (bot servicios)
+Service orders (repair tickets, salon appointments, etc.).
+
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| folio | text | `{PREFIX}{6 random alphanumeric}` — unique per client |
+| client_id | uuid FK | |
+| customer_phone | text | |
+| customer_name | text | |
+| device_type / device_brand / device_model | text | Intake fields |
+| problem_description | text | |
+| problem_category | text | AI-classified: `pantalla` \| `bateria` \| `software` \| `carga` \| `agua` \| `otro` |
+| photos | text[] | URLs to `tickets` storage bucket (Fase 2) |
+| status | text | `recibido` → `diagnostico` → `cotizado` → `aprobado` → `en_reparacion` → `listo` → `entregado`, plus `rechazado` and `cancelado` |
+| status_history | jsonb | `[{status, at, by, note}]` — append-only timeline |
+| quote_amount | numeric(10,2) | |
+| internal_notes | text | Operator-only |
+| created_at / updated_at | timestamptz | |
+
+UNIQUE (client_id, folio).
 
 ### `products`
 Product catalog for `catalogo` bots.
@@ -85,7 +152,7 @@ Product catalog for `catalogo` bots.
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
-| client_id | uuid FK → clients | |
+| client_id | uuid FK | |
 | category | text | Used to build List Message sections |
 | name | text | |
 | description | text | |
@@ -102,111 +169,122 @@ Orders created by `catalogo` bot.
 | id | uuid PK | |
 | client_id | uuid FK | |
 | customer_name | text | |
-| customer_phone | text | WhatsApp phone (from) |
+| customer_phone | text | |
 | items | jsonb | `[{name, category}]` |
 | delivery_type | text | `delivery` \| `pickup` |
-| address | text | Only for delivery |
+| address | text | |
 | payment_method | text | |
-| client_payment | numeric | Amount customer will pay with |
+| client_payment | numeric | |
 | total | numeric | |
-| status | boolean | false = pending, true = completed |
+| status | boolean | false=pending, true=completed |
 | planned_date | timestamptz | |
 | created_at | timestamptz | |
 
 ### `leads`
-Leads captured by `leads` bot.
+Captured by `leads` bot.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
-| client_id | uuid FK | |
-| customer_name | text | |
-| customer_phone | text | |
-| company | text | |
-| need | text | Main problem/need |
-| budget_range | text | |
-| timeline | text | |
+| id, client_id, customer_name, customer_phone | | |
+| company, need, budget_range, timeline | text | |
 | status | text | `new` \| `contacted` \| `qualified` \| `lost` \| `won` |
-| notes | text | Operator notes |
-| raw_conversation | jsonb | Full history at time of capture |
-| created_at | timestamptz | |
+| notes | text | |
+| raw_conversation | jsonb | History at time of capture |
 
 ### `conversation_sessions`
-State machine for each active WhatsApp conversation. Replaces BuilderBot MemoryDB.
+State machine for each active WhatsApp conversation.
 
 | Column | Type | Notes |
 |---|---|---|
-| id | uuid PK | |
-| client_id | uuid FK | |
-| phone_number | text | WhatsApp `from` field |
-| current_flow | text | `appointment` \| `catalog` \| `leads_qualification` \| null |
+| client_id, phone_number | text | UNIQUE together |
+| current_flow | text | `intake` \| `status` \| `faq` \| `appointment` \| `catalog` \| `leads_qualification` \| null |
 | flow_step | text | Step within current flow |
-| state | jsonb | Arbitrary flow state (cart, pending product, etc.) |
-| history | jsonb | Last 10 messages `[{role, content}]` — context for AI |
-| bot_disabled_for_user | boolean | `botoff` command per user |
-| human_takeover | boolean | Agent manually responding |
-| assigned_agent_id | uuid | Future: which agent took over |
-| last_message_at | timestamptz | |
-| UNIQUE | (client_id, phone_number) | One session per user per client |
+| state | jsonb | Arbitrary flow state |
+| history | jsonb | Last 10 messages — context for AI |
+| bot_disabled_for_user | boolean | Per-user `botoff` |
+| human_takeover | boolean | Operator manually responding |
 
-### `reminders`
-Scheduled WhatsApp messages.
-
-| Column | Type | Notes |
-|---|---|---|
-| client_id | uuid FK | |
-| message | text | |
-| phone_numbers | text[] | Recipients (empty = all active contacts) |
-| frequency | text | `daily` \| `weekly` \| `monthly` |
-| hour | int | 8–21 |
-| minute | int | 0 or 30 |
-| active | boolean | |
-| last_sent | timestamptz | Updated after each send |
-
-### `documents` + `document_chunks`
-RAG knowledge base. Used by `informativo` and `leads` bots.
-
-```
-documents
-  id, client_id, title, content (full text), metadata, created_at
-
-document_chunks
-  id, document_id, client_id, content (chunk text), embedding vector(1536), created_at
-  INDEX: HNSW on embedding using vector_cosine_ops
-```
-
-### `bot_configs`
-Per-client bot configuration (welcome message, system prompt, etc.).
+### `reminders`, `documents`, `document_chunks`, `bot_configs`
+Pre-existing — see migration 001.
 
 ### `match_chunks()` SQL function
+RAG retrieval. Updated default threshold: `0.4` (was 0.75).
+
 ```sql
-match_chunks(query_embedding, client_id_filter, match_threshold, match_count)
+match_chunks(query_embedding, client_id_filter, match_threshold = 0.4, match_count = 6)
 → table(id, content, similarity)
 ```
-Used by RAG retrieval. Finds most similar chunks via cosine similarity.
+
+---
+
+## RLS policy pattern
+
+All tables with `client_id` use this policy (created in migration 004):
+
+```sql
+create policy multi_tenant_access on <table>
+  for all to authenticated
+  using (
+    public.current_user_role() = 'super_admin'
+    or client_id = public.current_user_client_id()
+  )
+  with check (...same condition...);
+```
+
+`clients` is special — split into two policies:
+- `super_admin_clients` — FOR ALL, allows full CRUD
+- `user_read_own_client` — FOR SELECT, only `id = current_user_client_id()`
+
+`user_profiles`:
+- `self_read` — FOR SELECT, `id = auth.uid()`
+- `super_admin_write` — FOR ALL, `current_user_role() = 'super_admin'`
+
+The chatbot bypasses all of this via service role key.
 
 ---
 
 ## Frontend routes
 
-| Route | Page | Description |
+### Public
+| Route | Page | Notes |
 |---|---|---|
-| `/login` | Login.tsx | Supabase auth, only public route |
-| `/clientes` | Clientes.tsx | Full CRUD for client accounts |
-| `/productos` | Productos.tsx | Product catalog per client, image upload |
-| `/pedidos` | Pedidos.tsx | Orders table + detail modal, Realtime |
-| `/leads` | Leads.tsx | CRM table + status management, Realtime |
-| `/conversaciones` | Conversaciones.tsx | Live sessions, chat history, takeover |
-| `/reminders` | Reminders.tsx | Scheduled messages CRUD |
-| `/documentos` | Documentos.tsx | RAG document management |
+| `/login` | Login.tsx | Supabase auth |
+| `/reset-password` | ResetPassword.tsx | Triggered by `PASSWORD_RECOVERY` event |
 
-All routes under `/` are protected by `AuthGuard` which redirects to `/login` if no
-Supabase session exists.
+### Authenticated (inside DashboardLayout, behind AuthGuard)
+| Route | Page | Access |
+|---|---|---|
+| `/` | DefaultRedirect | Redirects based on profile |
+| `/no-access` | NoAccess.tsx | Shown when user has empty `allowed_pages` |
+| `/dashboard` | Dashboard.tsx | Per allowed_pages |
+| `/clientes` | Clientes.tsx | super_admin only |
+| `/usuarios` | Usuarios.tsx | super_admin only |
+| `/config` | ConfigBot.tsx | Per allowed_pages |
+| `/pedidos` | Pedidos.tsx | Per allowed_pages |
+| `/productos` | Productos.tsx | Per allowed_pages |
+| `/leads` | Leads.tsx | Per allowed_pages |
+| `/conversaciones` | Conversaciones.tsx | Per allowed_pages |
+| `/reminders` | Reminders.tsx | Per allowed_pages |
+| `/documentos` | Documentos.tsx | Per allowed_pages |
+| `/tickets` | Tickets.tsx | Per allowed_pages |
+| `/servicios` | Servicios.tsx | Per allowed_pages |
 
-**State management:** `AppContext` (React Context) holds:
+Access enforced by `<PageGuard page="...">` wrapper. `Navbar` filters items via
+`canSee()` from `lib/permissions.ts`.
+
+**State management:** `AppContext` exposes:
 - `session` — Supabase auth session
-- `selectedClient` — client currently in focus (for Realtime subscriptions)
-- `notifications` — unread count (new orders + leads)
+- `profile` — `user_profiles` row of current user
+- `loading` — initial session+profile resolution
+- `isPasswordRecovery` — true while in PASSWORD_RECOVERY flow
+- `selectedClient` — used by realtime notifications subscription
+- `notifications` — unread count
+- `signOut` / `clearPasswordRecovery` — actions
+
+The `onAuthStateChange` handler distinguishes:
+- `PASSWORD_RECOVERY` → set flag, force redirect to `/reset-password`
+- `TOKEN_REFRESHED` → only update session (no spinner / no profile re-fetch)
+- All others (`INITIAL_SESSION`, `SIGNED_IN`, `SIGNED_OUT`, `USER_UPDATED`) → full re-resolve
 
 ---
 
@@ -214,116 +292,123 @@ Supabase session exists.
 
 Base: `http://localhost:4000` (dev) / Railway URL (prod)
 
+### WhatsApp webhook
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/webhook` | Meta verify token | Webhook verification |
+| POST | `/webhook` | none (Meta IP) | Incoming WhatsApp messages |
+
+### Legacy management API (`x-api-key` header)
 | Method | Path | Description |
 |---|---|---|
-| GET | `/webhook` | Meta webhook verification (hub.verify_token check) |
-| POST | `/webhook` | Incoming WhatsApp messages — routed by phone_number_id |
+| PUT | `/bots/:clientId/toggle` | Toggle `bot_active` |
+| GET | `/bots/status` | All bot statuses |
+| POST | `/bots/:clientId/takeover` | Set `human_takeover` flag |
+| POST | `/bots/:clientId/send` | Send message as operator (within 24h window) |
+| PUT | `/bots/:clientId/credentials` | Update WA credentials |
+| POST | `/documents/:clientId/index` | RAG index a document |
+
+### Admin API (Bearer token from super_admin session)
+| Method | Path | Description |
+|---|---|---|
+| GET | `/admin/users` | List all `user_profiles` joined with auth.users emails |
+| POST | `/admin/users` | Create user (auth.admin.createUser + insert profile) |
+| PATCH | `/admin/users/:id` | Update profile (role, client_id, allowed_pages, full_name) |
+| DELETE | `/admin/users/:id` | Delete user (cascade deletes profile via FK) |
+
+CORS `allowedHeaders` MUST include `Authorization` for these to work.
+
+### Health
+| Method | Path | Description |
+|---|---|---|
 | GET | `/health` | Health check for Railway |
-| PUT | `/bots/:clientId/toggle` | Toggle bot_active on/off |
-| GET | `/bots/status` | All bots status from DB |
-| POST | `/bots/:clientId/takeover` | Set human_takeover flag on a session |
-| PUT | `/bots/:clientId/credentials` | Update wa_phone_number_id + wa_access_token |
 
 ---
 
 ## Bot flow state machines
 
 ### Bot 1 — Informativo (infoBot.ts)
-
 ```
-Message arrives
-       ↓
 current_flow === 'appointment'? → continueAppointmentFlow()
        ↓ no
-determineIntent()
-       ↓
-   agendar_cita → startAppointmentFlow()
-                    flow_step: 'collecting'
-                    AI collects name/phone/service/date (conversational)
-                    when AI returns CITA_CONFIRMADA token → finishAppointment()
-                      → checkAvailability() → createEvent() → confirm msg
-   consultar_empresa → createChat() with talker prompt + RAG context (F4)
-   hablar → createChat() with talker prompt (general conversation)
+determineIntent() → agendar_cita | consultar_empresa | consultar_servicios | hablar
+   agendar_cita → startAppointmentFlow() → AI conversational intake → CITA_CONFIRMADA
+   consultar_empresa | consultar_servicios → RAG + AI conversation
+   hablar → AI conversation (no RAG)
 ```
 
 ### Bot 2 — Catálogo (catalogBot.ts)
-
-```
-flow_step = null/idle → showCategoryMenu() [List Message]
-flow_step = category_selected → handleCategorySelection()
-  text starts with 'cat:X' → fetch products → [List Message]
-flow_step = product_selected → handleProductAction()
-  text = 'add_to_cart' → push to cart → buttons
-  text = 'checkout' → startCheckout()
-  text = 'view_more' → back to category
-  text starts with 'prod:X' → fetch product → image + buttons
-flow_step = checkout → handleDeliveryType()
-  'delivery' → ask address → flow_step = 'address'
-  'pickup' → showOrderSummary() → flow_step = 'confirming'
-flow_step = address → AI extracts address → showOrderSummary()
-flow_step = confirming → handleConfirmation()
-  'confirm_order' → INSERT orders → success msg → reset flow
-  'cancel_order' → cancel msg → reset flow
-```
+List/Buttons-driven cart flow → checkout → INSERT orders. No AI for menu, AI only for
+address parsing in delivery mode.
 
 ### Bot 3 — Leads (leadsBot.ts)
+AI conversation with SYSTEM_PROMPT + RAG. When AI returns `LEAD_LISTO` token →
+captureLead() → INSERT into leads.
 
+### Bot 4 — Servicios (servicesBot.ts)
 ```
-flow_step = 'captured' → already captured, polite redirect
-
-history.length >= 6 → isLeadReady()
-  ready = true → captureLead()
-    determineLead() → INSERT leads → closing msg → flow_step = 'captured'
-  ready = false → continue conversation
-
-continue → AI conversation with SYSTEM_PROMPT
-  (RAG context injected here in F4)
-  flow_step = 'qualifying'
+Folio detected (strict regex)? → handleStatusQuery()
+Menu_ tap?          → routeMenuOption()
+Active flow?        → handleIntakeStep | handleStatusQuery | runFAQ
+Free text, no flow? → ai.getServicesIntent() →
+                       levantar_orden → startIntake (List/Buttons state machine)
+                       consultar_orden → promptForFolio
+                       ver_servicios → sendServicesList
+                       consultar_empresa → startFAQ (RAG)
+                       hablar_humano → human_takeover=true
+                       saludo → sendMainMenu
 ```
+
+Intake is structured (List/Buttons) for: device_type → brand → model (text) →
+problem (text → AI classifies category) → name (text) → confirm (buttons + free-text
+words like "sí" / "no" accepted).
+
+Folio generation: `crypto.randomBytes` over alphabet `ABCDEFGHJKLMNPQRSTUVWXYZ23456789`
+(no O/0/I/1), 6 chars suffix, format `{PREFIX}{SUFFIX}` (no dash). Retry up to 5 times
+on collision.
 
 ---
 
 ## WhatsApp Cloud API integration
 
 **Credential model:** Each client has its own `wa_phone_number_id` and `wa_access_token`
-stored in the `clients` table. The webhook handler routes incoming messages by matching
-the `phone_number_id` from webhook metadata to the clients table.
+in `clients`. Webhook routes by matching incoming `phone_number_id` to the table.
 
-**Message routing:** `GET /webhook` + `POST /webhook` → one endpoint handles all clients.
+**Client cache:** `getCachedClient(phoneNumberId)` caches client rows for 5 minutes.
+Invalidated when credentials are updated via management API.
 
-**Client cache:** `getCachedClient(phoneNumberId)` caches client rows for 5 minutes
-to avoid hitting Supabase on every message. Cache is invalidated when credentials are
-updated via the management API.
-
-**Supported message types sent:**
+**Outbound message types implemented:**
 - `sendText()` — plain text
-- `sendList()` — scrollable list (up to 10 items per section)
-- `sendButtons()` — reply buttons (up to 3)
+- `sendList()` — scrollable list (max 10 items)
+- `sendButtons()` — reply buttons (max 3)
 - `sendImage()` — image with caption
 
-**Supported message types received:**
+**Incoming message types handled:**
 - `text` — plain user message
 - `interactive/button_reply` — button tap (id used as routing token)
 - `interactive/list_reply` — list selection (id used as routing token)
+
+Other types (`image`, `audio`, `video`, etc.) are currently ignored — a TODO for Fase 2 of
+servicios is to forward `image` to the bot when in `awaiting_photo` step.
+
+**24-hour window:** all responses to inbound messages are free. Proactive (outbound)
+messages outside the window require an approved template — see `docs/whatsapp-compliance.md`.
 
 ---
 
 ## Supabase Realtime subscriptions
 
-**Frontend (AppContext.tsx):** When a `selectedClient` is set, two channels are created:
-- `postgres_changes` INSERT on `orders` filtered by `client_id` → increments notifications
-- `postgres_changes` INSERT on `leads` filtered by `client_id` → increments notifications
+| Source | Table | Filter | Action |
+|---|---|---|---|
+| AppContext (notifications) | orders | client_id | Increment counter |
+| AppContext (notifications) | leads | client_id | Increment counter |
+| Conversaciones.tsx | conversation_sessions | client_id | Refresh list |
+| Pedidos.tsx | orders | client_id | Refresh table |
+| Leads.tsx | leads | client_id | Refresh table |
+| Tickets.tsx | tickets | client_id | Refresh table |
 
-**Frontend (Conversaciones.tsx):** All changes (`*`) on `conversation_sessions` filtered
-by `client_id` → refreshes session list in real time.
-
-**Frontend (Pedidos.tsx):** INSERT and UPDATE on `orders` filtered by `client_id` →
-auto-refreshes orders table.
-
-**Frontend (Leads.tsx):** INSERT on `leads` filtered by `client_id` → auto-refreshes.
-
-**Chatbot backend:** Does NOT use Supabase Realtime. It writes to Supabase via service
-role client, which triggers Realtime events automatically for the frontend.
+Realtime respects RLS — a `user` only receives events for rows where their `client_id`
+matches.
 
 ---
 
@@ -331,31 +416,65 @@ role client, which triggers Realtime events automatically for the frontend.
 
 | Bucket | Visibility | Used for |
 |---|---|---|
-| `products` | Public | Product images (uploaded via admin panel) |
-| `documents` | Private | RAG source documents (PDFs, text files) |
+| `products` | Public | Product images |
+| `documents` | Private | RAG source uploads (currently unused — content stored in `documents.content` column) |
+| `calendar-keys` | Private | Per-client Google service account JSON. Path: `{client_id}/service-account.json` |
+| `tickets` | Private | Photos of devices (Fase 2 of servicios). Path: `{client_id}/...` |
 
-Calendar service account JSON keys are stored at a URL in `clients.google_calendar_key_url`
-and downloaded at runtime by `GoogleCalendarService.downloadKeyFile()`.
+Storage RLS policies (migration 005) filter by first folder segment matching
+`current_user_client_id()`. Super_admin bypasses.
+
+The `products` bucket is public so the bot can serve `image_url` directly to WhatsApp
+without auth.
 
 ---
 
-## RAG architecture (F4 — pending)
+## RAG architecture
 
 ```
-Admin uploads document → stored in `documents` table
+Admin uploads document → INSERT into `documents` (content stored as text)
                        ↓
-POST /documents/:clientId/index (chatbot backend)
+POST /documents/:clientId/index
   → split into ~400-token chunks with 50-token overlap
-  → for each chunk: openai.embeddings.create(text-embedding-3-small)
+  → openai.embeddings.create(text-embedding-3-small) for each
   → INSERT into document_chunks (content, embedding)
                        ↓
-Bot receives message
-  → embed(userMessage) → query_embedding
-  → supabase.rpc('match_chunks', { query_embedding, client_id_filter })
-  → returns top 4 chunks above 0.75 similarity threshold
-  → inject into system prompt as context
+Bot receives FAQ-like message (intent: consultar_empresa | consultar_servicios)
+  → ragQuery = `${userMessage} ${client.company_name}`  (augmented with company name)
+  → embed(ragQuery) → query_embedding
+  → supabase.rpc('match_chunks', { query_embedding, client_id, threshold=0.4, count=6 })
+  → inject top 6 chunks into system prompt (prompt-talker.txt)
   → call OpenAI with grounded context
 ```
+
+Threshold 0.4 (was 0.75) and count 6 (was 4) are deliberate — short conversational
+queries have lower cosine similarity, and the FAQ bot benefits from broader context.
+
+---
+
+## Auth flow specifics
+
+**Login:**
+1. `Login.tsx` → `supabase.auth.signInWithPassword`
+2. `onAuthStateChange` fires with `SIGNED_IN`
+3. `AppContext` resolves session + fetches `user_profiles` row
+4. `AuthGuard` lets through; `DefaultRedirect` sends to `/dashboard` (super_admin) or
+   first allowed page (user)
+
+**Password recovery:**
+1. Super_admin sends recovery email from Supabase Dashboard
+2. User clicks link → Supabase verifies, creates session, redirects with hash
+3. supabase-js parses hash, fires `PASSWORD_RECOVERY` event
+4. AppContext sets `isPasswordRecovery=true`, does NOT load profile
+5. AuthGuard redirects to `/reset-password`
+6. ResetPassword form → `supabase.auth.updateUser({ password })` → clears flag → navigate
+   to dashboard
+
+**User without profile** (auth.users exists, no user_profiles row):
+- AuthGuard shows "Cuenta sin configurar" with logout button.
+
+**User with empty allowed_pages** (super_admin forgot to assign pages):
+- Lands on `/no-access` page (route defined explicitly to break the redirect loop).
 
 ---
 
@@ -363,16 +482,46 @@ Bot receives message
 
 | Service | Platform | Build command | Notes |
 |---|---|---|---|
-| Frontend | Cloudflare Pages | `npm run build:frontend` | Output: `frontend/dist/` |
-| Chatbot | Railway | `npm start` (in chatbot/) | Start: `node dist/index.js` |
-| Database | Supabase | Managed | No self-hosted infra |
+| Frontend | Railway | `npm run build --workspace=frontend` | Output: `frontend/dist/`, served via `serve` |
+| Chatbot | Railway | `npm run build` (in chatbot/) | Output: `chatbot/dist/`, run `node dist/index.js` |
+| Database | Supabase | Managed | |
 
-**Zero Docker.** All infrastructure is managed cloud services.
+Each service has a `railway.json` defining build+start.
+
+**No Docker.** All infrastructure is managed cloud services.
 
 ---
 
-## Known dead code / cleanup needed
+## Outbound notifications & WhatsApp templates (planned)
 
-- `chatbot/Dockerfile` — kept for reference but no longer used (deploy via Railway buildpack)
-- `REFACTOR.md` — original plan, superseded by `docs/devplan.md` for remaining work
-- `docs/architecture.md` (this file) — should be updated after F4 and F5 complete
+Currently the platform is REACTIVE only — bot replies to inbound, all free under the 24h
+window. Fase 2 of `servicios` will introduce proactive notifications (status updates from
+operator). These require:
+
+- Approved templates in Meta Business Manager
+- Enforcement layer in code (`sendTemplateMessage` validates template approved + opt-out
+  + throttle + quality rating before sending)
+- Cost tracking dashboard
+
+Full plan in `docs/whatsapp-compliance.md` (Epic F).
+
+Existing `reminders` feature already sends outbound but with hard-coded text — flagged as
+debt to migrate to templates before scaling.
+
+---
+
+## Cleanup completed
+
+- Docker eliminated (no Dockerfile, no docker-compose)
+- Next.js eliminated (Vite-only frontend)
+- BuilderBot eliminated (custom session manager + state machine)
+- MongoDB eliminated (Supabase only)
+- Mongoose, socket.io eliminated
+
+## Open dead code
+
+- `next_ticket_number()` SQL function — superseded by random folios but kept for backward
+  compat with legacy `DTR-1` style tickets
+- `ticket_counter` column on `clients` — same reason
+- `documents` storage bucket exists but unused (content stored in `documents.content` text
+  column instead)

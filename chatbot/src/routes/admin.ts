@@ -5,6 +5,36 @@ const router = Router()
 
 const VALID_ROLES = ['super_admin', 'user']
 
+// Catálogo de páginas asignables a un `user`. Excluye páginas super-admin-only
+// (clientes, usuarios). Debe mantenerse en sync con frontend/src/lib/permissions.ts
+// (las constantes ASSIGNABLE_PAGES allá deben matchear esto).
+const VALID_USER_PAGES = new Set([
+  'dashboard',
+  'pedidos',
+  'productos',
+  'leads',
+  'conversaciones',
+  'reminders',
+  'documentos',
+  'config',
+  'tickets',
+  'servicios',
+])
+
+function sanitizeAllowedPages(input: unknown): string[] {
+  if (!Array.isArray(input)) return []
+  return input.filter(p => typeof p === 'string' && VALID_USER_PAGES.has(p))
+}
+
+async function countSuperAdmins(): Promise<number> {
+  const { count, error } = await supabase
+    .from('user_profiles')
+    .select('id', { count: 'exact', head: true })
+    .eq('role', 'super_admin')
+  if (error) throw error
+  return count ?? 0
+}
+
 router.get('/users', async (_req: Request, res: Response) => {
   try {
     const { data: profiles, error: profilesError } = await supabase
@@ -71,7 +101,7 @@ router.post('/users', async (req: Request, res: Response) => {
       id: created.user.id,
       role,
       client_id: role === 'super_admin' ? null : client_id,
-      allowed_pages: role === 'super_admin' ? [] : (Array.isArray(allowed_pages) ? allowed_pages : []),
+      allowed_pages: role === 'super_admin' ? [] : sanitizeAllowedPages(allowed_pages),
       full_name: full_name ?? null,
     }
 
@@ -105,6 +135,27 @@ router.patch('/users/:id', async (req: Request, res: Response) => {
         res.status(400).json({ error: 'Invalid role' })
         return
       }
+
+      // Brick prevention: si se está demoting un super_admin a user,
+      // verificar que no es el último super_admin del sistema.
+      if (role === 'user') {
+        const { data: target } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', id)
+          .single()
+
+        if (target?.role === 'super_admin') {
+          const total = await countSuperAdmins()
+          if (total <= 1) {
+            res.status(400).json({
+              error: 'No se puede demotar al último super_admin. Crea otro super_admin antes de cambiar el rol de éste.',
+            })
+            return
+          }
+        }
+      }
+
       updates.role = role
       if (role === 'super_admin') {
         updates.client_id = null
@@ -115,11 +166,11 @@ router.patch('/users/:id', async (req: Request, res: Response) => {
           return
         }
         updates.client_id = client_id
-        updates.allowed_pages = Array.isArray(allowed_pages) ? allowed_pages : []
+        updates.allowed_pages = sanitizeAllowedPages(allowed_pages)
       }
     } else {
       if (client_id !== undefined) updates.client_id = client_id
-      if (allowed_pages !== undefined) updates.allowed_pages = allowed_pages
+      if (allowed_pages !== undefined) updates.allowed_pages = sanitizeAllowedPages(allowed_pages)
     }
 
     if (Object.keys(updates).length === 0) {
@@ -147,6 +198,23 @@ router.delete('/users/:id', async (req: Request, res: Response) => {
     if (req.user?.id === id) {
       res.status(400).json({ error: 'Cannot delete your own user' })
       return
+    }
+
+    // Brick prevention: no permitir eliminar al último super_admin
+    const { data: target } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', id)
+      .single()
+
+    if (target?.role === 'super_admin') {
+      const total = await countSuperAdmins()
+      if (total <= 1) {
+        res.status(400).json({
+          error: 'No se puede eliminar al último super_admin. Crea otro antes de eliminar éste.',
+        })
+        return
+      }
     }
 
     const { error } = await supabase.auth.admin.deleteUser(id)

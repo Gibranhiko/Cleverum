@@ -1,5 +1,9 @@
 # Cleverum — Development Plan (Remaining Work)
 
+> ## ✅ COMPLETADO
+> Las 6 fases (F1 → F6) fueron implementadas, deployed y validadas con smoke test.
+> Se mantiene como referencia histórica del plan original.
+
 > Phases F1, F2, F3 are complete. This document covers F4, F5, and F6.
 > See `docs/architecture.md` for the full system context.
 
@@ -12,9 +16,9 @@
 | F1 — Supabase Foundation | F1-01 → F1-06 | ✅ Complete |
 | F2 — Frontend (Vite) | F2-01 → F2-06 | ✅ Complete |
 | F3 — WhatsApp Cloud API | F3-01 → F3-10 | ✅ Complete |
-| F4 — RAG Integration | F4-01 → F4-04 | ⏳ Pending |
-| F5 — Admin Panel v2 | F5-01 → F5-05 | ⏳ Pending |
-| F6 — Cleanup & Deploy | F6-01 → F6-04 | ⏳ Pending |
+| F4 — RAG Integration | F4-01 → F4-04 | ✅ Complete |
+| F5 — Admin Panel v2 | F5-01 → F5-05 | ✅ Complete |
+| F6 — Cleanup & Deploy | F6-01 → F6-04 | ✅ Complete |
 
 ---
 

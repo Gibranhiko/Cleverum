@@ -111,7 +111,7 @@ async function startFAQ(ctx: BotContext) {
 async function startHumanTakeover(ctx: BotContext) {
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
-  await updateSession(clientId, from, { human_takeover: true, current_flow: null, flow_step: null })
+  await updateSession(clientId, from, { human_takeover: true, current_flow: null, flow_step: null, state: {} })
   await sendText(pid, token, from, 'Te conecto con un asesor humano. En breve te responde 🙏')
 }
 
@@ -160,18 +160,24 @@ async function routeMenuOption(ctx: BotContext, optionId: string) {
     case 'menu_intake':
       return startIntake(ctx)
 
-    case 'menu_status':
+    case 'menu_status': {
       await updateSession(clientId, from, { current_flow: 'status', flow_step: 'awaiting_folio', state: {} })
-      await sendText(pid, token, from, 'Escribe el folio de tu orden (ej: ABCD2K9P)')
+      const msg = 'Escribe el folio de tu orden (ej: ABCD2K9P)'
+      await sendText(pid, token, from, msg)
+      await appendToHistory(clientId, from, 'assistant', msg)
       return
+    }
 
     case 'menu_services':
       return sendServicesList(ctx)
 
-    case 'menu_faq':
+    case 'menu_faq': {
       await updateSession(clientId, from, { current_flow: 'faq', flow_step: null, state: {} })
-      await sendText(pid, token, from, '¿Qué quieres saber? Puedes preguntar libremente. Escribe *menu* para volver.')
+      const msg = '¿Qué quieres saber? Puedes preguntar libremente. Escribe *menu* para volver.'
+      await sendText(pid, token, from, msg)
+      await appendToHistory(clientId, from, 'assistant', msg)
       return
+    }
 
     case 'menu_human':
       return startHumanTakeover(ctx)
@@ -229,20 +235,26 @@ async function promptDeviceBrand(ctx: BotContext) {
 
 async function promptModel(ctx: BotContext) {
   const { from, client } = ctx
-  const { wa_phone_number_id: pid, wa_access_token: token } = client
-  await sendText(pid, token, from, '¿Cuál es el modelo? (ej: iPhone 13, Galaxy S22, ThinkPad T14)')
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  const msg = '¿Cuál es el modelo? (ej: iPhone 13, Galaxy S22, ThinkPad T14)'
+  await sendText(pid, token, from, msg)
+  await appendToHistory(clientId, from, 'assistant', msg)
 }
 
 async function promptProblem(ctx: BotContext) {
   const { from, client } = ctx
-  const { wa_phone_number_id: pid, wa_access_token: token } = client
-  await sendText(pid, token, from, 'Cuéntame qué le pasa al equipo (con el detalle que puedas)')
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  const msg = 'Cuéntame qué le pasa al equipo (con el detalle que puedas)'
+  await sendText(pid, token, from, msg)
+  await appendToHistory(clientId, from, 'assistant', msg)
 }
 
 async function promptName(ctx: BotContext) {
   const { from, client } = ctx
-  const { wa_phone_number_id: pid, wa_access_token: token } = client
-  await sendText(pid, token, from, '¿Cuál es tu nombre completo?')
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  const msg = '¿Cuál es tu nombre completo?'
+  await sendText(pid, token, from, msg)
+  await appendToHistory(clientId, from, 'assistant', msg)
 }
 
 async function promptConfirm(ctx: BotContext, state: IntakeState) {
@@ -409,10 +421,23 @@ async function finalizeIntake(ctx: BotContext, state: IntakeState) {
 // ─── Status query (B-05) ─────────────────────────────────────
 
 async function handleStatusQuery(ctx: BotContext, text: string) {
-  const { from, client } = ctx
+  const { from, client, session } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
 
-  const folio = text.trim().toUpperCase()
+  const trimmed = text.trim()
+
+  // BOT-05: validar formato de folio antes de query.
+  // Si el flow es awaiting_folio (user vino del menú), input inválido → re-prompt
+  // sin cerrar el flow. Si folio fue detectado por regex en otro contexto, ya
+  // está validado en handleServicesBot.
+  if (session.flow_step === 'awaiting_folio' && !FOLIO_REGEX.test(trimmed)) {
+    await sendText(pid, token, from,
+      'Formato no válido. El folio debe ser similar a *ABCD2K9P*. Inténtalo de nuevo o escribe *menu* para ver opciones.'
+    )
+    return // mantener flow_step en awaiting_folio
+  }
+
+  const folio = trimmed.toUpperCase()
 
   console.log(`[ServicesBot] status query — extracted folio="${folio}"`)
   const ticket = await getTicketByFolio(clientId, folio)
@@ -426,14 +451,14 @@ async function handleStatusQuery(ctx: BotContext, text: string) {
     await sendText(pid, token, from,
       `No encontré la orden *${folio}*. Verifica el folio o escribe *menu* para ver opciones.`
     )
-    await updateSession(clientId, from, { current_flow: null, flow_step: null })
+    await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
     return
   }
 
   const message = formatTicketStatus(ticket)
   await sendText(pid, token, from, message)
   await appendToHistory(clientId, from, 'assistant', message)
-  await updateSession(clientId, from, { current_flow: null, flow_step: null })
+  await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
 }
 
 // ─── Services list (B-06) ────────────────────────────────────

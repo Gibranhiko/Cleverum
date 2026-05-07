@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext'
 import { Button } from './ui/button'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { session, profile, loading, isPasswordRecovery, signOut } = useApp()
+  const { session, profile, profileError, loading, isPasswordRecovery, signOut, retryProfile } = useApp()
 
   if (loading) {
     return (
@@ -19,7 +19,26 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (!session) return <Navigate to="/login" replace />
 
-  // Session OK pero el usuario no tiene profile en user_profiles
+  // Error real al fetchear el profile (red, RLS, db down) — recoverable
+  if (profileError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="text-xl font-semibold">Error temporal</h1>
+          <p className="text-sm text-muted-foreground">
+            No pudimos cargar tu perfil. Puede ser un problema de conexión. Intenta de nuevo.
+          </p>
+          <p className="text-xs text-muted-foreground font-mono">{profileError}</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={retryProfile}>Reintentar</Button>
+            <Button onClick={signOut} variant="outline">Cerrar sesión</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Session OK, fetch OK, pero no hay row en user_profiles
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
