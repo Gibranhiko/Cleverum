@@ -97,12 +97,19 @@ async function runAppointmentAI(ctx: BotContext) {
     timeZone: 'America/Mexico_City',
   })
 
+  const productsContext = await getRagContext(
+    `servicios productos ${client.company_name ?? ''} ${text}`,
+    clientId,
+    'Servicios disponibles en la empresa:'
+  )
+  console.log(`[InfoBot/Appointment] PRODUCTS context length=${productsContext.length}`)
+
   const systemPrompt = loadPrompt('prompt-appointment.txt')
     .replace('{BUSINESSDATA.companyName}', client.company_name ?? '')
     .replace('{BUSINESSDATA.companyType}', client.company_type ?? '')
     .replace('{CURRENTDAY}', now)
     .replace('{HISTORY}', history.map(m => `${m.role}: ${m.content}`).join('\n'))
-    .replace('{PRODUCTS}', '')
+    .replace('{PRODUCTS}', productsContext)
     .replace('{APPOINTMENT_COMPLETE}', APPOINTMENT_COMPLETE)
 
   const messages: ChatCompletionMessageParam[] = [
