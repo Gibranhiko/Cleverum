@@ -6,7 +6,9 @@ import { verifyWebhook } from './webhook/verify'
 import { handleWebhook } from './webhook/handler'
 import botsRouter from './routes/bots'
 import documentsRouter from './routes/documents'
+import adminRouter from './routes/admin'
 import { requireApiKey } from './middleware/auth'
+import { requireSuperAdmin } from './middleware/requireSuperAdmin'
 import { startReminderCron } from './services/reminder'
 
 const app = express()
@@ -37,6 +39,9 @@ app.use('/bots', requireApiKey, botsRouter)
 
 // Document indexing API (requires ADMIN_API_KEY header)
 app.use('/documents', requireApiKey, documentsRouter)
+
+// Admin API for user management (requires Bearer token from a super_admin)
+app.use('/admin', requireSuperAdmin, adminRouter)
 
 // Health check for Railway
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }))

@@ -1,26 +1,34 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Users, ShoppingBag, Package, UserCheck, Bell, MessageSquare, Clock, FileText, LogOut, LayoutDashboard, Settings } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import {
+  Users, ShoppingBag, Package, UserCheck, Bell, MessageSquare,
+  Clock, FileText, LogOut, LayoutDashboard, Settings, Wrench, Receipt, UserCog,
+} from 'lucide-react'
 import { useApp } from '../context/AppContext'
+import { canSee, type PageKey } from '../lib/permissions'
 
-const links = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/clientes', label: 'Clientes', icon: Users },
-  { to: '/pedidos', label: 'Pedidos', icon: ShoppingBag },
-  { to: '/productos', label: 'Productos', icon: Package },
-  { to: '/leads', label: 'Leads', icon: UserCheck },
-  { to: '/conversaciones', label: 'Conversaciones', icon: MessageSquare },
-  { to: '/reminders', label: 'Reminders', icon: Clock },
-  { to: '/documentos', label: 'Documentos', icon: FileText },
-  { to: '/config', label: 'Config Bot', icon: Settings },
+const links: { to: string; label: string; page: PageKey; icon: typeof Users }[] = [
+  { to: '/dashboard',      label: 'Dashboard',      page: 'dashboard',      icon: LayoutDashboard },
+  { to: '/clientes',       label: 'Clientes',       page: 'clientes',       icon: Users },
+  { to: '/usuarios',       label: 'Usuarios',       page: 'usuarios',       icon: UserCog },
+  { to: '/pedidos',        label: 'Pedidos',        page: 'pedidos',        icon: ShoppingBag },
+  { to: '/productos',      label: 'Productos',      page: 'productos',      icon: Package },
+  { to: '/leads',          label: 'Leads',          page: 'leads',          icon: UserCheck },
+  { to: '/conversaciones', label: 'Conversaciones', page: 'conversaciones', icon: MessageSquare },
+  { to: '/tickets',        label: 'Tickets',        page: 'tickets',        icon: Receipt },
+  { to: '/servicios',      label: 'Servicios',      page: 'servicios',      icon: Wrench },
+  { to: '/reminders',      label: 'Reminders',      page: 'reminders',      icon: Clock },
+  { to: '/documentos',     label: 'Documentos',     page: 'documentos',     icon: FileText },
+  { to: '/config',         label: 'Config Bot',     page: 'config',         icon: Settings },
 ]
 
 export default function Navbar() {
   const navigate = useNavigate()
-  const { notifications, clearNotifications } = useApp()
+  const { profile, notifications, clearNotifications, signOut } = useApp()
+
+  const visibleLinks = links.filter(l => canSee(l.page, profile))
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    await signOut()
     navigate('/login')
   }
 
@@ -28,11 +36,13 @@ export default function Navbar() {
     <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col shadow-[2px_0_8px_0_rgba(0,0,0,0.05)]">
       <div className="px-4 py-5 border-b border-gray-200">
         <h1 className="text-lg font-semibold text-gray-900">Cleverum</h1>
-        <p className="text-xs text-gray-500">Panel admin</p>
+        <p className="text-xs text-gray-500">
+          {profile?.role === 'super_admin' ? 'Panel admin' : profile?.full_name ?? 'Panel'}
+        </p>
       </div>
 
-      <nav className="flex-1 px-2 py-4 space-y-0.5">
-        {links.map(({ to, label, icon: Icon }) => (
+      <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
+        {visibleLinks.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

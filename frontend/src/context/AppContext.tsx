@@ -7,38 +7,80 @@ interface Client {
   id: string
   company_name: string
   image_url: string | null
-  bot_type: 'informativo' | 'catalogo' | 'leads'
+  bot_type: 'informativo' | 'catalogo' | 'leads' | 'servicios'
+}
+
+export interface UserProfile {
+  id: string
+  role: 'super_admin' | 'user'
+  client_id: string | null
+  allowed_pages: string[]
+  full_name: string | null
 }
 
 interface AppContextType {
   session: Session | null
+  profile: UserProfile | null
   loading: boolean
   selectedClient: Client | null
   setSelectedClient: (client: Client | null) => void
   notifications: number
   clearNotifications: () => void
+  signOut: () => Promise<void>
 }
 
 const AppContext = createContext<AppContextType | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [notifications, setNotifications] = useState(0)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
+    let cancelled = false
+
+    async function resolveSessionAndProfile(s: Session | null) {
+      if (cancelled) return
+      setSession(s)
+      if (!s) {
+        setProfile(null)
+        setLoading(false)
+        return
+      }
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id, role, client_id, allowed_pages, full_name')
+        .eq('id', s.user.id)
+        .single()
+      if (cancelled) return
+      if (error || !data) {
+        console.warn('[AppContext] No profile found for user', s.user.id, error)
+        setProfile(null)
+      } else {
+        setProfile(data as UserProfile)
+      }
       setLoading(false)
+    }
+
+    supabase.auth.getSession().then(({ data: { session: s } }) => resolveSessionAndProfile(s))
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      // TOKEN_REFRESHED renueva el access_token sin cambiar de usuario.
+      // No re-fetcheamos el profile ni mostramos el spinner — solo actualizamos session.
+      if (event === 'TOKEN_REFRESHED') {
+        setSession(s)
+        return
+      }
+      setLoading(true)
+      resolveSessionAndProfile(s)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [])
 
   // Realtime: nuevas órdenes y leads del cliente seleccionado
@@ -64,14 +106,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => { supabase.removeChannel(channel) }
   }, [selectedClient])
 
+  async function signOut() {
+    await supabase.auth.signOut()
+    setSelectedClient(null)
+  }
+
   return (
     <AppContext.Provider value={{
       session,
+      profile,
       loading,
       selectedClient,
       setSelectedClient,
       notifications,
-      clearNotifications: () => setNotifications(0)
+      clearNotifications: () => setNotifications(0),
+      signOut,
     }}>
       {children}
     </AppContext.Provider>

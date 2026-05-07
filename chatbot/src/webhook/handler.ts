@@ -5,6 +5,7 @@ import { sendText } from '../lib/whatsapp'
 import { handleInfoBot } from '../flows/infoBot'
 import { handleCatalogBot } from '../flows/catalogBot'
 import { handleLeadsBot } from '../flows/leadsBot'
+import { handleServicesBot } from '../flows/servicesBot'
 import { ai } from '../services/ai'
 import { ClientRow, BotConfigRow } from '../types'
 
@@ -188,6 +189,7 @@ async function processMessage(message: any, phoneNumberId: string) {
     case 'informativo': return handleInfoBot(ctx)
     case 'catalogo':    return handleCatalogBot(ctx)
     case 'leads':       return handleLeadsBot(ctx)
+    case 'servicios':   return handleServicesBot(ctx)
     default: console.warn(`[Webhook] Unknown bot_type: ${client.bot_type}`)
   }
 }
@@ -216,6 +218,7 @@ async function handleOptOutConfirmation(text: string, from: string, client: Clie
     case 'informativo': return handleInfoBot(ctx)
     case 'catalogo':    return handleCatalogBot(ctx)
     case 'leads':       return handleLeadsBot(ctx)
+    case 'servicios':   return handleServicesBot(ctx)
   }
 }
 

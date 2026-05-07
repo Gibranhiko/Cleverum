@@ -171,6 +171,78 @@ class AIService {
     )
   }
 
+  getServicesIntent(text: string, history: { role: string; content: string }[]) {
+    const context = history.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n')
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: 'system',
+        content:
+          'You classify the user intent for a service-business WhatsApp bot (repair shop, salon, mechanic, etc.). ' +
+          'Pick the single best intent based on the latest message and recent context. ' +
+          'levantar_orden = wants to start a new service order / drop off a device. ' +
+          'consultar_orden = asks about the status of an existing order/ticket. ' +
+          'ver_servicios = asks for the catalog of services or prices. ' +
+          'consultar_empresa = asks general info about the business (hours, location, warranty, what they do). ' +
+          'hablar_humano = explicitly wants to talk to a real person/agent. ' +
+          'saludo = greeting or unclear / open conversation.',
+      },
+      {
+        role: 'user',
+        content: context ? `Recent conversation:\n${context}\n\nLatest message: ${text}` : text,
+      },
+    ]
+    return this.callTool<{ intent: string }>(
+      messages,
+      'fn_get_services_intent',
+      {
+        description: 'Classify user intent for a service-business bot',
+        parameters: {
+          type: 'object',
+          properties: {
+            intent: {
+              type: 'string',
+              enum: ['levantar_orden', 'consultar_orden', 'ver_servicios', 'consultar_empresa', 'hablar_humano', 'saludo'],
+            },
+          },
+          required: ['intent'],
+        },
+      },
+      { intent: 'saludo' }
+    )
+  }
+
+  classifyProblem(description: string) {
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: 'system',
+        content:
+          'Classify the device problem description into one of these categories: ' +
+          'pantalla (screen, display, glass, touch), bateria (battery, charge holding, drains fast), ' +
+          'software (OS, apps, slow, virus, frozen), carga (charging port, not charging, cable), ' +
+          'agua (water damage, liquid, wet), otro (anything else).',
+      },
+      { role: 'user', content: description },
+    ]
+    return this.callTool<{ category: string }>(
+      messages,
+      'fn_classify_problem',
+      {
+        description: 'Classify a device problem description into a category',
+        parameters: {
+          type: 'object',
+          properties: {
+            category: {
+              type: 'string',
+              enum: ['pantalla', 'bateria', 'software', 'carga', 'agua', 'otro'],
+            },
+          },
+          required: ['category'],
+        },
+      },
+      { category: 'otro' }
+    )
+  }
+
   isOptOutIntent(text: string, history: { role: string; content: string }[]) {
     const context = history.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')
     const messages: ChatCompletionMessageParam[] = [
