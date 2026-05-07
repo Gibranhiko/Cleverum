@@ -18,7 +18,7 @@ interface Cliente {
   company_address: string
   admin_name: string
   whatsapp_phone: string
-  bot_type: 'informativo' | 'catalogo' | 'leads'
+  bot_type: 'informativo' | 'catalogo' | 'leads' | 'servicios'
   facebook_link: string
   instagram_link: string
   wa_phone_number_id: string
@@ -33,12 +33,14 @@ const botTypeLabel = {
   informativo: 'Informativo',
   catalogo: 'Catálogo',
   leads: 'Leads',
+  servicios: 'Servicios',
 }
 
 const botTypeColor: Record<string, 'default' | 'secondary' | 'outline'> = {
   informativo: 'default',
   catalogo: 'secondary',
   leads: 'outline',
+  servicios: 'default',
 }
 
 export default function Clientes() {

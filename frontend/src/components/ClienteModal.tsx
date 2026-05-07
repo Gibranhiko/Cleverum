@@ -16,7 +16,7 @@ interface Cliente {
   company_address: string
   admin_name: string
   whatsapp_phone: string
-  bot_type: 'informativo' | 'catalogo' | 'leads'
+  bot_type: 'informativo' | 'catalogo' | 'leads' | 'servicios'
   facebook_link: string
   instagram_link: string
   wa_phone_number_id: string
@@ -133,6 +133,7 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
                   <SelectItem value="informativo">Informativo + Citas</SelectItem>
                   <SelectItem value="catalogo">Catálogo + Pedidos</SelectItem>
                   <SelectItem value="leads">Ventas / Leads</SelectItem>
+                  <SelectItem value="servicios">Servicios + Tickets</SelectItem>
                 </SelectContent>
               </Select>
             </div>
