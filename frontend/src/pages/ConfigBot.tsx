@@ -10,6 +10,7 @@ interface Cliente {
   id: string
   company_name: string
   bot_type: string
+  ticket_prefix: string | null
 }
 
 interface BotConfig {
@@ -38,13 +39,15 @@ export default function ConfigBot() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [newQuestion, setNewQuestion] = useState('')
+  const [ticketPrefix, setTicketPrefix] = useState('')
+  const [prefixError, setPrefixError] = useState('')
 
   const selectedCliente = clientes.find(c => c.id === clienteId)
 
   useEffect(() => {
     supabase
       .from('clients')
-      .select('id, company_name, bot_type')
+      .select('id, company_name, bot_type, ticket_prefix')
       .eq('is_active', true)
       .order('company_name')
       .then(({ data }) => {
@@ -53,6 +56,11 @@ export default function ConfigBot() {
         if (list[0]) setClienteId(list[0].id)
       })
   }, [])
+
+  useEffect(() => {
+    if (selectedCliente) setTicketPrefix(selectedCliente.ticket_prefix ?? '')
+    setPrefixError('')
+  }, [clienteId, selectedCliente])
 
   useEffect(() => {
     if (!clienteId) return
@@ -79,6 +87,43 @@ export default function ConfigBot() {
 
   async function handleSave() {
     setSaving(true)
+    setPrefixError('')
+
+    // Validate + save ticket_prefix if bot_type is servicios
+    if (selectedCliente?.bot_type === 'servicios') {
+      const prefix = ticketPrefix.trim().toUpperCase()
+      if (prefix && !/^[A-Z]{2,5}$/.test(prefix)) {
+        setPrefixError('El prefijo debe tener 2-5 letras (A-Z)')
+        setSaving(false)
+        return
+      }
+      if (prefix && prefix !== selectedCliente.ticket_prefix) {
+        // Check uniqueness across other clients
+        const { data: clash } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('ticket_prefix', prefix)
+          .neq('id', clienteId)
+          .maybeSingle()
+        if (clash) {
+          setPrefixError('Ese prefijo ya está en uso por otro cliente')
+          setSaving(false)
+          return
+        }
+      }
+      const { error: prefixSaveError } = await supabase
+        .from('clients')
+        .update({ ticket_prefix: prefix || null })
+        .eq('id', clienteId)
+      if (prefixSaveError) {
+        setPrefixError(prefixSaveError.message)
+        setSaving(false)
+        return
+      }
+      // Refresh local list so the change persists in selectedCliente
+      setClientes(prev => prev.map(c => c.id === clienteId ? { ...c, ticket_prefix: prefix || null } : c))
+    }
+
     const { error } = await supabase
       .from('bot_configs')
       .upsert({ client_id: clienteId, ...config }, { onConflict: 'client_id' })
@@ -184,6 +229,23 @@ export default function ConfigBot() {
               placeholder="¡Gracias por contactarnos! Estamos para servirte."
             />
           </div>
+
+          {selectedCliente?.bot_type === 'servicios' && (
+            <div className="space-y-1.5">
+              <Label>Prefijo de folio para tickets</Label>
+              <p className="text-xs text-muted-foreground">
+                2-5 letras (A-Z). Se usa para generar folios como <strong>{(ticketPrefix || 'ABC').toUpperCase()}-1</strong>, <strong>{(ticketPrefix || 'ABC').toUpperCase()}-2</strong>...
+              </p>
+              <Input
+                value={ticketPrefix}
+                onChange={e => { setTicketPrefix(e.target.value.toUpperCase().slice(0, 5)); setPrefixError(''); setSaved(false) }}
+                placeholder="DTR"
+                className="max-w-32 uppercase font-mono"
+                maxLength={5}
+              />
+              {prefixError && <p className="text-sm text-destructive">{prefixError}</p>}
+            </div>
+          )}
 
           {selectedCliente?.bot_type === 'informativo' && (
             <div className="space-y-2">

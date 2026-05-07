@@ -1,8 +1,9 @@
 import { Navigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
+import { Button } from './ui/button'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useApp()
+  const { session, profile, loading, signOut } = useApp()
 
   if (loading) {
     return (
@@ -13,6 +14,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) return <Navigate to="/login" replace />
+
+  // Session OK pero el usuario no tiene profile en user_profiles
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+        <div className="max-w-md text-center space-y-4">
+          <h1 className="text-xl font-semibold">Cuenta sin configurar</h1>
+          <p className="text-sm text-muted-foreground">
+            Tu cuenta aún no tiene un perfil asignado. Contacta al administrador para que te asigne acceso.
+          </p>
+          <Button onClick={signOut} variant="outline">Cerrar sesión</Button>
+        </div>
+      </div>
+    )
+  }
 
   return <>{children}</>
 }

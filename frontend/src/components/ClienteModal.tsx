@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { useApp } from '@/context/AppContext'
 
 interface Cliente {
   id?: string
@@ -50,6 +51,8 @@ interface Props {
 }
 
 export default function ClienteModal({ open, cliente, onClose, onSaved }: Props) {
+  const { profile } = useApp()
+  const isSuperAdmin = profile?.role === 'super_admin'
   const [form, setForm] = useState<Cliente>(empty)
   const [keyFile, setKeyFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -162,26 +165,30 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
             </div>
           </div>
 
-          <Separator />
+          {isSuperAdmin && (
+            <>
+              <Separator />
 
-          {/* Credenciales WhatsApp */}
-          <p className="text-sm font-medium text-muted-foreground">WhatsApp Cloud API</p>
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-1.5">
-              <Label>Número de WhatsApp</Label>
-              <Input value={form.whatsapp_phone} onChange={e => set('whatsapp_phone', e.target.value)} placeholder="+52 55 1234 5678" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Phone Number ID (Meta)</Label>
-              <Input value={form.wa_phone_number_id} onChange={e => set('wa_phone_number_id', e.target.value)} placeholder="ID del número en Meta" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Access Token (Meta)</Label>
-              <Input value={form.wa_access_token} onChange={e => set('wa_access_token', e.target.value)} placeholder="Token de acceso de Meta" />
-            </div>
-          </div>
+              {/* Credenciales WhatsApp — solo super_admin */}
+              <p className="text-sm font-medium text-muted-foreground">WhatsApp Cloud API</p>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Número de WhatsApp</Label>
+                  <Input value={form.whatsapp_phone} onChange={e => set('whatsapp_phone', e.target.value)} placeholder="+52 55 1234 5678" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Phone Number ID (Meta)</Label>
+                  <Input value={form.wa_phone_number_id} onChange={e => set('wa_phone_number_id', e.target.value)} placeholder="ID del número en Meta" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Access Token (Meta)</Label>
+                  <Input value={form.wa_access_token} onChange={e => set('wa_access_token', e.target.value)} placeholder="Token de acceso de Meta" />
+                </div>
+              </div>
+            </>
+          )}
 
-          {form.bot_type === 'informativo' && (
+          {isSuperAdmin && form.bot_type === 'informativo' && (
             <>
               <Separator />
               <p className="text-sm font-medium text-muted-foreground">Google Calendar</p>
