@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto'
 import supabase from './supabase'
 import { ClientRow, TicketRow } from '../types'
 
@@ -12,24 +13,47 @@ export interface IntakeData {
   photos?: string[]
 }
 
+// Alfabeto sin caracteres ambiguos (excluye O, 0, I, 1).
+// 32 chars × 6 posiciones = ~1 billón de combinaciones por cliente.
+const FOLIO_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const FOLIO_SUFFIX_LEN = 6
+const FOLIO_MAX_RETRIES = 5
+
 function resolvePrefix(client: ClientRow): string {
   if (client.ticket_prefix) return client.ticket_prefix.toUpperCase()
   const fallback = (client.company_name ?? 'CLI').replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase()
   return fallback || 'CLI'
 }
 
-export async function createTicket(client: ClientRow, intake: IntakeData): Promise<{ folio: string; ticketId: string } | null> {
-  const { data: nextNumberData, error: counterError } = await supabase.rpc('next_ticket_number', {
-    p_client_id: client.id,
-  })
-
-  if (counterError || nextNumberData == null) {
-    console.error('[Tickets] next_ticket_number error:', counterError)
-    return null
+function randomFolioSuffix(): string {
+  const bytes = randomBytes(FOLIO_SUFFIX_LEN)
+  let result = ''
+  for (let i = 0; i < FOLIO_SUFFIX_LEN; i++) {
+    result += FOLIO_ALPHABET[bytes[i] % FOLIO_ALPHABET.length]
   }
+  return result
+}
 
+async function generateUniqueFolio(client: ClientRow): Promise<string | null> {
   const prefix = resolvePrefix(client)
-  const folio = `${prefix}-${nextNumberData}`
+  for (let attempt = 0; attempt < FOLIO_MAX_RETRIES; attempt++) {
+    const folio = `${prefix}${randomFolioSuffix()}`
+    const { data } = await supabase
+      .from('tickets')
+      .select('id')
+      .eq('client_id', client.id)
+      .eq('folio', folio)
+      .maybeSingle()
+    if (!data) return folio
+    console.warn(`[Tickets] folio collision on ${folio} (attempt ${attempt + 1}), retrying`)
+  }
+  console.error(`[Tickets] failed to generate unique folio after ${FOLIO_MAX_RETRIES} attempts`)
+  return null
+}
+
+export async function createTicket(client: ClientRow, intake: IntakeData): Promise<{ folio: string; ticketId: string } | null> {
+  const folio = await generateUniqueFolio(client)
+  if (!folio) return null
 
   const initialHistory = [{
     status: 'recibido',
@@ -67,12 +91,13 @@ export async function createTicket(client: ClientRow, intake: IntakeData): Promi
 }
 
 export async function getTicketByFolio(clientId: string, folio: string): Promise<TicketRow | null> {
+  const normalized = folio.trim().toUpperCase()
   const { data, error } = await supabase
     .from('tickets')
     .select('*')
     .eq('client_id', clientId)
-    .ilike('folio', folio)
-    .single()
+    .eq('folio', normalized)
+    .maybeSingle()
 
   if (error || !data) return null
   return data as TicketRow

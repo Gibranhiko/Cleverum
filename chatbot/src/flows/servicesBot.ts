@@ -15,9 +15,10 @@ function loadPrompt(name: string): string {
 
 // Strict: el texto entero (trimeado) debe ser el folio para evitar matches
 // dentro de oraciones tipo "Mi PC-1 no enciende" (BOT-02).
-// Para preguntas tipo "estado de DTR-1", el intent classifier detecta
-// `consultar_orden` y luego pide el folio en `awaiting_folio`.
-const FOLIO_REGEX = /^([A-Z]{2,5})-(\d+)$/i
+// Soporta dos formatos:
+//   - Nuevo: PREFIX + 6 chars alfanuméricos (ej: DTRX7K9P2)
+//   - Legacy: PREFIX-N (ej: DTR-1) — para tickets creados antes del cambio
+const FOLIO_REGEX = /^[A-Z]{2,5}(?:-\d+|[A-Z0-9]{6})$/i
 
 const DEVICE_TYPES = ['Celular', 'Computadora', 'Laptop', 'Tablet', 'Otro']
 const BRANDS = ['Apple', 'Samsung', 'Huawei', 'Xiaomi', 'HP', 'Lenovo', 'Dell', 'Otra']
@@ -97,7 +98,7 @@ async function promptForFolio(ctx: BotContext) {
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
   await updateSession(clientId, from, { current_flow: 'status', flow_step: 'awaiting_folio', state: {} })
-  await sendText(pid, token, from, 'Escribe tu folio (ej: ABC-123)')
+  await sendText(pid, token, from, 'Escribe el folio de tu orden (ej: ABCD2K9P)')
 }
 
 async function startFAQ(ctx: BotContext) {
@@ -161,7 +162,7 @@ async function routeMenuOption(ctx: BotContext, optionId: string) {
 
     case 'menu_status':
       await updateSession(clientId, from, { current_flow: 'status', flow_step: 'awaiting_folio', state: {} })
-      await sendText(pid, token, from, 'Escribe tu folio (ej: ABC-123)')
+      await sendText(pid, token, from, 'Escribe el folio de tu orden (ej: ABCD2K9P)')
       return
 
     case 'menu_services':
@@ -389,10 +390,15 @@ async function finalizeIntake(ctx: BotContext, state: IntakeState) {
   }
 
   const message = [
-    `✅ *Orden ${result.folio} creada*`,
+    `✅ *¡Tu orden ha sido registrada!*`,
     '',
-    `Te avisaremos cuando tengamos novedades.`,
-    `Puedes consultar el status escribiendo *${result.folio}* en cualquier momento.`,
+    `📋 Folio: *${result.folio}*`,
+    '',
+    `📌 *Guarda este folio.* Lo necesitas para:`,
+    `• Consultar el estado de tu reparación`,
+    `• Recoger tu equipo cuando esté listo`,
+    '',
+    `Te avisaremos por aquí mismo en cuanto tengamos novedades.`,
   ].join('\n')
 
   await sendText(pid, token, from, message)
@@ -406,8 +412,7 @@ async function handleStatusQuery(ctx: BotContext, text: string) {
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
 
-  const match = text.trim().match(FOLIO_REGEX)
-  const folio = match ? `${match[1].toUpperCase()}-${match[2]}` : text.trim().toUpperCase()
+  const folio = text.trim().toUpperCase()
 
   console.log(`[ServicesBot] status query — extracted folio="${folio}"`)
   const ticket = await getTicketByFolio(clientId, folio)
@@ -419,7 +424,7 @@ async function handleStatusQuery(ctx: BotContext, text: string) {
       console.warn(`[ServicesBot] folio ${folio} access denied — phone mismatch`)
     }
     await sendText(pid, token, from,
-      `No encontré la orden *${folio}*. Verifica el folio (ej: ABC-123) o escribe *menu* para ver opciones.`
+      `No encontré la orden *${folio}*. Verifica el folio o escribe *menu* para ver opciones.`
     )
     await updateSession(clientId, from, { current_flow: null, flow_step: null })
     return
