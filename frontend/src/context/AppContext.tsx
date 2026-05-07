@@ -66,7 +66,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session: s } }) => resolveSessionAndProfile(s))
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      // TOKEN_REFRESHED renueva el access_token sin cambiar de usuario.
+      // No re-fetcheamos el profile ni mostramos el spinner — solo actualizamos session.
+      if (event === 'TOKEN_REFRESHED') {
+        setSession(s)
+        return
+      }
       setLoading(true)
       resolveSessionAndProfile(s)
     })

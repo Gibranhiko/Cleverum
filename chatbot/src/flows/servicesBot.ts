@@ -13,10 +13,25 @@ function loadPrompt(name: string): string {
   return fs.readFileSync(path.join(__dirname, '..', 'prompts', name), 'utf-8')
 }
 
-const FOLIO_REGEX = /\b([A-Z]{2,5})-(\d+)\b/i
+// Strict: el texto entero (trimeado) debe ser el folio para evitar matches
+// dentro de oraciones tipo "Mi PC-1 no enciende" (BOT-02).
+// Para preguntas tipo "estado de DTR-1", el intent classifier detecta
+// `consultar_orden` y luego pide el folio en `awaiting_folio`.
+const FOLIO_REGEX = /^([A-Z]{2,5})-(\d+)$/i
 
 const DEVICE_TYPES = ['Celular', 'Computadora', 'Laptop', 'Tablet', 'Otro']
 const BRANDS = ['Apple', 'Samsung', 'Huawei', 'Xiaomi', 'HP', 'Lenovo', 'Dell', 'Otra']
+
+const YES_WORDS = ['intake_confirm:yes', 'si', 'sí', 'yes', 'ok', 'okay', 'correcto', 'confirmo', 'dale']
+const MODIFY_WORDS = ['intake_confirm:modify', 'no', 'modificar', 'cambiar', 'editar']
+
+function isYesText(text: string): boolean {
+  return YES_WORDS.includes(text.trim().toLowerCase())
+}
+
+function isModifyText(text: string): boolean {
+  return MODIFY_WORDS.includes(text.trim().toLowerCase())
+}
 
 interface IntakeState extends Record<string, unknown> {
   device_type?: string
@@ -33,8 +48,9 @@ export async function handleServicesBot(ctx: BotContext) {
 
   console.log(`[ServicesBot] from=${from} flow=${flow} step=${session.flow_step ?? '-'} text="${text.slice(0, 60)}"`)
 
-  // 1. Folio detection — works from anywhere except mid-intake
-  if (flow !== 'intake' && FOLIO_REGEX.test(text)) {
+  // 1. Folio detection — works from anywhere except mid-intake.
+  // Strict match: el texto entero (trimeado) debe ser el folio.
+  if (flow !== 'intake' && FOLIO_REGEX.test(text.trim())) {
     console.log(`[ServicesBot] folio detected — routing to status query`)
     return handleStatusQuery(ctx, text)
   }
@@ -324,19 +340,23 @@ async function handleIntakeStep(ctx: BotContext) {
     }
 
     case 'awaiting_confirm': {
-      if (text === 'intake_confirm:yes') {
+      if (isYesText(text)) {
         return finalizeIntake(ctx, state)
       }
-      if (text === 'intake_confirm:modify') {
-        // Restart from device_type, keeping data so user re-confirms each step
+      if (isModifyText(text)) {
+        // Reset completo: WhatsApp Lists no soportan default selection,
+        // así que es más simple repetir todo el flow.
         await updateSession(clientId, from, {
           flow_step: 'awaiting_device_type',
           state: {},
         })
-        await sendText(pid, token, from, 'Sin problema, comencemos de nuevo.')
+        await sendText(pid, token, from, 'Sin problema, comencemos de nuevo desde el principio.')
         return promptDeviceType(ctx)
       }
-      // Invalid input — re-show confirm
+      // Invalid input — explicar y re-mostrar confirm
+      await sendText(pid, token, from,
+        'No entendí. Tap un botón o escribe *sí* para crear la orden o *no* para modificar.'
+      )
       return promptConfirm(ctx, state)
     }
 
@@ -386,24 +406,20 @@ async function handleStatusQuery(ctx: BotContext, text: string) {
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
 
-  const match = text.match(FOLIO_REGEX)
+  const match = text.trim().match(FOLIO_REGEX)
   const folio = match ? `${match[1].toUpperCase()}-${match[2]}` : text.trim().toUpperCase()
 
   console.log(`[ServicesBot] status query — extracted folio="${folio}"`)
   const ticket = await getTicketByFolio(clientId, folio)
 
-  if (!ticket) {
+  // Security: mismo mensaje si el folio no existe O pertenece a otro número.
+  // Mensajes distintos permiten enumerar tickets de otros clientes finales.
+  if (!ticket || ticket.customer_phone !== from) {
+    if (ticket && ticket.customer_phone !== from) {
+      console.warn(`[ServicesBot] folio ${folio} access denied — phone mismatch`)
+    }
     await sendText(pid, token, from,
       `No encontré la orden *${folio}*. Verifica el folio (ej: ABC-123) o escribe *menu* para ver opciones.`
-    )
-    await updateSession(clientId, from, { current_flow: null, flow_step: null })
-    return
-  }
-
-  // Security: only show ticket if it belongs to this customer phone
-  if (ticket.customer_phone !== from) {
-    await sendText(pid, token, from,
-      `No encontré la orden *${folio}* asociada a este número.`
     )
     await updateSession(clientId, from, { current_flow: null, flow_step: null })
     return
