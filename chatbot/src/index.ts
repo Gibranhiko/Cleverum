@@ -17,7 +17,7 @@ app.set('trust proxy', 1)
 const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(',')
 app.use(cors({
   origin: allowedOrigins,
-  allowedHeaders: ['Content-Type', 'x-api-key'],
+  allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization'],
 }))
 
 app.use(express.json())
