@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext'
 import { Button } from './ui/button'
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { session, profile, loading, signOut } = useApp()
+  const { session, profile, loading, isPasswordRecovery, signOut } = useApp()
 
   if (loading) {
     return (
@@ -12,6 +12,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       </div>
     )
   }
+
+  // Recovery flow: la sesión existe pero el usuario clickeó un recovery link.
+  // Forzar la pantalla de reset antes de dejarlo entrar a la app.
+  if (isPasswordRecovery) return <Navigate to="/reset-password" replace />
 
   if (!session) return <Navigate to="/login" replace />
 

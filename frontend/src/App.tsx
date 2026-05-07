@@ -18,6 +18,7 @@ import Usuarios from './pages/Usuarios'
 import Servicios from './pages/Servicios'
 import Tickets from './pages/Tickets'
 import NoAccess from './pages/NoAccess'
+import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
       <AppProvider>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route
             path="/"
             element={

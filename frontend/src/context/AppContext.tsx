@@ -22,6 +22,8 @@ interface AppContextType {
   session: Session | null
   profile: UserProfile | null
   loading: boolean
+  isPasswordRecovery: boolean
+  clearPasswordRecovery: () => void
   selectedClient: Client | null
   setSelectedClient: (client: Client | null) => void
   notifications: number
@@ -35,6 +37,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [notifications, setNotifications] = useState(0)
 
@@ -67,6 +70,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => resolveSessionAndProfile(s))
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      // PASSWORD_RECOVERY: Supabase creó una sesión válida porque el usuario
+      // clickeó un recovery link. NO cargamos el profile ni dejamos pasar al
+      // dashboard — el RouteGuard de App.tsx forzará /reset-password.
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true)
+        setSession(s)
+        setProfile(null)
+        setLoading(false)
+        return
+      }
       // TOKEN_REFRESHED renueva el access_token sin cambiar de usuario.
       // No re-fetcheamos el profile ni mostramos el spinner — solo actualizamos session.
       if (event === 'TOKEN_REFRESHED') {
@@ -109,6 +122,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     await supabase.auth.signOut()
     setSelectedClient(null)
+    setIsPasswordRecovery(false)
   }
 
   return (
@@ -116,6 +130,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       session,
       profile,
       loading,
+      isPasswordRecovery,
+      clearPasswordRecovery: () => setIsPasswordRecovery(false),
       selectedClient,
       setSelectedClient,
       notifications,
