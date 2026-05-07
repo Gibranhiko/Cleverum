@@ -39,10 +39,11 @@ export async function handleInfoBot(ctx: BotContext) {
     return startAppointmentFlow(ctx)
   }
 
-  // consultar_empresa or hablar → AI conversation with RAG context
-  const ragQuery = `${text} ${client.company_name ?? ''}`
-  const ragContext = await getRagContext(ragQuery, clientId)
-  console.log(`[InfoBot] RAG context length=${ragContext.length}`)
+  const needsRag = intent === 'consultar_empresa' || intent === 'consultar_servicios'
+  const ragContext = needsRag
+    ? await getRagContext(`${text} ${client.company_name ?? ''}`, clientId)
+    : ''
+  console.log(`[InfoBot] needsRag=${needsRag} RAG context length=${ragContext.length}`)
 
   const basePrompt = ctx.botConfig?.system_prompt || loadPrompt('prompt-talker.txt')
   const talker = basePrompt
