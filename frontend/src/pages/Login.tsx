@@ -9,8 +9,9 @@ import wabbiLogo from '@/assets/logos/wabbi-logo.png'
 
 const NAVY = '#050d1a'
 const NAVY_BTN = '#0a1628'
-const BLUE_DEEP = '#0d47a1'
-const BLUE = '#1565c0'
+// Brand violets de Cleverum (sacados del favicon)
+const BRAND_DEEP = '#5b14ff'
+const BRAND_BRIGHT = '#863bff'
 const WHATSAPP_GREEN = '#25d366'
 
 interface FieldErrors {
@@ -59,7 +60,7 @@ export default function Login() {
         className="md:hidden flex flex-col items-center gap-3 py-7 px-6"
         style={{ backgroundColor: NAVY }}
       >
-        <img src={wabbiLogo} alt="Wabbi" className="h-12 w-auto" />
+        <img src={wabbiLogo} alt="Wabbi" className="h-10 w-auto" />
         <div className="flex items-center gap-2 text-[12px] text-white/55">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: WHATSAPP_GREEN }} />
           Panel de gestión · WhatsApp
@@ -78,26 +79,26 @@ export default function Login() {
         <div
           className="pointer-events-none absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full blur-3xl"
           style={{
-            background: `radial-gradient(circle, ${BLUE_DEEP} 0%, transparent 65%)`,
+            background: `radial-gradient(circle, ${BRAND_DEEP} 0%, transparent 65%)`,
             animation: 'orbBreathe 7s ease-in-out infinite',
           }}
         />
         <div
           className="pointer-events-none absolute -bottom-40 -right-40 w-[420px] h-[420px] rounded-full blur-3xl"
           style={{
-            background: `radial-gradient(circle, ${BLUE} 0%, transparent 65%)`,
+            background: `radial-gradient(circle, ${BRAND_BRIGHT} 0%, transparent 65%)`,
             animation: 'orbBreatheReverse 7s ease-in-out infinite',
           }}
         />
 
         {/* Top-left: Cleverum logo (anclado a esquina) */}
         <div className="relative z-10">
-          <img src={cleverumLogo} alt="Cleverum" className="h-9 w-auto" />
+          <img src={cleverumLogo} alt="Cleverum" className="h-14 w-auto" />
         </div>
 
         {/* Hero: Wabbi — centrado horizontal y vertical en el espacio restante */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6 max-w-[420px] mx-auto text-center">
-          <img src={wabbiLogo} alt="Wabbi" className="max-w-[260px] w-full h-auto" />
+          <img src={wabbiLogo} alt="Wabbi" className="max-w-[180px] w-full h-auto" />
 
           <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/[0.04] border border-white/10">
             <span
@@ -139,7 +140,7 @@ export default function Login() {
         {/* Decorative orb */}
         <div
           className="pointer-events-none absolute -top-20 -right-20 w-[320px] h-[320px] rounded-full blur-3xl"
-          style={{ background: `radial-gradient(circle, rgba(21,101,192,0.06) 0%, transparent 70%)` }}
+          style={{ background: `radial-gradient(circle, rgba(134,59,255,0.07) 0%, transparent 70%)` }}
         />
 
         <form
@@ -232,7 +233,7 @@ export default function Login() {
               checked={keepLogged}
               onChange={e => setKeepLogged(e.target.checked)}
               className="cursor-pointer"
-              style={{ accentColor: BLUE }}
+              style={{ accentColor: BRAND_BRIGHT }}
             />
             Mantener sesión iniciada
           </label>
