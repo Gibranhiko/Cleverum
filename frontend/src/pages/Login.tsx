@@ -56,19 +56,22 @@ export default function Login() {
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-background">
       {/* Mobile-only compact brand header */}
       <div
-        className="md:hidden flex flex-col items-center gap-2 py-5 px-6"
+        className="md:hidden flex flex-col items-center gap-3 py-7 px-6"
         style={{ backgroundColor: NAVY }}
       >
-        <img src={wabbiLogo} alt="Wabbi" className="h-10 w-auto" />
-        <div className="flex items-center gap-2 text-[11px] text-white/45">
+        <img src={wabbiLogo} alt="Wabbi" className="h-12 w-auto" />
+        <div className="flex items-center gap-2 text-[12px] text-white/55">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: WHATSAPP_GREEN }} />
           Panel de gestión · WhatsApp
         </div>
+        <p className="text-[12px] font-light text-white/55 text-center max-w-[280px] leading-relaxed">
+          El centro de control para tus conversaciones de WhatsApp.
+        </p>
       </div>
 
       {/* LEFT PANEL — brand (desktop only) */}
       <div
-        className="hidden md:flex relative overflow-hidden flex-col justify-between p-10 text-white"
+        className="hidden md:flex relative overflow-hidden flex-col p-10 text-white"
         style={{ backgroundColor: NAVY }}
       >
         {/* Animated orbs */}
@@ -87,26 +90,35 @@ export default function Login() {
           }}
         />
 
-        {/* Top: Cleverum logo */}
+        {/* Top-left: Cleverum logo (anclado a esquina) */}
         <div className="relative z-10">
-          <img src={cleverumLogo} alt="Cleverum" className="h-7 w-auto" />
+          <img src={cleverumLogo} alt="Cleverum" className="h-9 w-auto" />
         </div>
 
-        {/* Hero: Wabbi */}
-        <div className="relative z-10 flex flex-col items-start gap-4 max-w-[280px]">
-          <img src={wabbiLogo} alt="Wabbi" className="max-w-[200px] w-full h-auto" />
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10">
+        {/* Hero: Wabbi — centrado horizontal y vertical en el espacio restante */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6 max-w-[420px] mx-auto text-center">
+          <img src={wabbiLogo} alt="Wabbi" className="max-w-[260px] w-full h-auto" />
+
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/[0.04] border border-white/10">
             <span
               className="flex items-center justify-center w-[18px] h-[18px] rounded-full"
               style={{ backgroundColor: WHATSAPP_GREEN }}
             >
               <MessageCircle size={11} className="text-white" strokeWidth={2.5} />
             </span>
-            <span className="text-[11px] text-white/45">Panel de gestión para WhatsApp</span>
+            <span className="text-[12px] font-medium text-white/70">Panel de gestión para WhatsApp</span>
           </div>
+
           <p
-            className="text-[13px] font-light leading-relaxed"
-            style={{ color: 'rgba(255,255,255,0.38)' }}
+            className="text-[22px] font-light leading-snug max-w-[380px]"
+            style={{ color: 'rgba(255,255,255,0.78)' }}
+          >
+            El centro de control para tus conversaciones de WhatsApp.
+          </p>
+
+          <p
+            className="text-[13px] font-light leading-relaxed max-w-[360px]"
+            style={{ color: 'rgba(255,255,255,0.4)' }}
           >
             Administra tus chatbots, conversaciones y automatizaciones desde un solo lugar.
           </p>
@@ -114,11 +126,11 @@ export default function Login() {
 
         {/* Footer */}
         <div
-          className="relative z-10 flex items-center gap-2 pt-5"
+          className="relative z-10 flex items-center justify-center gap-2 pt-5"
           style={{ borderTop: '0.5px solid rgba(255,255,255,0.07)' }}
         >
-          <Shield size={12} className="text-white/25" />
-          <span className="text-[11px] text-white/25">Acceso privado — solo usuarios autorizados</span>
+          <Shield size={12} className="text-white/30" />
+          <span className="text-[11px] text-white/30">Acceso privado — solo usuarios autorizados</span>
         </div>
       </div>
 
@@ -135,22 +147,16 @@ export default function Login() {
           className="relative z-10 w-full max-w-[400px] space-y-5"
           noValidate
         >
-          <div className="space-y-2 mb-7">
-            <p
-              className="text-[11px] uppercase tracking-[1.5px] text-muted-foreground opacity-0"
-              style={{ animation: 'fadeUp 0.45s ease-out 0.1s forwards' }}
-            >
-              Panel de administración
-            </p>
+          <div className="space-y-1.5 mb-7">
             <h2
-              className="font-serif-display text-[30px] leading-tight text-foreground opacity-0"
-              style={{ animation: 'fadeUp 0.45s ease-out 0.18s forwards' }}
+              className="text-[24px] font-semibold leading-tight text-foreground opacity-0"
+              style={{ animation: 'fadeUp 0.45s ease-out 0.12s forwards' }}
             >
               Iniciar sesión
             </h2>
             <p
               className="text-[13px] font-light text-muted-foreground opacity-0"
-              style={{ animation: 'fadeUp 0.45s ease-out 0.25s forwards' }}
+              style={{ animation: 'fadeUp 0.45s ease-out 0.2s forwards' }}
             >
               Ingresa tus credenciales para continuar.
             </p>
