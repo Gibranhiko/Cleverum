@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Input } from '@/components/ui/input'
@@ -21,6 +21,7 @@ interface FieldErrors {
 
 export default function Login() {
   const navigate = useNavigate()
+  const leftPanelRef = useRef<HTMLDivElement>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -28,6 +29,41 @@ export default function Login() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Mouse-follow gradient + parallax de orbs (efecto profundidad).
+  // Usamos CSS variables directamente sobre el ref para evitar re-renders de React.
+  useEffect(() => {
+    const panel = leftPanelRef.current
+    if (!panel) return
+
+    function handleMove(e: MouseEvent) {
+      if (!panel) return
+      const rect = panel.getBoundingClientRect()
+      const x = (e.clientX - rect.left) / rect.width
+      const y = (e.clientY - rect.top) / rect.height
+      // Spotlight position 0..100%
+      panel.style.setProperty('--mx', `${x * 100}%`)
+      panel.style.setProperty('--my', `${y * 100}%`)
+      // Parallax offsets (orbs se mueven en sentido inverso, máx 20px)
+      panel.style.setProperty('--px', `${(0.5 - x) * 40}px`)
+      panel.style.setProperty('--py', `${(0.5 - y) * 40}px`)
+    }
+
+    function handleLeave() {
+      if (!panel) return
+      panel.style.setProperty('--mx', `50%`)
+      panel.style.setProperty('--my', `50%`)
+      panel.style.setProperty('--px', `0px`)
+      panel.style.setProperty('--py', `0px`)
+    }
+
+    panel.addEventListener('mousemove', handleMove)
+    panel.addEventListener('mouseleave', handleLeave)
+    return () => {
+      panel.removeEventListener('mousemove', handleMove)
+      panel.removeEventListener('mouseleave', handleLeave)
+    }
+  }, [])
 
   function validate(): boolean {
     const errs: FieldErrors = {}
@@ -72,33 +108,61 @@ export default function Login() {
 
       {/* LEFT PANEL — brand (desktop only) */}
       <div
-        className="hidden md:flex relative overflow-hidden flex-col p-10 text-white"
-        style={{ backgroundColor: NAVY }}
+        ref={leftPanelRef}
+        className="hidden md:flex relative overflow-hidden flex-col p-10 text-white group"
+        style={{
+          backgroundColor: NAVY,
+          // Defaults para las CSS vars antes de que el mouse entre
+          ['--mx' as string]: '50%',
+          ['--my' as string]: '50%',
+          ['--px' as string]: '0px',
+          ['--py' as string]: '0px',
+        }}
       >
-        {/* Animated orbs */}
+        {/* Mouse-follow spotlight (overlay sutil, sigue el cursor) */}
         <div
-          className="pointer-events-none absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full blur-3xl"
+          className="pointer-events-none absolute inset-0 transition-[background] duration-300 ease-out"
+          style={{
+            background: `radial-gradient(600px circle at var(--mx) var(--my), rgba(134,59,255,0.18), transparent 50%)`,
+          }}
+        />
+
+        {/* Animated orbs con parallax */}
+        <div
+          className="pointer-events-none absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full blur-3xl transition-transform duration-500 ease-out"
           style={{
             background: `radial-gradient(circle, ${BRAND_DEEP} 0%, transparent 65%)`,
             animation: 'orbBreathe 7s ease-in-out infinite',
+            transform: 'translate(var(--px), var(--py))',
           }}
         />
         <div
-          className="pointer-events-none absolute -bottom-40 -right-40 w-[420px] h-[420px] rounded-full blur-3xl"
+          className="pointer-events-none absolute -bottom-40 -right-40 w-[420px] h-[420px] rounded-full blur-3xl transition-transform duration-500 ease-out"
           style={{
             background: `radial-gradient(circle, ${BRAND_BRIGHT} 0%, transparent 65%)`,
             animation: 'orbBreatheReverse 7s ease-in-out infinite',
+            transform: 'translate(calc(var(--px) * -0.6), calc(var(--py) * -0.6))',
+          }}
+        />
+
+        {/* Tercer orb sutil para más profundidad (drift opuesto) */}
+        <div
+          className="pointer-events-none absolute top-1/3 left-1/4 w-[300px] h-[300px] rounded-full blur-3xl opacity-40 transition-transform duration-700 ease-out"
+          style={{
+            background: `radial-gradient(circle, ${BRAND_BRIGHT} 0%, transparent 70%)`,
+            animation: 'orbBreathe 9s ease-in-out infinite',
+            transform: 'translate(calc(var(--px) * 0.3), calc(var(--py) * 0.3))',
           }}
         />
 
         {/* Top-left: Cleverum logo (anclado a esquina) */}
         <div className="relative z-10">
-          <img src={cleverumLogo} alt="Cleverum" className="h-14 w-auto" />
+          <img src={cleverumLogo} alt="Cleverum" className="h-20 w-auto" />
         </div>
 
         {/* Hero: Wabbi — centrado horizontal y vertical en el espacio restante */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6 max-w-[420px] mx-auto text-center">
-          <img src={wabbiLogo} alt="Wabbi" className="max-w-[180px] w-full h-auto" />
+          <img src={wabbiLogo} alt="Wabbi" className="max-w-[240px] w-full h-auto" />
 
           <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/[0.04] border border-white/10">
             <span
