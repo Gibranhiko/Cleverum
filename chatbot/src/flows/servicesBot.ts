@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { ChatCompletionMessageParam } from 'openai/resources/chat'
 import { updateSession, appendToHistory } from '../lib/session'
-import { sendList, sendText, sendButtons } from '../lib/whatsapp'
+import { sendList, sendText, sendButtons, sendImage } from '../lib/whatsapp'
 import { createTicket, IntakeData, getTicketByFolio, formatTicketStatus } from '../lib/tickets'
 import { BotContext, ServiceRow } from '../types'
 import { ai } from '../services/ai'
@@ -49,11 +49,28 @@ export async function handleServicesBot(ctx: BotContext) {
 
   console.log(`[ServicesBot] from=${from} flow=${flow} step=${session.flow_step ?? '-'} text="${text.slice(0, 60)}"`)
 
+  // 0. Comando global "menu" — siempre regresa al menú principal,
+  // sin importar el flow actual. Determinístico, sin AI.
+  if (flow !== 'intake' && text.trim().toLowerCase() === 'menu') {
+    console.log(`[ServicesBot] global menu command — returning to main menu`)
+    return sendMainMenu(ctx)
+  }
+
   // 1. Folio detection — works from anywhere except mid-intake.
   // Strict match: el texto entero (trimeado) debe ser el folio.
   if (flow !== 'intake' && FOLIO_REGEX.test(text.trim())) {
     console.log(`[ServicesBot] folio detected — routing to status query`)
     return handleStatusQuery(ctx, text)
+  }
+
+  // 2a. Tap en un servicio del listado → enviar detalle
+  if (text.startsWith('service:')) {
+    return sendServiceDetail(ctx, text.split(':')[1])
+  }
+
+  // 2b. Acciones de los buttons del detalle
+  if (text.startsWith('service_detail:')) {
+    return handleServiceDetailAction(ctx, text)
   }
 
   // 2. Menu option taps (interactive ids start with menu_)
@@ -118,8 +135,19 @@ async function startHumanTakeover(ctx: BotContext) {
 // ─── Main menu ───────────────────────────────────────────────
 
 async function sendMainMenu(ctx: BotContext) {
-  const { from, client } = ctx
+  const { from, client, session } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId, company_name } = client
+
+  // Mascot greeting — solo en primera interacción del cliente final.
+  // Si después se quiere extender a "primera vez del día", chequear `last_message_at`.
+  const isFirstInteraction = (session.history ?? []).length === 0
+  if (isFirstInteraction && client.mascot_name && client.mascot_image_url) {
+    const greeting =
+      `¡Hola! 👋 Mi nombre es *${client.mascot_name}*, el asesor digital de ${company_name ?? 'la empresa'}. ` +
+      `¿En qué puedo ayudarte el día de hoy?`
+    await sendImage(pid, token, from, client.mascot_image_url, greeting)
+    await appendToHistory(clientId, from, 'assistant', greeting)
+  }
 
   await sendList(
     pid,
@@ -533,6 +561,83 @@ async function sendServicesList(ctx: BotContext) {
     'Ver lista',
     sections
   )
+}
+
+// ─── Service detail (tap en un row del listado) ──────────────
+
+async function sendServiceDetail(ctx: BotContext, serviceId: string) {
+  const { from, client } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+
+  const { data, error } = await supabase
+    .from('services')
+    .select('*')
+    .eq('id', serviceId)
+    .eq('client_id', clientId) // security: solo del propio cliente
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (error || !data) {
+    console.warn(`[ServicesBot] service detail not found id=${serviceId}`)
+    await sendText(pid, token, from,
+      'Ese servicio ya no está disponible. Escribe *menu* para ver otras opciones.'
+    )
+    return
+  }
+
+  const service = data as ServiceRow
+  const lines: string[] = []
+  lines.push(`*${service.name}*`)
+  if (service.description) {
+    lines.push('')
+    lines.push(service.description)
+  }
+
+  const priceText = service.price_label
+    || (service.price_amount != null ? `$${service.price_amount}` : null)
+  if (priceText) {
+    lines.push('')
+    lines.push(`💵 ${priceText}`)
+  }
+  if (service.estimated_duration) {
+    lines.push(`⏱️ ${service.estimated_duration}`)
+  }
+  if (service.examples) {
+    lines.push('')
+    lines.push(`📋 *Ejemplos:*`)
+    lines.push(service.examples)
+  }
+
+  let message = lines.join('\n')
+  // WhatsApp caption limit es 1024 chars cuando hay imagen, 4096 sin imagen
+  const maxLen = service.image_url ? 1024 : 4096
+  if (message.length > maxLen) {
+    message = message.slice(0, maxLen - 3) + '...'
+  }
+
+  if (service.image_url) {
+    await sendImage(pid, token, from, service.image_url, message)
+  } else {
+    await sendText(pid, token, from, message)
+  }
+  await appendToHistory(clientId, from, 'assistant', message)
+
+  // Buttons de acción
+  await sendButtons(pid, token, from, '¿Qué quieres hacer?', [
+    { id: 'service_detail:start_intake', title: '🔧 Levantar orden' },
+    { id: 'service_detail:back_to_services', title: '⬅️ Más servicios' },
+  ])
+}
+
+async function handleServiceDetailAction(ctx: BotContext, action: string) {
+  if (action === 'service_detail:back_to_services') {
+    return sendServicesList(ctx)
+  }
+  if (action.startsWith('service_detail:start_intake')) {
+    return startIntake(ctx)
+  }
+  console.warn(`[ServicesBot] unknown service detail action: ${action}`)
+  return sendMainMenu(ctx)
 }
 
 // ─── FAQ (B-07) ──────────────────────────────────────────────

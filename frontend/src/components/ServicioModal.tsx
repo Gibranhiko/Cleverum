@@ -15,6 +15,8 @@ interface Servicio {
   price_amount: number | null
   price_label: string
   estimated_duration: string
+  examples: string
+  image_url: string
   is_active: boolean
   display_order: number
 }
@@ -26,6 +28,8 @@ const empty: Servicio = {
   price_amount: null,
   price_label: '',
   estimated_duration: '',
+  examples: '',
+  image_url: '',
   is_active: true,
   display_order: 0,
 }
@@ -41,6 +45,7 @@ interface Props {
 export default function ServicioModal({ open, clientId, servicio, onClose, onSaved }: Props) {
   const [form, setForm] = useState<Servicio>(empty)
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -50,6 +55,28 @@ export default function ServicioModal({ open, clientId, servicio, onClose, onSav
 
   function set<K extends keyof Servicio>(field: K, value: Servicio[K]) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError('')
+    const ext = file.name.split('.').pop()
+    const path = `${clientId}/${Date.now()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('services').upload(path, file, { upsert: true })
+    if (upErr) {
+      setError(`Error al subir imagen: ${upErr.message}`)
+      setUploading(false)
+      return
+    }
+    const { data: { publicUrl } } = supabase.storage.from('services').getPublicUrl(path)
+    set('image_url', publicUrl)
+    setUploading(false)
+  }
+
+  function clearImage() {
+    set('image_url', '')
   }
 
   async function handleSave() {
@@ -68,6 +95,8 @@ export default function ServicioModal({ open, clientId, servicio, onClose, onSav
       price_amount: form.price_amount,
       price_label: form.price_label || null,
       estimated_duration: form.estimated_duration || null,
+      examples: form.examples || null,
+      image_url: form.image_url || null,
       is_active: form.is_active,
       display_order: form.display_order,
     }
@@ -117,6 +146,61 @@ export default function ServicioModal({ open, clientId, servicio, onClose, onSav
               rows={3}
               className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Ejemplos / casos de uso (opcional)</Label>
+            <textarea
+              value={form.examples}
+              onChange={e => set('examples', e.target.value)}
+              placeholder={'Ej:\n• Cambio de pantalla iPhone 13 — $1,800\n• Cambio de batería Galaxy S22 — $900'}
+              rows={3}
+              className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <p className="text-xs text-muted-foreground">
+              Aparece en el bot debajo de la descripción cuando el cliente abre el detalle.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Imagen (opcional)</Label>
+            {form.image_url ? (
+              <div className="flex items-center gap-3">
+                <img
+                  src={form.image_url}
+                  alt="Servicio"
+                  className="h-20 w-20 rounded-md object-cover border"
+                />
+                <div className="flex flex-col gap-1.5">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearImage}
+                    className="text-xs text-destructive hover:underline self-start"
+                  >
+                    Quitar imagen
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploading}
+                className="text-sm"
+              />
+            )}
+            {uploading && <p className="text-xs text-muted-foreground">Subiendo...</p>}
+            <p className="text-xs text-muted-foreground">
+              Si subes imagen, se enviará junto con el detalle del servicio en WhatsApp.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

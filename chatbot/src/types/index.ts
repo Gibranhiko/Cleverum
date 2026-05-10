@@ -17,6 +17,8 @@ export interface ClientRow {
   instagram_link: string | null
   ticket_prefix: string | null
   ticket_counter: number
+  mascot_name: string | null
+  mascot_image_url: string | null
 }
 
 export interface TicketRow {
@@ -48,6 +50,8 @@ export interface ServiceRow {
   price_amount: number | null
   price_label: string | null
   estimated_duration: string | null
+  image_url: string | null
+  examples: string | null
   is_active: boolean
   display_order: number
 }
