@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
@@ -43,6 +43,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
   const [selectedClient, setSelectedClient] = useState<Client | null>(null)
   const [notifications, setNotifications] = useState(0)
+  // Tracking del user actual — evita remontar la app en cada visibility change
+  // (Supabase dispara SIGNED_IN al regresar a la pestaña con el mismo user).
+  const currentUserIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -51,6 +54,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (cancelled) return
       setSession(s)
       setProfileError(null)
+      currentUserIdRef.current = s?.user?.id ?? null
       if (!s) {
         setProfile(null)
         setLoading(false)
@@ -94,6 +98,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // TOKEN_REFRESHED renueva el access_token sin cambiar de usuario.
       // No re-fetcheamos el profile ni mostramos el spinner — solo actualizamos session.
       if (event === 'TOKEN_REFRESHED') {
+        setSession(s)
+        return
+      }
+      // SIGNED_IN puede dispararse al regresar a la pestaña (Supabase re-valida
+      // la sesión al recuperar el foco). Si el user es el mismo que ya tenemos,
+      // solo actualizamos la session sin remontar la dashboard.
+      if (s?.user?.id && s.user.id === currentUserIdRef.current) {
         setSession(s)
         return
       }

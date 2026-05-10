@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { FileUploadField } from '@/components/ui/file-upload-field'
 
 interface Servicio {
   id?: string
@@ -162,46 +163,19 @@ export default function ServicioModal({ open, clientId, servicio, onClose, onSav
             </p>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Imagen (opcional)</Label>
-            {form.image_url ? (
-              <div className="flex items-center gap-3">
-                <img
-                  src={form.image_url}
-                  alt="Servicio"
-                  className="h-20 w-20 rounded-md object-cover border"
-                />
-                <div className="flex flex-col gap-1.5">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                    className="text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={clearImage}
-                    className="text-xs text-destructive hover:underline self-start"
-                  >
-                    Quitar imagen
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={uploading}
-                className="text-sm"
-              />
-            )}
-            {uploading && <p className="text-xs text-muted-foreground">Subiendo...</p>}
-            <p className="text-xs text-muted-foreground">
-              Si subes imagen, se enviará junto con el detalle del servicio en WhatsApp.
-            </p>
-          </div>
+          <FileUploadField
+            label="Imagen (opcional)"
+            hint="Si subes imagen, se enviará junto con el detalle del servicio en WhatsApp."
+            accept="image/*"
+            variant="image"
+            imageUrl={form.image_url || null}
+            uploading={uploading}
+            onFileSelected={file => {
+              const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>
+              handleImageUpload(fakeEvent)
+            }}
+            onClear={clearImage}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
