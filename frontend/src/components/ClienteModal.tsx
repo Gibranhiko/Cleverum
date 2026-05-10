@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { FileUploadField } from '@/components/ui/file-upload-field'
 import { useApp } from '@/context/AppContext'
 
 interface Cliente {
@@ -59,7 +60,6 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
   const isSuperAdmin = profile?.role === 'super_admin'
   const [form, setForm] = useState<Cliente>(empty)
   const [keyFile, setKeyFile] = useState<File | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadingMascot, setUploadingMascot] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -248,48 +248,21 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
                     placeholder="Ej. Ribo, Sofía, Toto"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Imagen del asesor (PNG transparente recomendado, máx 1MB)</Label>
-                  {form.mascot_image_url ? (
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={form.mascot_image_url}
-                        alt="Mascota"
-                        className="h-20 w-20 rounded-md object-cover border bg-muted/50"
-                      />
-                      <div className="flex flex-col gap-1.5">
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          onChange={handleMascotUpload}
-                          disabled={uploadingMascot || !form.id}
-                          className="text-xs"
-                        />
-                        <button
-                          type="button"
-                          onClick={clearMascot}
-                          className="text-xs text-destructive hover:underline self-start"
-                        >
-                          Quitar mascota
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      onChange={handleMascotUpload}
-                      disabled={uploadingMascot || !form.id}
-                      className="text-sm"
-                    />
-                  )}
-                  {uploadingMascot && <p className="text-xs text-muted-foreground">Subiendo...</p>}
-                  {!form.id && (
-                    <p className="text-xs text-amber-600">
-                      Guarda el cliente primero, después puedes subir la mascota editándolo.
-                    </p>
-                  )}
-                </div>
+                <FileUploadField
+                  label="Imagen del asesor"
+                  hint="PNG transparente recomendado, máx 1MB. Tip: comprime con tinypng.com"
+                  accept="image/png,image/jpeg,image/webp"
+                  variant="image"
+                  imageUrl={form.mascot_image_url || null}
+                  uploading={uploadingMascot}
+                  disabled={!form.id}
+                  disabledHint="Guarda el cliente primero, después puedes subir la mascota editándolo."
+                  onFileSelected={file => {
+                    const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>
+                    handleMascotUpload(fakeEvent)
+                  }}
+                  onClear={clearMascot}
+                />
               </div>
             </>
           )}
@@ -303,28 +276,14 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
                   <Label>Calendar ID</Label>
                   <Input value={form.google_calendar_id} onChange={e => set('google_calendar_id', e.target.value)} placeholder="ID del calendario de Google" />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Service Account JSON</Label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={e => setKeyFile(e.target.files?.[0] ?? null)}
-                  />
-                  <div
-                    className="flex items-center gap-3 rounded-md border border-input px-3 py-2 text-sm cursor-pointer hover:bg-accent"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <span className="text-muted-foreground">
-                      {keyFile
-                        ? keyFile.name
-                        : form.google_calendar_key_url
-                          ? '✓ Clave configurada — clic para reemplazar'
-                          : 'Seleccionar archivo .json'}
-                    </span>
-                  </div>
-                </div>
+                <FileUploadField
+                  label="Service Account JSON"
+                  accept=".json,application/json"
+                  variant="file"
+                  fileName={keyFile?.name}
+                  fileExists={!keyFile && !!form.google_calendar_key_url}
+                  onFileSelected={file => setKeyFile(file)}
+                />
               </div>
             </>
           )}

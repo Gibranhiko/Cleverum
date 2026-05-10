@@ -10,6 +10,7 @@
 | ID | Descripción | Severidad | Área | Estado |
 |---|---|---|---|---|
 | ARCH-01 | Tipos de DB duplicados entre pages y modales del frontend | MEDIA | `frontend/src` | ⏳ Pendiente |
+| ARCH-02 | File upload UI duplicada en 3 lugares | BAJA | `frontend/src/components` | ✅ Resuelto |
 
 ---
 
@@ -152,3 +153,49 @@ Eso es un refactor mayor (~3-4 hrs incluyendo configurar paths del workspace), p
 No es urgente. Es trabajo de **higiene** que paga dividendos en sprints siguientes. Buen candidato para un día de baja carga o como parte de una sesión de refactor cuando agregues una nueva entidad grande (sería natural definir el tipo en `db.ts` desde el inicio).
 
 **Trigger sugerido:** cuando agregues una columna nueva y tengas que tocar 4+ archivos otra vez, ese es el momento.
+
+---
+
+## ARCH-02 — File upload UI duplicada en 3 lugares ✅ Resuelto
+
+**Severidad:** BAJA
+**Área:** `frontend/src/components` (ClienteModal, ServicioModal)
+
+### Problema
+
+El mismo patrón de upload UI estaba copy-pasted en 3 lugares:
+1. ClienteModal — Service Account JSON de Google Calendar
+2. ClienteModal — Imagen de mascota
+3. ServicioModal — Imagen del servicio
+
+Cada uno con:
+- Hidden `<input type="file">` + ref
+- Estilo del clickable trigger
+- Estado de uploading
+- Lógica de preview + clear
+
+### Solución aplicada
+
+Creado componente reutilizable `frontend/src/components/ui/file-upload-field.tsx` con:
+- Variants `image` (preview lateral 80x80) y `file` (chip con nombre)
+- Props para uploading state, disabled, error, hint, disabledHint
+- Empty state con border dashed + ícono según variant
+- Click delegation al input oculto via ref interno
+
+API:
+```tsx
+<FileUploadField
+  label="..."
+  variant="image" | "file"
+  imageUrl={url}            // image variant
+  fileName={name}           // file variant
+  fileExists={boolean}      // file variant — cuando hay archivo guardado pero sin name
+  uploading={boolean}
+  disabled={boolean}
+  disabledHint="..."
+  onFileSelected={(file) => ...}
+  onClear={() => ...}
+/>
+```
+
+Los 3 lugares ahora usan el componente. Próximo upload nuevo (ej: imagen de producto, foto de ticket en Fase 2) lo usa también sin duplicar nada.
