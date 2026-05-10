@@ -23,6 +23,8 @@ interface Cliente {
   wa_access_token: string
   google_calendar_id: string
   google_calendar_key_url: string
+  mascot_name: string
+  mascot_image_url: string
   bot_active: boolean
 }
 
@@ -40,6 +42,8 @@ const empty: Cliente = {
   wa_access_token: '',
   google_calendar_id: '',
   google_calendar_key_url: '',
+  mascot_name: '',
+  mascot_image_url: '',
   bot_active: true,
 }
 
@@ -56,6 +60,7 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
   const [form, setForm] = useState<Cliente>(empty)
   const [keyFile, setKeyFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadingMascot, setUploadingMascot] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -67,6 +72,44 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
 
   function set(field: keyof Cliente, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function handleMascotUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 1024 * 1024) {
+      setError('La imagen debe pesar menos de 1MB. Comprime con tinypng.com o squoosh.app')
+      return
+    }
+
+    if (!form.id) {
+      setError('Guarda el cliente primero antes de subir la mascota')
+      return
+    }
+
+    setUploadingMascot(true)
+    setError('')
+    const ext = file.name.split('.').pop()
+    const path = `${form.id}/mascot.${ext}`
+    const { error: upErr } = await supabase.storage
+      .from('services')
+      .upload(path, file, { upsert: true, cacheControl: '3600' })
+
+    if (upErr) {
+      setError(`Error al subir mascota: ${upErr.message}`)
+      setUploadingMascot(false)
+      return
+    }
+
+    // Cache busting via timestamp query — el browser y WhatsApp ven la nueva imagen
+    const { data: { publicUrl } } = supabase.storage.from('services').getPublicUrl(path)
+    set('mascot_image_url', `${publicUrl}?v=${Date.now()}`)
+    setUploadingMascot(false)
+  }
+
+  function clearMascot() {
+    set('mascot_image_url', '')
   }
 
   async function handleSave() {
@@ -184,6 +227,68 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
                 <div className="space-y-1.5">
                   <Label>Access Token (Meta)</Label>
                   <Input value={form.wa_access_token} onChange={e => set('wa_access_token', e.target.value)} placeholder="Token de acceso de Meta" />
+                </div>
+              </div>
+            </>
+          )}
+
+          {isSuperAdmin && (
+            <>
+              <Separator />
+              <p className="text-sm font-medium text-muted-foreground">Asesor virtual</p>
+              <p className="text-xs text-muted-foreground -mt-2">
+                Configura una mascota o personaje. Aparecerá la primera vez que un cliente inicie conversación con el bot.
+              </p>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Nombre del asesor</Label>
+                  <Input
+                    value={form.mascot_name}
+                    onChange={e => set('mascot_name', e.target.value)}
+                    placeholder="Ej. Ribo, Sofía, Toto"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Imagen del asesor (PNG transparente recomendado, máx 1MB)</Label>
+                  {form.mascot_image_url ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={form.mascot_image_url}
+                        alt="Mascota"
+                        className="h-20 w-20 rounded-md object-cover border bg-muted/50"
+                      />
+                      <div className="flex flex-col gap-1.5">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          onChange={handleMascotUpload}
+                          disabled={uploadingMascot || !form.id}
+                          className="text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={clearMascot}
+                          className="text-xs text-destructive hover:underline self-start"
+                        >
+                          Quitar mascota
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={handleMascotUpload}
+                      disabled={uploadingMascot || !form.id}
+                      className="text-sm"
+                    />
+                  )}
+                  {uploadingMascot && <p className="text-xs text-muted-foreground">Subiendo...</p>}
+                  {!form.id && (
+                    <p className="text-xs text-amber-600">
+                      Guarda el cliente primero, después puedes subir la mascota editándolo.
+                    </p>
+                  )}
                 </div>
               </div>
             </>

@@ -135,8 +135,19 @@ async function startHumanTakeover(ctx: BotContext) {
 // ─── Main menu ───────────────────────────────────────────────
 
 async function sendMainMenu(ctx: BotContext) {
-  const { from, client } = ctx
+  const { from, client, session } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId, company_name } = client
+
+  // Mascot greeting — solo en primera interacción del cliente final.
+  // Si después se quiere extender a "primera vez del día", chequear `last_message_at`.
+  const isFirstInteraction = (session.history ?? []).length === 0
+  if (isFirstInteraction && client.mascot_name && client.mascot_image_url) {
+    const greeting =
+      `¡Hola! 👋 Mi nombre es *${client.mascot_name}*, el asesor digital de ${company_name ?? 'la empresa'}. ` +
+      `¿En qué puedo ayudarte el día de hoy?`
+    await sendImage(pid, token, from, client.mascot_image_url, greeting)
+    await appendToHistory(clientId, from, 'assistant', greeting)
+  }
 
   await sendList(
     pid,

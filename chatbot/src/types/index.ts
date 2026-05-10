@@ -17,6 +17,8 @@ export interface ClientRow {
   instagram_link: string | null
   ticket_prefix: string | null
   ticket_counter: number
+  mascot_name: string | null
+  mascot_image_url: string | null
 }
 
 export interface TicketRow {
