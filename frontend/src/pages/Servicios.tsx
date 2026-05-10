@@ -26,6 +26,8 @@ interface Servicio {
   price_amount: number | null
   price_label: string
   estimated_duration: string
+  examples: string
+  image_url: string
   is_active: boolean
   display_order: number
 }
