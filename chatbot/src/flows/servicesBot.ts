@@ -134,27 +134,74 @@ async function startHumanTakeover(ctx: BotContext) {
 
 // ─── Main menu ───────────────────────────────────────────────
 
+// Pools de bodies para el menú según el contexto.
+// El header del list es siempre `company_name`. El body cambia para que
+// el saludo se sienta cordial sin ser redundante con el greeting del mascot.
+
+const MENU_BODY_FIRST_NO_MASCOT = [
+  '¡Hola! Bienvenido a {company}. ¿En qué te puedo ayudar?',
+]
+
+const MENU_BODY_FIRST_WITH_MASCOT = [
+  'Elige una opción para continuar.',
+  '¿Por dónde quieres empezar?',
+]
+
+const MENU_BODY_RETURNING_WITH_MASCOT = [
+  'Hola, soy {mascot}. ¿En qué te ayudo hoy?',
+  '¡{mascot} aquí! Elige una opción.',
+  '¡Qué bueno verte! Soy {mascot}, ¿qué necesitas?',
+  'Hola de nuevo. Soy {mascot}. ¿En qué te ayudo?',
+]
+
+const MENU_BODY_RETURNING_NO_MASCOT = [
+  '¡Hola! ¿En qué te puedo ayudar?',
+  '¡Qué gusto verte! Elige una opción.',
+  '¡Hola! ¿Qué necesitas hoy?',
+  'Aquí estoy para ayudarte.',
+]
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+function chooseMenuBody(isFirst: boolean, mascotName: string | null, companyName: string): string {
+  let pool: string[]
+  if (isFirst && mascotName) pool = MENU_BODY_FIRST_WITH_MASCOT
+  else if (isFirst) pool = MENU_BODY_FIRST_NO_MASCOT
+  else if (mascotName) pool = MENU_BODY_RETURNING_WITH_MASCOT
+  else pool = MENU_BODY_RETURNING_NO_MASCOT
+
+  return pickRandom(pool)
+    .replace('{mascot}', mascotName ?? '')
+    .replace('{company}', companyName)
+}
+
 async function sendMainMenu(ctx: BotContext) {
   const { from, client, session } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId, company_name } = client
+  const companyName = company_name ?? 'la empresa'
 
-  // Mascot greeting — solo en primera interacción del cliente final.
-  // Si después se quiere extender a "primera vez del día", chequear `last_message_at`.
+  // Mascot greeting con imagen — solo en primera interacción + mascot configurado.
   const isFirstInteraction = (session.history ?? []).length === 0
-  if (isFirstInteraction && client.mascot_name && client.mascot_image_url) {
+  const hasMascot = !!(client.mascot_name && client.mascot_image_url)
+
+  if (isFirstInteraction && hasMascot) {
     const greeting =
-      `¡Hola! 👋 Mi nombre es *${client.mascot_name}*, el asesor digital de ${company_name ?? 'la empresa'}. ` +
+      `¡Hola! Mi nombre es *${client.mascot_name}*, el asesor digital de ${companyName}. ` +
       `¿En qué puedo ayudarte el día de hoy?`
-    await sendImage(pid, token, from, client.mascot_image_url, greeting)
+    await sendImage(pid, token, from, client.mascot_image_url!, greeting)
     await appendToHistory(clientId, from, 'assistant', greeting)
   }
+
+  const menuBody = chooseMenuBody(isFirstInteraction, client.mascot_name, companyName)
 
   await sendList(
     pid,
     token,
     from,
     company_name ?? 'Bienvenido',
-    '¿En qué te puedo ayudar?',
+    menuBody,
     'Ver opciones',
     [
       {
