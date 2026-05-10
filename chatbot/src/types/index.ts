@@ -48,6 +48,8 @@ export interface ServiceRow {
   price_amount: number | null
   price_label: string | null
   estimated_duration: string | null
+  image_url: string | null
+  examples: string | null
   is_active: boolean
   display_order: number
 }
