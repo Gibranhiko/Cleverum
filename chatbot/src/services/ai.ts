@@ -66,7 +66,7 @@ class AIService {
           properties: {
             intent: {
               type: 'string',
-              enum: ['agendar_cita', 'consultar_empresa', 'hablar'],
+              enum: ['saludo', 'agendar_cita', 'consultar_servicios', 'consultar_empresa', 'hablar'],
             },
           },
           required: ['intent'],
