@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { canSee, type PageKey } from '../lib/permissions'
+import wabbiLogo from '@/assets/logos/wabbi-logo.png'
 
 const links: { to: string; label: string; page: PageKey; icon: typeof Users }[] = [
   { to: '/dashboard',      label: 'Dashboard',      page: 'dashboard',      icon: LayoutDashboard },
@@ -34,11 +35,14 @@ export default function Navbar() {
 
   return (
     <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col shadow-[2px_0_8px_0_rgba(0,0,0,0.05)]">
-      <div className="px-4 py-5 border-b border-gray-200">
-        <h1 className="text-lg font-semibold text-gray-900">Cleverum</h1>
-        <p className="text-xs text-gray-500">
-          {profile?.role === 'super_admin' ? 'Panel admin' : profile?.full_name ?? 'Panel'}
-        </p>
+      <div className="px-4 py-5 border-b border-gray-200 flex items-center gap-2.5">
+        <img src={wabbiLogo} alt="Wabbi" className="h-9 w-9 object-contain shrink-0" />
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold text-gray-900 leading-tight">Wabbi</h1>
+          <p className="text-xs text-gray-500 truncate">
+            {profile?.role === 'super_admin' ? 'Panel admin' : profile?.full_name ?? 'Panel'}
+          </p>
+        </div>
       </div>
 
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
