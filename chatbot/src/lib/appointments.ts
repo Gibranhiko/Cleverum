@@ -54,6 +54,19 @@ export function getDbBusyForDay(clientId: string, dayISO: string, tz: string) {
   return getDbBusyForRange(clientId, b.start, b.end)
 }
 
+// Citas próximas (no canceladas) de un teléfono — para "Consultar mi cita".
+export async function getUpcomingAppointments(clientId: string, phone: string): Promise<AppointmentRow[]> {
+  const { data } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('client_id', clientId)
+    .eq('customer_phone', phone)
+    .in('status', ['nueva', 'confirmada'])
+    .gte('starts_at', new Date().toISOString())
+    .order('starts_at', { ascending: true })
+  return (data ?? []) as AppointmentRow[]
+}
+
 export function getDbBusyForHorizon(clientId: string, fromDayISO: string, settings: AppointmentSettings) {
   const start = dayBoundsUtc(fromDayISO, settings.timezone).start
   const end = dayBoundsUtc(addDaysISO(fromDayISO, settings.horizon_days), settings.timezone).start

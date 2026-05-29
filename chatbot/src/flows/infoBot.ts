@@ -14,8 +14,10 @@ import {
   getAppointmentSettings,
   getDbBusyForDay,
   getDbBusyForHorizon,
+  getUpcomingAppointments,
   bookAppointment,
 } from '../lib/appointments'
+import { sendMascotGreeting } from '../lib/mascot'
 import { BotContext, AppointmentSettings } from '../types'
 
 const APPOINTMENT_COMPLETE = 'CITA_CONFIRMADA'
@@ -41,6 +43,16 @@ export async function handleInfoBot(ctx: BotContext) {
     return slotsEnabled
       ? continueSlotAppointment(ctx, settings!)
       : continueAppointmentFlow(ctx)
+  }
+
+  // Tap de una opción del menú
+  if (text.startsWith('menu_')) return routeInfoMenu(ctx, text, settings, slotsEnabled)
+
+  // Primera interacción (o comando "menu") → saludo con mascot + menú
+  const isFirstInteraction = (session.history ?? []).length === 0
+  const lower = text.trim().toLowerCase()
+  if (isFirstInteraction || lower === 'menu' || lower === 'menú') {
+    return sendInfoMenu(ctx)
   }
 
   // Classify intent
@@ -544,5 +556,106 @@ async function doBooking(ctx: BotContext, settings: AppointmentSettings, state: 
   await sendText(pid, token, from, msg)
   await appendToHistory(clientId, from, 'assistant', msg)
   await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
-  await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
+}
+
+// ═══════════════════════════════════════════════════════════
+// SALUDO CON MASCOT + MENÚ (primera interacción del bot informativo)
+// ═══════════════════════════════════════════════════════════
+
+async function sendInfoMenu(ctx: BotContext) {
+  const { from, client } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId, company_name } = client
+  const companyName = company_name ?? 'la empresa'
+
+  // Mascot con imagen — solo si está configurado (1 vez por usuario, primera interacción)
+  if (client.mascot_name && client.mascot_image_url) {
+    const greeting =
+      `¡Hola! Mi nombre es *${client.mascot_name}*, el asesor digital de ${companyName}. ` +
+      `¿En qué puedo ayudarte el día de hoy?`
+    await sendMascotGreeting(client, from, greeting)
+    await appendToHistory(clientId, from, 'assistant', greeting)
+  }
+
+  await sendList(
+    pid!,
+    token!,
+    from,
+    company_name ?? 'Bienvenido',
+    'Elige una opción para continuar.',
+    'Ver opciones',
+    [
+      {
+        title: 'Opciones',
+        rows: [
+          { id: 'menu_cita',      title: '📅 Agendar cita',      description: 'Reserva tu cita' },
+          { id: 'menu_faq',       title: '❓ Información',         description: 'Preguntas frecuentes' },
+          { id: 'menu_consultar', title: '🔎 Consultar mi cita',  description: 'Estado de tu cita' },
+          { id: 'menu_human',     title: '👤 Hablar con asesor',  description: 'Te atiende una persona' },
+        ],
+      },
+    ]
+  )
+}
+
+async function routeInfoMenu(
+  ctx: BotContext,
+  optionId: string,
+  settings: AppointmentSettings | null,
+  slotsEnabled: boolean
+) {
+  const { from, client } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  console.log(`[InfoBot] menu option tapped: ${optionId}`)
+
+  switch (optionId) {
+    case 'menu_cita':
+      return slotsEnabled ? startSlotAppointment(ctx, settings!) : startAppointmentFlow(ctx)
+
+    case 'menu_faq': {
+      const msg = '¿Qué te gustaría saber? Escríbeme tu pregunta. 💬'
+      await sendText(pid!, token!, from, msg)
+      await appendToHistory(clientId, from, 'assistant', msg)
+      return
+    }
+
+    case 'menu_consultar':
+      return consultarCita(ctx, settings)
+
+    case 'menu_human': {
+      await updateSession(clientId, from, { human_takeover: true, current_flow: null, flow_step: null, state: {} })
+      const msg = 'Te conecto con un asesor. En breve te responde 🙏'
+      await sendText(pid!, token!, from, msg)
+      await appendToHistory(clientId, from, 'assistant', msg)
+      return
+    }
+
+    default:
+      return sendInfoMenu(ctx)
+  }
+}
+
+// Consultar mi cita — lista las próximas citas del teléfono del usuario.
+async function consultarCita(ctx: BotContext, settings: AppointmentSettings | null) {
+  const { from, client } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  const tz = settings?.timezone ?? 'America/Mexico_City'
+
+  const upcoming = await getUpcomingAppointments(clientId, from)
+
+  if (upcoming.length === 0) {
+    const msg = 'No encontré citas próximas registradas con este número. Si quieres agendar una, escribe *cita*. 📅'
+    await sendText(pid!, token!, from, msg)
+    await appendToHistory(clientId, from, 'assistant', msg)
+    return
+  }
+
+  const STATUS_LABEL: Record<string, string> = { nueva: 'Registrada', confirmada: 'Confirmada' }
+  const lines = upcoming.map(a => {
+    const when = formatInTimeZone(new Date(a.starts_at), tz, "EEEE d 'de' MMMM, HH:mm 'hrs'", { locale: es })
+    const estado = STATUS_LABEL[a.status] ?? a.status
+    return `📅 ${a.service ?? 'Cita'}\n🕐 ${when}\n📌 ${estado}`
+  })
+  const msg = `Tus próximas citas:\n\n${lines.join('\n\n')}`
+  await sendText(pid!, token!, from, msg)
+  await appendToHistory(clientId, from, 'assistant', msg)
 }
