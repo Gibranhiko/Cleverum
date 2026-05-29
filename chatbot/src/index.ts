@@ -14,7 +14,10 @@ import { startReminderCron } from './services/reminder'
 const app = express()
 app.set('trust proxy', 1)
 
-const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173').split(',')
+const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim().replace(/\/$/, ''))
+  .filter(Boolean)
 app.use(cors({
   origin: allowedOrigins,
   allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization'],
