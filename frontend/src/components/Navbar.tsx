@@ -39,7 +39,9 @@ export default function Navbar() {
   return (
     <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col shadow-[2px_0_8px_0_rgba(0,0,0,0.05)]">
       <div className="px-4 py-5 border-b border-gray-200 flex items-center gap-2.5">
-        <img src={wabbiLogo} alt="Wabbi" className="h-9 w-9 object-contain shrink-0" />
+        <div className="h-10 w-10 rounded-lg bg-slate-900 flex items-center justify-center shrink-0">
+          <img src={wabbiLogo} alt="Wabbi" className="h-8 w-8 object-contain" />
+        </div>
         <div className="min-w-0">
           <h1 className="text-lg font-semibold text-gray-900 leading-tight">Wabbi</h1>
           <p className="text-xs text-gray-500 truncate">

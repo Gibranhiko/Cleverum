@@ -4,12 +4,11 @@ import { supabase } from '../lib/supabase'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Mail, Lock, Eye, EyeOff, Shield, Info, MessageCircle } from 'lucide-react'
-import cleverumLogo from '@/assets/logos/cleverum-logo.png'
 import wabbiLogo from '@/assets/logos/wabbi-logo.png'
 
 const NAVY = '#050d1a'
 const NAVY_BTN = '#0a1628'
-// Brand violets de Cleverum (sacados del favicon)
+// Brand violets (sacados del favicon)
 const BRAND_DEEP = '#5b14ff'
 const BRAND_BRIGHT = '#863bff'
 const WHATSAPP_GREEN = '#25d366'
@@ -155,11 +154,6 @@ export default function Login() {
           }}
         />
 
-        {/* Top-left: Cleverum logo (anclado a esquina) */}
-        <div className="relative z-10">
-          <img src={cleverumLogo} alt="Cleverum" className="h-20 w-auto" />
-        </div>
-
         {/* Hero: Wabbi — centrado horizontal y vertical en el espacio restante */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-6 max-w-[420px] mx-auto text-center">
           <img src={wabbiLogo} alt="Wabbi" className="max-w-[240px] w-full h-auto" />
@@ -242,7 +236,7 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={e => { setEmail(e.target.value); if (fieldErrors.email) setFieldErrors(p => ({ ...p, email: undefined })) }}
-                placeholder="usuario@cleverum.com"
+                placeholder="usuario@wabbi.com"
                 autoComplete="email"
                 aria-invalid={!!fieldErrors.email}
                 className={`pl-10 h-11 rounded-[10px] ${fieldErrors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
@@ -338,7 +332,7 @@ export default function Login() {
           >
             <Info size={14} className="mt-0.5 shrink-0 text-muted-foreground" />
             <p className="text-[11.5px] leading-[1.55] text-muted-foreground">
-              Este panel es de acceso privado. Si no tienes credenciales, contacta a tu administrador en Cleverum.
+              Este panel es de acceso privado. Si no tienes credenciales, contacta a tu administrador.
             </p>
           </div>
         </form>
