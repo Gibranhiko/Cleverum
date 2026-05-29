@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import {
   Users, ShoppingBag, Package, UserCheck, Bell, MessageSquare,
   Clock, FileText, LogOut, LayoutDashboard, Settings, Wrench, Receipt, UserCog,
+  CalendarDays, CalendarCog,
 } from 'lucide-react'
 import { useApp } from '../context/AppContext'
 import { canSee, type PageKey } from '../lib/permissions'
@@ -16,7 +17,9 @@ const links: { to: string; label: string; page: PageKey; icon: typeof Users }[] 
   { to: '/leads',          label: 'Leads',          page: 'leads',          icon: UserCheck },
   { to: '/conversaciones', label: 'Conversaciones', page: 'conversaciones', icon: MessageSquare },
   { to: '/tickets',        label: 'Tickets',        page: 'tickets',        icon: Receipt },
+  { to: '/citas',          label: 'Citas',          page: 'citas',          icon: CalendarDays },
   { to: '/servicios',      label: 'Servicios',      page: 'servicios',      icon: Wrench },
+  { to: '/config-citas',   label: 'Config Citas',   page: 'config_citas',   icon: CalendarCog },
   { to: '/reminders',      label: 'Reminders',      page: 'reminders',      icon: Clock },
   { to: '/documentos',     label: 'Documentos',     page: 'documentos',     icon: FileText },
   { to: '/config',         label: 'Config Bot',     page: 'config',         icon: Settings },
@@ -36,7 +39,9 @@ export default function Navbar() {
   return (
     <aside className="w-56 min-h-screen bg-white border-r border-gray-200 flex flex-col shadow-[2px_0_8px_0_rgba(0,0,0,0.05)]">
       <div className="px-4 py-5 border-b border-gray-200 flex items-center gap-2.5">
-        <img src={wabbiLogo} alt="Wabbi" className="h-9 w-9 object-contain shrink-0" />
+        <div className="h-10 w-10 rounded-lg bg-slate-900 flex items-center justify-center shrink-0">
+          <img src={wabbiLogo} alt="Wabbi" className="h-8 w-8 object-contain" />
+        </div>
         <div className="min-w-0">
           <h1 className="text-lg font-semibold text-gray-900 leading-tight">Wabbi</h1>
           <p className="text-xs text-gray-500 truncate">
