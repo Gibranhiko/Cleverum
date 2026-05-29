@@ -17,6 +17,8 @@ import ConfigBot from './pages/ConfigBot'
 import Usuarios from './pages/Usuarios'
 import Servicios from './pages/Servicios'
 import Tickets from './pages/Tickets'
+import Citas from './pages/Citas'
+import ConfigCitas from './pages/ConfigCitas'
 import NoAccess from './pages/NoAccess'
 import ResetPassword from './pages/ResetPassword'
 
@@ -48,6 +50,8 @@ export default function App() {
             <Route path="usuarios"       element={<PageGuard page="usuarios"><Usuarios /></PageGuard>} />
             <Route path="servicios"      element={<PageGuard page="servicios"><Servicios /></PageGuard>} />
             <Route path="tickets"        element={<PageGuard page="tickets"><Tickets /></PageGuard>} />
+            <Route path="citas"          element={<PageGuard page="citas"><Citas /></PageGuard>} />
+            <Route path="config-citas"   element={<PageGuard page="config_citas"><ConfigCitas /></PageGuard>} />
             <Route path="no-access"      element={<NoAccess />} />
           </Route>
           <Route path="*" element={<DefaultRedirect />} />

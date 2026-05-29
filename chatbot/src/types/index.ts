@@ -57,6 +57,58 @@ export interface ServiceRow {
   display_order: number
 }
 
+export interface DayHours {
+  open: string            // 'HH:mm'
+  close: string           // 'HH:mm'
+  open2?: string          // horario partido (opcional)
+  close2?: string
+}
+
+export interface IntakeField {
+  key: string
+  label: string
+  type: 'text' | 'list'
+  options?: string[]
+  required?: boolean
+}
+
+export interface AppointmentSettings {
+  client_id: string
+  enabled: boolean
+  timezone: string
+  weekly_hours: (DayHours | null)[]   // índice 0=domingo .. 6=sábado
+  slot_minutes: number
+  buffer_minutes: number
+  lead_time_minutes: number
+  horizon_days: number
+  max_slots_listed: number
+  closed_dates: string[]              // ['YYYY-MM-DD', ...]
+  service_label: string
+  use_services_catalog: boolean
+  intake_fields: IntakeField[]
+}
+
+export type AppointmentStatus = 'nueva' | 'confirmada' | 'completada' | 'cancelada' | 'no_asistio'
+
+export interface AppointmentRow {
+  id: string
+  client_id: string
+  customer_phone: string
+  customer_name: string | null
+  service: string | null
+  starts_at: string
+  ends_at: string
+  extra: Record<string, unknown>
+  status: AppointmentStatus
+  status_history: { status: string; at: string; by: string; note: string | null }[]
+  origin: 'whatsapp' | 'panel'
+  calendar_event_id: string | null
+  calendar_synced: boolean
+  internal_notes: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface BotConfigRow {
   client_id: string
   welcome_message: string | null

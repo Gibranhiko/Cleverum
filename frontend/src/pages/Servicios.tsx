@@ -143,9 +143,9 @@ export default function Servicios() {
         </div>
       </div>
 
-      {selectedCliente && selectedCliente.bot_type !== 'servicios' && (
+      {selectedCliente && !['servicios', 'informativo'].includes(selectedCliente.bot_type) && (
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-          Este cliente tiene bot tipo <strong>{selectedCliente.bot_type}</strong>. Los servicios se usan principalmente en bots tipo <strong>Servicios</strong>.
+          Este cliente tiene bot tipo <strong>{selectedCliente.bot_type}</strong>. Los servicios se usan en bots tipo <strong>Servicios</strong> y como especialidades en <strong>Informativo</strong> con Citas.
         </div>
       )}
 

@@ -103,7 +103,7 @@ npm run dev
 
 - Project ID: `rbfxfnwgwzbvxwifzvad`
 - URL: stored in `frontend/.env` and `chatbot/.env`
-- Migrations: 001 → 005 already applied to prod
+- Migrations: 001 → 008 applied to prod. **009_appointments.sql (citas con slots) PENDIENTE de aplicar** — ver `docs/devplan-citas.md`
 - RLS: enabled on all tables. Policy `multi_tenant_access`:
   ```sql
   using (
@@ -113,7 +113,7 @@ npm run dev
   ```
   `clients` table has split policies (super_admin full, user read-only of own row).
 - Helper functions: `current_user_role()`, `current_user_client_id()` (SECURITY DEFINER, read from `user_profiles` by `auth.uid()`).
-- Realtime: enabled for `orders`, `leads`, `tickets`, `conversation_sessions`.
+- Realtime: enabled for `orders`, `leads`, `tickets`, `conversation_sessions`. **`appointments` requiere habilitarse al aplicar 009.**
 
 ---
 
@@ -204,6 +204,7 @@ Docker was eliminated entirely. Dev: tsx + Vite. Prod: Railway buildpacks for bo
 | F5 — Admin Panel v2 | ✅ Complete | Tickets + Servicios + Usuarios pages |
 | Auth multi-tenant | ✅ Complete | 2 roles, page-based access, user CRUD |
 | Bot servicios | ✅ Complete | Intake + tickets + status query + FAQ |
+| Citas con slots (informativo) | 🚧 Código listo, falta deploy | Motor de slots + doble escritura Calendar/DB + panel Citas + Config Citas. Aplicar migración 009 + habilitar realtime + configurar cliente. Ver `docs/devplan-citas.md` |
 | F6 — Outbound templates | ⏳ Pending | See `docs/whatsapp-compliance.md` |
 | F7 — Outbound notifications (Fase 2 servicios) | ⏳ Pending | Depends on F6 |
 

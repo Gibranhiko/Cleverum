@@ -12,6 +12,8 @@ export const PAGE_KEYS = [
   'config',
   'tickets',
   'servicios',
+  'citas',
+  'config_citas',
   'usuarios',
 ] as const
 
@@ -53,5 +55,7 @@ export const PAGE_LABELS: Record<PageKey, string> = {
   config:        'Config Bot',
   tickets:       'Tickets',
   servicios:     'Servicios',
+  citas:         'Citas',
+  config_citas:  'Config Citas',
   usuarios:      'Usuarios',
 }
