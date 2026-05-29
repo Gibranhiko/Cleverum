@@ -19,6 +19,7 @@ export interface ClientRow {
   ticket_counter: number
   mascot_name: string | null
   mascot_image_url: string | null
+  mascot_media_id: string | null
 }
 
 export interface TicketRow {
