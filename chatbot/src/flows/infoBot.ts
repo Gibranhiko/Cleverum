@@ -39,6 +39,15 @@ export async function handleInfoBot(ctx: BotContext) {
     client.google_calendar_key_url
   )
 
+  const lower = text.trim().toLowerCase()
+
+  // Escape global: "menu" resetea cualquier flujo y muestra el menú (sin mascot).
+  if (lower === 'menu' || lower === 'menú') {
+    await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
+    console.log('[InfoBot] menu command → sending menu')
+    return sendInfoMenu(ctx, false)
+  }
+
   if (session.current_flow === 'appointment') {
     return slotsEnabled
       ? continueSlotAppointment(ctx, settings!)
@@ -48,15 +57,15 @@ export async function handleInfoBot(ctx: BotContext) {
   // Tap de una opción del menú
   if (text.startsWith('menu_')) return routeInfoMenu(ctx, text, settings, slotsEnabled)
 
-  // Primera interacción (o comando "menu") → saludo con mascot + menú
-  const isFirstInteraction = (session.history ?? []).length === 0
-  const lower = text.trim().toLowerCase()
-  if (isFirstInteraction || lower === 'menu' || lower === 'menú') {
-    return sendInfoMenu(ctx)
+  const history = session.history ?? []
+
+  // Primera vez que se usa el bot → intro con mascot + menú, sin importar qué escriba.
+  if (history.length === 0) {
+    console.log('[InfoBot] first interaction → intro + menu')
+    return sendInfoMenu(ctx, true)
   }
 
-  // Classify intent
-  const history = session.history ?? []
+  // Clasificar intención con IA (no regex)
   const historyText = history.map(m => `${m.role}: ${m.content}`).join('\n')
   const discriminator = loadPrompt('prompt-discriminator.txt').replace('{HISTORY}', historyText)
 
@@ -67,6 +76,11 @@ export async function handleInfoBot(ctx: BotContext) {
 
   const { intent } = await ai.determineIntent(intentMessages)
   console.log(`[InfoBot] intent="${intent}" text="${text.slice(0, 50)}"`)
+
+  // Saludo de un usuario que regresa → solo el menú (mascot ya se mostró la 1ª vez)
+  if (intent === 'saludo') {
+    return sendInfoMenu(ctx, false)
+  }
 
   if (intent === 'agendar_cita') {
     return slotsEnabled ? startSlotAppointment(ctx, settings!) : startAppointmentFlow(ctx)
@@ -562,13 +576,13 @@ async function doBooking(ctx: BotContext, settings: AppointmentSettings, state: 
 // SALUDO CON MASCOT + MENÚ (primera interacción del bot informativo)
 // ═══════════════════════════════════════════════════════════
 
-async function sendInfoMenu(ctx: BotContext) {
+async function sendInfoMenu(ctx: BotContext, withMascot: boolean) {
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId, company_name } = client
   const companyName = company_name ?? 'la empresa'
 
-  // Mascot con imagen — solo si está configurado (1 vez por usuario, primera interacción)
-  if (client.mascot_name && client.mascot_image_url) {
+  // Mascot con imagen — solo la primera vez (withMascot) y si está configurado.
+  if (withMascot && client.mascot_name && client.mascot_image_url) {
     const greeting =
       `¡Hola! Mi nombre es *${client.mascot_name}*, el asesor digital de ${companyName}. ` +
       `¿En qué puedo ayudarte el día de hoy?`
@@ -630,7 +644,7 @@ async function routeInfoMenu(
     }
 
     default:
-      return sendInfoMenu(ctx)
+      return sendInfoMenu(ctx, false)
   }
 }
 

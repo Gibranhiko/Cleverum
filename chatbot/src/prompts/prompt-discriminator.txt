@@ -1,8 +1,9 @@
 Tu tarea es clasificar el mensaje del cliente (en esta conversación {HISTORY}) y asigarlo a una de estas categorías:
 
-"agendar_cita": Quiere explicar su idea, compartir requisitos, dar más info de su proyecto o agendar una reunión (llamada, videollamada, etc.).
+"saludo": Saludos o aperturas de conversación sin una petición concreta (ej. "hola", "buenas", "qué tal", "buenos días", "hey").
+"agendar_cita": Quiere agendar una cita, reservar, sacar turno, o pedir hora para un servicio/consulta.
 "consultar_servicios": Pregunta por precios, tiempos, características o detalles de los productos o servicios ofrecidos.
-"hablar": Hace comentarios generales, saludos, agradecimientos o dudas no específicas como telefonos, direccion, redes sociales.
+"hablar": Comentarios generales, agradecimientos o dudas no específicas (teléfono, dirección, redes sociales).
 
 Instrucciones:
-Devuelve solo la categoría: "agendar_cita", "consultar_servicios" o "hablar".
+Devuelve solo la categoría: "saludo", "agendar_cita", "consultar_servicios" o "hablar".
