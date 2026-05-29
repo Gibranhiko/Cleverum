@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { ChatCompletionMessageParam } from 'openai/resources/chat'
 import { updateSession, appendToHistory } from '../lib/session'
-import { sendList, sendText, sendButtons, sendImage } from '../lib/whatsapp'
+import { sendList, sendText, sendButtons, sendImage, sendImageById, uploadMedia } from '../lib/whatsapp'
 import { createTicket, IntakeData, getTicketByFolio, formatTicketStatus } from '../lib/tickets'
 import { BotContext, ServiceRow } from '../types'
 import { ai } from '../services/ai'
@@ -177,6 +177,36 @@ function chooseMenuBody(isFirst: boolean, mascotName: string | null, companyName
     .replace('{company}', companyName)
 }
 
+// Manda la imagen del mascot por media_id (entrega rápida y en orden, el menú
+// no se adelanta). Sube la imagen 1 vez por cliente y cachea el media_id en
+// clients.mascot_media_id. Si el media_id está expirado/inválido, re-sube una
+// vez. Último recurso: manda por link (orden no garantizado, pero al menos llega).
+async function sendMascotGreeting(ctx: BotContext, greeting: string) {
+  const { from, client } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  const imageUrl = client.mascot_image_url!
+
+  async function freshUpload(): Promise<string> {
+    const mediaId = await uploadMedia(pid!, token!, imageUrl)
+    await supabase.from('clients').update({ mascot_media_id: mediaId }).eq('id', clientId)
+    client.mascot_media_id = mediaId
+    return mediaId
+  }
+
+  try {
+    const mediaId = client.mascot_media_id ?? (await freshUpload())
+    try {
+      await sendImageById(pid!, token!, from, mediaId, greeting)
+    } catch {
+      // media_id probablemente expirado → re-subir una vez y reintentar.
+      await sendImageById(pid!, token!, from, await freshUpload(), greeting)
+    }
+  } catch (err) {
+    console.error('[ServicesBot] mascot media_id path failed, falling back to link:', err)
+    await sendImage(pid!, token!, from, imageUrl, greeting)
+  }
+}
+
 async function sendMainMenu(ctx: BotContext) {
   const { from, client, session } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId, company_name } = client
@@ -190,7 +220,7 @@ async function sendMainMenu(ctx: BotContext) {
     const greeting =
       `¡Hola! Mi nombre es *${client.mascot_name}*, el asesor digital de ${companyName}. ` +
       `¿En qué puedo ayudarte el día de hoy?`
-    await sendImage(pid, token, from, client.mascot_image_url!, greeting)
+    await sendMascotGreeting(ctx, greeting)
     await appendToHistory(clientId, from, 'assistant', greeting)
   }
 
