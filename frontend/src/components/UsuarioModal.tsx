@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import { ASSIGNABLE_PAGES, PAGE_LABELS, type PageKey } from '@/lib/permissions'
+import { ASSIGNABLE_PAGES, PAGE_LABELS, recommendedPages, type PageKey } from '@/lib/permissions'
 import { CHATBOT_URL } from '@/lib/config'
 import { supabase } from '@/lib/supabase'
 
@@ -21,6 +21,14 @@ interface UserRow {
 interface ClientOption {
   id: string
   company_name: string
+  bot_type: string
+}
+
+const BOT_LABELS: Record<string, string> = {
+  informativo: 'Informativo + Citas',
+  catalogo: 'Catálogo',
+  leads: 'Leads',
+  servicios: 'Servicios',
 }
 
 interface Props {
@@ -65,6 +73,21 @@ export default function UsuarioModal({ open, user, clients, onClose, onSaved }: 
     setAllowedPages(curr =>
       curr.includes(page) ? curr.filter(p => p !== page) : [...curr, page]
     )
+  }
+
+  const selectedClient = clients.find(c => c.id === clientId)
+  const botType = selectedClient?.bot_type
+
+  // Auto-aplicar el preset recomendado al elegir cliente en un usuario NUEVO.
+  // En edición no se toca (se respetan los permisos existentes).
+  useEffect(() => {
+    if (isEdit || role !== 'user' || !clientId) return
+    setAllowedPages(recommendedPages(botType))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId])
+
+  function applyRecommended() {
+    setAllowedPages(recommendedPages(botType))
   }
 
   async function handleSave() {
@@ -174,7 +197,22 @@ export default function UsuarioModal({ open, user, clients, onClose, onSaved }: 
               </div>
 
               <div className="space-y-1.5">
-                <Label>Páginas permitidas</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Páginas permitidas</Label>
+                  <button
+                    type="button"
+                    onClick={applyRecommended}
+                    disabled={!clientId}
+                    className="text-xs text-violet-600 hover:underline disabled:opacity-40 disabled:no-underline"
+                  >
+                    ✨ Aplicar recomendadas
+                  </button>
+                </div>
+                {botType && (
+                  <p className="text-xs text-muted-foreground">
+                    Bot del cliente: <span className="font-medium">{BOT_LABELS[botType] ?? botType}</span>
+                  </p>
+                )}
                 <div className="grid grid-cols-2 gap-2 p-3 border rounded-md max-h-60 overflow-y-auto">
                   {ASSIGNABLE_PAGES.map(p => (
                     <label key={p} className="flex items-center gap-2 text-sm cursor-pointer">

@@ -28,6 +28,22 @@ export const ASSIGNABLE_PAGES: PageKey[] = PAGE_KEYS.filter(
   p => !SUPER_ADMIN_ONLY_PAGES.includes(p as PageKey)
 ) as PageKey[]
 
+export type BotType = 'informativo' | 'catalogo' | 'leads' | 'servicios'
+
+// Páginas "core" recomendadas por tipo de bot, para preseleccionar al crear un
+// `user`. Son sugerencias — el super_admin puede ajustar libremente.
+export const RECOMMENDED_PAGES: Record<BotType, PageKey[]> = {
+  informativo: ['citas', 'config_citas', 'servicios', 'conversaciones', 'dashboard'],
+  catalogo:    ['productos', 'pedidos', 'conversaciones', 'dashboard'],
+  leads:       ['leads', 'conversaciones', 'dashboard'],
+  servicios:   ['tickets', 'servicios', 'conversaciones', 'dashboard'],
+}
+
+export function recommendedPages(botType: string | null | undefined): PageKey[] {
+  if (!botType) return []
+  return RECOMMENDED_PAGES[botType as BotType] ?? []
+}
+
 export function canSee(page: PageKey, profile: UserProfile | null): boolean {
   if (!profile) return false
   if (profile.role === 'super_admin') return true
