@@ -54,7 +54,7 @@ function Button({
   const Comp = asChild ? Slot.Root : "button"
 
   return (
-    // @ts-expect-error — Slot.Root SlotProps.children incompatible with React 19 ReactPortal type
+    // @ts-ignore — Slot.Root SlotProps.children a veces choca con el tipo ReactPortal de React 19 (según versión resuelta)
     <Comp
       data-slot="button"
       data-variant={variant}
