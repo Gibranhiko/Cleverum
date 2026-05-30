@@ -222,7 +222,12 @@ Docker was eliminated entirely. Dev: tsx + Vite. Prod: Railway buildpacks for bo
 - Supabase client in frontend uses anon key (RLS enforces access)
 - Supabase client in chatbot uses service role key (bypasses RLS — intentional)
 - All DB writes from chatbot go through service role (bots need to write without auth)
-- New page added? Update `frontend/src/lib/permissions.ts` `PAGE_KEYS` array
+- New page added? Update `frontend/src/lib/permissions.ts` `PAGE_KEYS` (+ `PAGE_LABELS`),
+  add the route in `App.tsx` and the link in `Navbar.tsx`. The backend
+  (`chatbot/src/routes/admin.ts`) uses a **denylist** (`SUPER_ADMIN_ONLY_PAGES`), so a
+  normal assignable page needs NO backend change — it's accepted automatically. Only if
+  the new page is **super-admin-only** must you add it to BOTH
+  `permissions.ts` `SUPER_ADMIN_ONLY_PAGES` and `admin.ts` `SUPER_ADMIN_ONLY_PAGES`.
 - New table added? Add `multi_tenant_access` RLS policy in the migration
 - Outbound WhatsApp messages (proactive) MUST go through the templates layer (when F6
   ships). Don't hard-code outbound text.

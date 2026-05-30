@@ -24,6 +24,7 @@ interface UserRow {
 interface ClientOption {
   id: string
   company_name: string
+  bot_type: string
 }
 
 export default function Usuarios() {
@@ -60,7 +61,7 @@ export default function Usuarios() {
   async function loadClients() {
     const { data, error } = await supabase
       .from('clients')
-      .select('id, company_name')
+      .select('id, company_name, bot_type')
       .order('company_name')
     if (error) {
       toast.error(error.message)

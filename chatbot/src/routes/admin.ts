@@ -5,25 +5,21 @@ const router = Router()
 
 const VALID_ROLES = ['super_admin', 'user']
 
-// Catálogo de páginas asignables a un `user`. Excluye páginas super-admin-only
-// (clientes, usuarios). Debe mantenerse en sync con frontend/src/lib/permissions.ts
-// (las constantes ASSIGNABLE_PAGES allá deben matchear esto).
-const VALID_USER_PAGES = new Set([
-  'dashboard',
-  'pedidos',
-  'productos',
-  'leads',
-  'conversaciones',
-  'reminders',
-  'documentos',
-  'config',
-  'tickets',
-  'servicios',
+// Páginas que un `user` NUNCA puede tener (solo super_admin). Espejo de
+// SUPER_ADMIN_ONLY_PAGES en frontend/src/lib/permissions.ts.
+// Usamos lista NEGRA (no blanca) a propósito: así cualquier página nueva que
+// se agregue al panel se puede asignar sin tocar este archivo. Solo hay que
+// actualizar esto si se crea una NUEVA página super-admin-only.
+const SUPER_ADMIN_ONLY_PAGES = new Set([
+  'clientes',
+  'usuarios',
 ])
 
 function sanitizeAllowedPages(input: unknown): string[] {
   if (!Array.isArray(input)) return []
-  return input.filter(p => typeof p === 'string' && VALID_USER_PAGES.has(p))
+  return input.filter(
+    (p): p is string => typeof p === 'string' && p.length > 0 && !SUPER_ADMIN_ONLY_PAGES.has(p)
+  )
 }
 
 async function countSuperAdmins(): Promise<number> {
