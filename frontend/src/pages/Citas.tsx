@@ -24,7 +24,6 @@ interface Appointment {
   service: string | null
   starts_at: string
   ends_at: string
-  extra: Record<string, unknown>
   status: string
   status_history: { status: string; at: string; by: string; note: string | null }[]
   origin: string
@@ -202,7 +201,7 @@ export default function Citas() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Paciente</TableHead>
+              <TableHead>Cliente</TableHead>
               <TableHead>Servicio</TableHead>
               <TableHead>Fecha</TableHead>
               <TableHead>Hora</TableHead>
@@ -223,7 +222,7 @@ export default function Citas() {
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                   <CalendarDays size={32} className="mx-auto mb-2 opacity-30" />
-                  {appts.length === 0 ? 'Aún no hay citas. Cuando un paciente agende desde WhatsApp, aparecerá aquí.' : 'No hay citas que coincidan.'}
+                  {appts.length === 0 ? 'Aún no hay citas. Cuando un cliente agende desde WhatsApp, aparecerá aquí.' : 'No hay citas que coincidan.'}
                 </TableCell>
               </TableRow>
             ) : filtered.map(a => {
@@ -266,22 +265,13 @@ export default function Citas() {
           {selected && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><p className="text-muted-foreground">Paciente</p><p className="font-medium">{selected.customer_name ?? '—'}</p></div>
+                <div><p className="text-muted-foreground">Cliente</p><p className="font-medium">{selected.customer_name ?? '—'}</p></div>
                 <div><p className="text-muted-foreground">Teléfono</p><p className="font-mono">{selected.customer_phone}</p></div>
                 <div><p className="text-muted-foreground">Servicio</p><p>{selected.service ?? '—'}</p></div>
                 <div><p className="text-muted-foreground">Origen</p><p className="capitalize">{selected.origin}</p></div>
                 <div><p className="text-muted-foreground">Fecha</p><p>{fmt(selected.starts_at, { dateStyle: 'full' })}</p></div>
                 <div><p className="text-muted-foreground">Hora</p><p>{fmt(selected.starts_at, { timeStyle: 'short' })} – {fmt(selected.ends_at, { timeStyle: 'short' })}</p></div>
               </div>
-
-              {Object.entries(selected.extra ?? {}).filter(([, v]) => v).length > 0 && (
-                <div className="text-sm">
-                  <p className="text-muted-foreground mb-1">Datos adicionales</p>
-                  {Object.entries(selected.extra).filter(([, v]) => v).map(([k, v]) => (
-                    <p key={k}><span className="capitalize">{k}</span>: {String(v)}</p>
-                  ))}
-                </div>
-              )}
 
               {!selected.calendar_synced && selected.status !== 'cancelada' && (
                 <div className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
@@ -306,7 +296,7 @@ export default function Citas() {
                   onChange={e => setEditNotes(e.target.value)}
                   rows={3}
                   className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-                  placeholder="Notas para el equipo (no se envían al paciente)"
+                  placeholder="Notas para el equipo (no se envían al cliente)"
                 />
               </div>
             </div>

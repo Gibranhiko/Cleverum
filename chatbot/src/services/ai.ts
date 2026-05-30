@@ -110,44 +110,6 @@ class AIService {
     )
   }
 
-  // Extrae los datos de intake de una cita por slots. Los campos extra
-  // (ej. "seguro") son dinámicos por cliente (appointment_settings.intake_fields).
-  extractAppointmentData(
-    messages: ChatCompletionMessageParam[],
-    opts: { serviceLabel: string; extraFieldKeys: string[] }
-  ) {
-    const extraProps: Record<string, { type: string }> = {}
-    for (const k of opts.extraFieldKeys) extraProps[k] = { type: 'string' }
-
-    return this.callTool<{
-      name: string
-      service: string
-      preferred_date: string
-      extra: Record<string, string>
-    }>(
-      messages,
-      'fn_extract_appointment',
-      {
-        description: 'Extract appointment intake data from the conversation',
-        parameters: {
-          type: 'object',
-          properties: {
-            name: { type: 'string', description: "Customer's full name" },
-            service: { type: 'string', description: opts.serviceLabel },
-            preferred_date: {
-              type: 'string',
-              description:
-                'Preferred day as YYYY-MM-DD in America/Mexico_City timezone. Empty string if the user did not give a day.',
-            },
-            extra: { type: 'object', properties: extraProps },
-          },
-          required: ['name', 'service', 'preferred_date'],
-        },
-      },
-      { name: '', service: '', preferred_date: '', extra: {} }
-    )
-  }
-
   determineLead(messages: ChatCompletionMessageParam[]) {
     return this.callTool<{
       lead: {

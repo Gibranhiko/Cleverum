@@ -82,7 +82,6 @@ export interface BookInput {
   customerName: string
   service: string | null
   slotStart: Date
-  extra?: Record<string, unknown>
   origin?: 'whatsapp' | 'panel'
 }
 
@@ -103,7 +102,7 @@ export interface BookResult {
  * mismo slot → la segunda recibe 'slot_taken'.
  */
 export async function bookAppointment(input: BookInput): Promise<BookResult> {
-  const { clientId, calendar, settings, customerPhone, customerName, service, slotStart, extra = {}, origin = 'whatsapp' } = input
+  const { clientId, calendar, settings, customerPhone, customerName, service, slotStart, origin = 'whatsapp' } = input
   const slotEnd = addMinutes(slotStart, settings.slot_minutes)
   const nowISO = new Date().toISOString()
 
@@ -124,7 +123,6 @@ export async function bookAppointment(input: BookInput): Promise<BookResult> {
       service,
       starts_at: slotStart.toISOString(),
       ends_at: slotEnd.toISOString(),
-      extra,
       status: 'nueva',
       status_history: [{ status: 'nueva', at: nowISO, by: origin === 'panel' ? 'panel' : 'bot', note: null }],
       origin,
@@ -134,7 +132,7 @@ export async function bookAppointment(input: BookInput): Promise<BookResult> {
     .single()
 
   if (insertError) {
-    // 23505 = unique_violation → otro paciente ganó el slot (A3, edge #16).
+    // 23505 = unique_violation → otro cliente ganó el slot (A3, edge #16).
     if ((insertError as any).code === '23505') return { ok: false, reason: 'slot_taken' }
     console.error('[Appointments] insert error:', insertError)
     return { ok: false, reason: 'error' }
@@ -148,7 +146,7 @@ export async function bookAppointment(input: BookInput): Promise<BookResult> {
     try {
       const eventId = await calendar.createEvent(
         `${service ?? 'Cita'} — ${customerName}`,
-        `Teléfono: ${customerPhone}\n${Object.entries(extra).map(([k, v]) => `${k}: ${v}`).join('\n')}`,
+        `Teléfono: ${customerPhone}`,
         slotStart,
         settings.slot_minutes / 60
       )

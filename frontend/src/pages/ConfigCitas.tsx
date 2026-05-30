@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 
 interface Cliente { id: string; company_name: string; bot_type: string }
@@ -25,7 +24,6 @@ interface SettingsState {
   closed_dates: string[]
   service_label: string
   use_services_catalog: boolean
-  intake_fields: unknown[]
 }
 
 function defaults(): SettingsState {
@@ -41,7 +39,6 @@ function defaults(): SettingsState {
     closed_dates: [],
     service_label: 'Servicio',
     use_services_catalog: false,
-    intake_fields: [],
   }
 }
 
@@ -49,7 +46,6 @@ export default function ConfigCitas() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteId, setClienteId] = useState('')
   const [s, setS] = useState<SettingsState>(defaults())
-  const [intakeText, setIntakeText] = useState('[]')
   const [closedText, setClosedText] = useState('')
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -82,11 +78,9 @@ export default function ConfigCitas() {
               closed_dates: data.closed_dates ?? [],
               service_label: data.service_label,
               use_services_catalog: data.use_services_catalog,
-              intake_fields: data.intake_fields ?? [],
             }
           : defaults()
         setS(next)
-        setIntakeText(JSON.stringify(next.intake_fields, null, 2))
         setClosedText((next.closed_dates ?? []).join('\n'))
         setLoading(false)
       })
@@ -97,8 +91,6 @@ export default function ConfigCitas() {
   }
 
   async function save() {
-    let intake_fields: unknown[]
-    try { intake_fields = JSON.parse(intakeText) } catch { toast.error('Campos de intake: JSON inválido'); return }
     const closed_dates = closedText.split('\n').map(l => l.trim()).filter(Boolean)
     if (closed_dates.some(d => !/^\d{4}-\d{2}-\d{2}$/.test(d))) { toast.error('Fechas cerradas: usa YYYY-MM-DD por línea'); return }
 
@@ -107,7 +99,6 @@ export default function ConfigCitas() {
       client_id: clienteId,
       ...s,
       closed_dates,
-      intake_fields,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'client_id' })
     setSaving(false)
@@ -177,18 +168,10 @@ export default function ConfigCitas() {
             </div>
           </div>
 
-          {/* Avanzado */}
-          <div className="rounded-lg border bg-card p-4 space-y-4">
-            <div>
-              <Label>Fechas cerradas (una por línea, YYYY-MM-DD)</Label>
-              <textarea value={closedText} onChange={e => setClosedText(e.target.value)} rows={3} className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono" placeholder="2026-12-25" />
-            </div>
-            <Separator />
-            <div>
-              <Label>Campos adicionales de intake (JSON)</Label>
-              <p className="text-xs text-muted-foreground mb-1">Ej: [{`{"key":"seguro","label":"Seguro médico","type":"list","options":["GNP","AXA","Particular"],"required":true}`}]</p>
-              <textarea value={intakeText} onChange={e => setIntakeText(e.target.value)} rows={6} className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono" />
-            </div>
+          {/* Fechas cerradas */}
+          <div className="rounded-lg border bg-card p-4">
+            <Label>Fechas cerradas (una por línea, YYYY-MM-DD)</Label>
+            <textarea value={closedText} onChange={e => setClosedText(e.target.value)} rows={3} className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono" placeholder="2026-12-25" />
           </div>
 
           <Button onClick={save} disabled={saving || !clienteId}>{saving ? 'Guardando...' : 'Guardar configuración'}</Button>
