@@ -15,10 +15,14 @@ import {
   getDbBusyForDay,
   getDbBusyForHorizon,
   getUpcomingAppointments,
+  getAppointmentById,
+  cancelAppointment,
+  rescheduleAppointment,
   bookAppointment,
+  type BookResult,
 } from '../lib/appointments'
 import { sendMascotGreeting } from '../lib/mascot'
-import { BotContext, AppointmentSettings } from '../types'
+import { BotContext, AppointmentSettings, AppointmentRow } from '../types'
 
 const APPOINTMENT_COMPLETE = 'CITA_CONFIRMADA'
 
@@ -28,7 +32,7 @@ function loadPrompt(name: string): string {
 
 export async function handleInfoBot(ctx: BotContext) {
   const { text, from, client, session } = ctx
-  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  const { id: clientId } = client
 
   // ¿Flujo de slots habilitado para este cliente? (settings.enabled + Calendar)
   const settings = await getAppointmentSettings(clientId)
@@ -47,49 +51,39 @@ export async function handleInfoBot(ctx: BotContext) {
     return sendInfoMenu(ctx, false)
   }
 
+  // ── Flujos activos (deterministas). La IA NO decide routing. ──
   if (session.current_flow === 'appointment') {
     return slotsEnabled
       ? continueSlotAppointment(ctx, settings!)
       : continueAppointmentFlow(ctx)
   }
+  if (session.current_flow === 'faq') {
+    return runFAQ(ctx)   // única vía donde la IA responde texto libre (con RAG)
+  }
+  if (session.current_flow === 'manage_appt') {
+    return continueManageAppt(ctx, settings, slotsEnabled)
+  }
 
   // Tap de una opción del menú
   if (text.startsWith('menu_')) return routeInfoMenu(ctx, text, settings, slotsEnabled)
 
+  // Cualquier otra cosa fuera de flujo → menú (mascot solo la 1ª vez).
+  // Routing 100% por menú: el usuario elige qué hacer tapeando, no por texto libre.
+  const isFirstInteraction = (session.history ?? []).length === 0
+  console.log(`[InfoBot] no flow → sending menu (first=${isFirstInteraction})`)
+  return sendInfoMenu(ctx, isFirstInteraction)
+}
+
+// FAQ — única vía donde la IA responde texto libre (con RAG). Se entra desde el menú
+// ("Información") y se sale con "menu". No participa en el routing.
+async function runFAQ(ctx: BotContext) {
+  const { text, from, client, session } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
   const history = session.history ?? []
-
-  // Primera vez que se usa el bot → intro con mascot + menú, sin importar qué escriba.
-  if (history.length === 0) {
-    console.log('[InfoBot] first interaction → intro + menu')
-    return sendInfoMenu(ctx, true)
-  }
-
-  // Clasificar intención con IA (no regex)
   const historyText = history.map(m => `${m.role}: ${m.content}`).join('\n')
-  const discriminator = loadPrompt('prompt-discriminator.txt').replace('{HISTORY}', historyText)
 
-  const intentMessages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: discriminator },
-    { role: 'user', content: text },
-  ]
-
-  const { intent } = await ai.determineIntent(intentMessages)
-  console.log(`[InfoBot] intent="${intent}" text="${text.slice(0, 50)}"`)
-
-  // Saludo de un usuario que regresa → solo el menú (mascot ya se mostró la 1ª vez)
-  if (intent === 'saludo') {
-    return sendInfoMenu(ctx, false)
-  }
-
-  if (intent === 'agendar_cita') {
-    return slotsEnabled ? startSlotAppointment(ctx, settings!) : startAppointmentFlow(ctx)
-  }
-
-  const needsRag = intent === 'consultar_empresa' || intent === 'consultar_servicios'
-  const ragContext = needsRag
-    ? await getRagContext(`${text} ${client.company_name ?? ''}`, clientId)
-    : ''
-  console.log(`[InfoBot] needsRag=${needsRag} RAG context length=${ragContext.length}`)
+  const ragContext = await getRagContext(`${text} ${client.company_name ?? ''}`, clientId)
+  console.log(`[InfoBot/FAQ] RAG context length=${ragContext.length}`)
 
   const basePrompt = ctx.botConfig?.system_prompt || loadPrompt('prompt-talker.txt')
   const talker = basePrompt
@@ -242,6 +236,8 @@ interface ApptState {
   chosen_day?: string
   offered_slots?: string[]
   chosen_slot?: string
+  reschedule_id?: string        // si está, doBooking reagenda esta cita en vez de crear
+  manage_id?: string            // cita seleccionada en el flujo "Mi cita"
   [key: string]: unknown
 }
 
@@ -320,7 +316,7 @@ async function askService(ctx: BotContext, settings: AppointmentSettings, state:
 
   const newState: ApptState = { ...state, offered_services: names }
   await updateSession(clientId, from, { current_flow: 'appointment', flow_step: 'collect_service', state: newState })
-  await sendList(pid!, token!, from, settings.service_label, `Elige una ${settings.service_label.toLowerCase()}:`, 'Ver opciones', [
+  await sendList(pid!, token!, from, settings.service_label, 'Elige una opción:', 'Ver opciones', [
     { title: settings.service_label, rows: names.map((n, i) => ({ id: `svc_${i}`, title: n.slice(0, 24) })) },
   ])
 }
@@ -415,7 +411,7 @@ async function presentDays(ctx: BotContext, settings: AppointmentSettings, state
 
   await updateSession(clientId, from, { current_flow: 'appointment', flow_step: 'picking_day', state })
 
-  const body = 'Esos horarios no están disponibles. Estos son los próximos días con espacio:'
+  const body = 'Elige el día para tu cita:'
   await sendList(pid, token, from, client.company_name ?? 'Citas', body, 'Ver días', [
     { title: 'Días disponibles', rows: days.map(d => ({ id: `day_${d}`, title: fmtDay(d) })) },
   ])
@@ -489,32 +485,41 @@ async function confirmStep(ctx: BotContext, settings: AppointmentSettings) {
   return doBooking(ctx, settings, state)
 }
 
-// ─── Paso 6: agendar (doble escritura) + confirmación ────────
+// ─── Paso 6: agendar / reagendar (doble escritura) + confirmación ────────
 async function doBooking(ctx: BotContext, settings: AppointmentSettings, state: ApptState) {
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
   const tz = settings.timezone
   const slotStart = new Date(state.chosen_slot!)
+  const isReschedule = !!state.reschedule_id
 
-  const result = await bookAppointment({
-    clientId,
-    calendar: getCalendar(client),
-    settings,
-    customerPhone: from,
-    customerName: state.name ?? '',
-    service: state.service ?? null,
-    slotStart,
-    origin: 'whatsapp',
-  })
+  let result: BookResult
+  if (isReschedule) {
+    const appt = await getAppointmentById(String(state.reschedule_id))
+    result = appt
+      ? await rescheduleAppointment(appt, slotStart, settings, getCalendar(client))
+      : { ok: false, reason: 'error' }
+  } else {
+    result = await bookAppointment({
+      clientId,
+      calendar: getCalendar(client),
+      settings,
+      customerPhone: from,
+      customerName: state.name ?? '',
+      service: state.service ?? null,
+      slotStart,
+      origin: 'whatsapp',
+    })
+  }
 
   if (result.ok) {
     const confirmation =
-      `✅ ¡Cita registrada!\n\n` +
+      `✅ ¡Cita ${isReschedule ? 'reagendada' : 'registrada'}!\n\n` +
       `👤 ${state.name}\n` +
       `📋 ${settings.service_label}: ${state.service}\n` +
       `📅 ${fmtDay(state.chosen_day!)}\n` +
       `🕐 ${fmtTime(slotStart, tz)} hrs\n\n` +
-      `Te esperamos. Si necesitas cambios, escríbenos. 🙌`
+      `Te esperamos. Si necesitas cambios, escribe *menu*. 🙌`
     await sendText(pid, token, from, confirmation)
     await appendToHistory(clientId, from, 'assistant', confirmation)
     await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
@@ -564,10 +569,10 @@ async function sendInfoMenu(ctx: BotContext, withMascot: boolean) {
       {
         title: 'Opciones',
         rows: [
-          { id: 'menu_cita',      title: '📅 Agendar cita',      description: 'Reserva tu cita' },
-          { id: 'menu_faq',       title: '❓ Información',         description: 'Preguntas frecuentes' },
-          { id: 'menu_consultar', title: '🔎 Consultar mi cita',  description: 'Estado de tu cita' },
-          { id: 'menu_human',     title: '👤 Hablar con asesor',  description: 'Te atiende una persona' },
+          { id: 'menu_cita',   title: '📅 Agendar cita',     description: 'Reserva tu cita' },
+          { id: 'menu_faq',    title: '❓ Información',        description: 'Preguntas frecuentes' },
+          { id: 'menu_micita', title: '🗓️ Mi cita',          description: 'Ver, cambiar o cancelar' },
+          { id: 'menu_human',  title: '👤 Hablar con asesor', description: 'Te atiende una persona' },
         ],
       },
     ]
@@ -589,14 +594,15 @@ async function routeInfoMenu(
       return slotsEnabled ? startSlotAppointment(ctx, settings!) : startAppointmentFlow(ctx)
 
     case 'menu_faq': {
-      const msg = '¿Qué te gustaría saber? Escríbeme tu pregunta. 💬'
+      await updateSession(clientId, from, { current_flow: 'faq', flow_step: null, state: {} })
+      const msg = '¿Qué te gustaría saber? Escríbeme tu pregunta 💬\n\n(escribe *menu* para volver al menú)'
       await sendText(pid!, token!, from, msg)
       await appendToHistory(clientId, from, 'assistant', msg)
       return
     }
 
-    case 'menu_consultar':
-      return consultarCita(ctx, settings)
+    case 'menu_micita':
+      return showMyAppointments(ctx, settings, slotsEnabled)
 
     case 'menu_human': {
       await updateSession(clientId, from, { human_takeover: true, current_flow: null, flow_step: null, state: {} })
@@ -611,28 +617,121 @@ async function routeInfoMenu(
   }
 }
 
-// Consultar mi cita — lista las próximas citas del teléfono del usuario.
-async function consultarCita(ctx: BotContext, settings: AppointmentSettings | null) {
+// ═══════════════════════════════════════════════════════════
+// "Mi cita" — consultar / reagendar / cancelar (flujo determinista)
+// ═══════════════════════════════════════════════════════════
+
+function fmtApptWhen(iso: string, tz: string): string {
+  return formatInTimeZone(new Date(iso), tz, "EEEE d 'de' MMMM, HH:mm 'hrs'", { locale: es })
+}
+
+// Entrada del menú "Mi cita": muestra la(s) cita(s) próxima(s) con acciones.
+async function showMyAppointments(ctx: BotContext, settings: AppointmentSettings | null, slotsEnabled: boolean) {
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
   const tz = settings?.timezone ?? 'America/Mexico_City'
-
   const upcoming = await getUpcomingAppointments(clientId, from)
 
   if (upcoming.length === 0) {
-    const msg = 'No encontré citas próximas registradas con este número. Si quieres agendar una, escribe *cita*. 📅'
+    await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
+    const msg = 'No tienes citas próximas con este número. Para agendar una, escribe *menu* y elige "Agendar cita". 📅'
     await sendText(pid!, token!, from, msg)
     await appendToHistory(clientId, from, 'assistant', msg)
     return
   }
 
-  const STATUS_LABEL: Record<string, string> = { nueva: 'Registrada', confirmada: 'Confirmada' }
-  const lines = upcoming.map(a => {
-    const when = formatInTimeZone(new Date(a.starts_at), tz, "EEEE d 'de' MMMM, HH:mm 'hrs'", { locale: es })
-    const estado = STATUS_LABEL[a.status] ?? a.status
-    return `📅 ${a.service ?? 'Cita'}\n🕐 ${when}\n📌 ${estado}`
-  })
-  const msg = `Tus próximas citas:\n\n${lines.join('\n\n')}`
-  await sendText(pid!, token!, from, msg)
-  await appendToHistory(clientId, from, 'assistant', msg)
+  if (upcoming.length === 1) {
+    return presentApptActions(ctx, settings, slotsEnabled, upcoming[0])
+  }
+
+  // Varias citas → lista para elegir cuál gestionar
+  await updateSession(clientId, from, { current_flow: 'manage_appt', flow_step: 'picking_appt', state: {} })
+  await sendList(pid!, token!, from, 'Mis citas', 'Elige la cita que quieres ver:', 'Ver citas', [
+    {
+      title: 'Próximas citas',
+      rows: upcoming.slice(0, 10).map(a => ({
+        id: `appt_${a.id}`,
+        title: formatInTimeZone(new Date(a.starts_at), tz, "d MMM HH:mm", { locale: es }).slice(0, 24),
+        description: a.service ?? undefined,
+      })),
+    },
+  ])
+}
+
+// Muestra una cita + botones de acción.
+async function presentApptActions(ctx: BotContext, settings: AppointmentSettings | null, slotsEnabled: boolean, appt: AppointmentRow) {
+  const { from, client } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+  const tz = settings?.timezone ?? 'America/Mexico_City'
+
+  await updateSession(clientId, from, { current_flow: 'manage_appt', flow_step: 'actions', state: { manage_id: appt.id } })
+
+  const body =
+    `Tu cita:\n\n` +
+    `📋 ${settings?.service_label ?? 'Servicio'}: ${appt.service ?? '—'}\n` +
+    `🗓️ ${fmtApptWhen(appt.starts_at, tz)}\n\n` +
+    `¿Qué quieres hacer?`
+
+  const buttons = [{ id: `cancel_${appt.id}`, title: '❌ Cancelar' }]
+  if (slotsEnabled) buttons.unshift({ id: `resched_${appt.id}`, title: '🕐 Cambiar horario' })
+  await sendButtons(pid!, token!, from, body, buttons)
+}
+
+async function continueManageAppt(ctx: BotContext, settings: AppointmentSettings | null, slotsEnabled: boolean) {
+  const { text, from, client } = ctx
+  const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
+
+  if (text.startsWith('appt_')) {
+    const appt = await getAppointmentById(text.slice(5))
+    if (!appt) return showMyAppointments(ctx, settings, slotsEnabled)
+    return presentApptActions(ctx, settings, slotsEnabled, appt)
+  }
+
+  if (text.startsWith('resched_')) {
+    const appt = await getAppointmentById(text.slice(8))
+    if (!appt || !settings) return showMyAppointments(ctx, settings, slotsEnabled)
+    return startReschedule(ctx, settings, appt)
+  }
+
+  if (text.startsWith('cancel_')) {
+    const id = text.slice(7)
+    await updateSession(clientId, from, { current_flow: 'manage_appt', flow_step: 'confirm_cancel', state: { manage_id: id } })
+    await sendButtons(pid!, token!, from, '¿Seguro que quieres cancelar tu cita?', [
+      { id: 'cancelyes', title: '✅ Sí, cancelar' },
+      { id: 'cancelno', title: '↩️ No' },
+    ])
+    return
+  }
+
+  if (text === 'cancelyes') {
+    const state = (ctx.session.state ?? {}) as ApptState
+    const appt = state.manage_id ? await getAppointmentById(String(state.manage_id)) : null
+    if (appt) await cancelAppointment(appt, getCalendar(client))
+    await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
+    const msg = appt ? '✅ Tu cita fue cancelada. Si quieres agendar otra, escribe *menu*.' : 'No encontré la cita. Escribe *menu*.'
+    await sendText(pid!, token!, from, msg)
+    await appendToHistory(clientId, from, 'assistant', msg)
+    return
+  }
+
+  if (text === 'cancelno') {
+    await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
+    const msg = 'Listo, no cancelé nada. Escribe *menu* para ver opciones. 🙂'
+    await sendText(pid!, token!, from, msg)
+    await appendToHistory(clientId, from, 'assistant', msg)
+    return
+  }
+
+  return showMyAppointments(ctx, settings, slotsEnabled)
+}
+
+// Inicia la reagenda reusando el picker de día/hora; marca reschedule_id para que
+// doBooking actualice la cita existente en vez de crear una nueva.
+async function startReschedule(ctx: BotContext, settings: AppointmentSettings, appt: AppointmentRow) {
+  const state: ApptState = {
+    reschedule_id: appt.id,
+    name: appt.customer_name ?? '',
+    service: appt.service ?? undefined,
+  }
+  return presentDays(ctx, settings, state, todayISO(settings.timezone))
 }

@@ -105,6 +105,34 @@ export class GoogleCalendarService {
     }
   }
 
+  // Borra un evento (para cancelar una cita). Best-effort: 410/404 = ya no existe.
+  async deleteEvent(eventId: string): Promise<void> {
+    const auth = await this.getAuth()
+    const authClient = await auth.getClient()
+    google.options({ auth: authClient as any })
+    const calendar = google.calendar({ version: 'v3' })
+    await calendar.events.delete({ calendarId: this.calendarId, eventId })
+  }
+
+  // Mueve un evento a una nueva fecha/hora (para reagendar).
+  async updateEvent(eventId: string, date: Date, durationHours = 1): Promise<void> {
+    const auth = await this.getAuth()
+    const authClient = await auth.getClient()
+    google.options({ auth: authClient as any })
+    const calendar = google.calendar({ version: 'v3' })
+    const start = new Date(date)
+    const end = new Date(start)
+    end.setHours(start.getHours() + durationHours)
+    await calendar.events.patch({
+      calendarId: this.calendarId,
+      eventId,
+      requestBody: {
+        start: { dateTime: start.toISOString(), timeZone: TIMEZONE },
+        end: { dateTime: end.toISOString(), timeZone: TIMEZONE },
+      },
+    })
+  }
+
   // Consulta freebusy en un rango y devuelve los intervalos ocupados (UTC).
   // Una sola llamada cubre varios días (clave para getNextAvailableDays).
   async getBusyIntervals(timeMin: Date, timeMax: Date): Promise<Interval[]> {
