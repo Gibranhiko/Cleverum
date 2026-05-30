@@ -21,7 +21,6 @@ import { sendMascotGreeting } from '../lib/mascot'
 import { BotContext, AppointmentSettings } from '../types'
 
 const APPOINTMENT_COMPLETE = 'CITA_CONFIRMADA'
-const SLOTS_READY = 'DATOS_LISTOS'
 
 function loadPrompt(name: string): string {
   return fs.readFileSync(path.join(__dirname, '..', 'prompts', name), 'utf-8')
@@ -239,8 +238,7 @@ async function finishAppointment(ctx: BotContext) {
 interface ApptState {
   name?: string
   service?: string
-  preferred_date?: string
-  extra?: Record<string, string>
+  offered_services?: string[]   // opciones de servicio ofrecidas (validación)
   chosen_day?: string
   offered_slots?: string[]
   chosen_slot?: string
@@ -273,107 +271,81 @@ async function fetchServiceNames(clientId: string): Promise<string[]> {
   return (data ?? []).map((s: any) => s.name)
 }
 
-async function buildServicesText(clientId: string, settings: AppointmentSettings): Promise<string> {
-  if (!settings.use_services_catalog) return ''
-  const names = await fetchServiceNames(clientId)
-  return names.length ? ` (opciones: ${names.join(', ')})` : ''
-}
-
-function buildExtraFieldsText(settings: AppointmentSettings): string {
-  const fields = settings.intake_fields ?? []
-  if (!fields.length) return ''
-  return fields
-    .map((f, i) => {
-      const opts = f.type === 'list' && f.options?.length ? ` (opciones: ${f.options.join(', ')})` : ''
-      return `${i + 4}. ${f.label}${opts}`
-    })
-    .join('\n')
-}
+// ═══════════════════════════════════════════════════════════
+// Máquina de estados determinista (sin IA en la recolección).
+// IA solo en: primer intent (handleInfoBot) + texto abierto (nombre).
+// Orden: nombre → especialidad → campos extra → día → hora → confirmar.
+// ═══════════════════════════════════════════════════════════
 
 // ─── Entrada ─────────────────────────────────────────────────
 async function startSlotAppointment(ctx: BotContext, settings: AppointmentSettings) {
   const { from, client } = ctx
-  await updateSession(client.id, from, { current_flow: 'appointment', flow_step: 'collecting', state: {} })
-  const fresh = await getSession(client.id, from)
-  return collectStep({ ...ctx, session: fresh }, settings)
+  await updateSession(client.id, from, { current_flow: 'appointment', flow_step: 'collect_name', state: {} })
+  const msg = 'Para agendar tu cita, ¿cuál es tu *nombre completo*? 🙂'
+  await sendText(client.wa_phone_number_id!, client.wa_access_token!, from, msg)
+  await appendToHistory(client.id, from, 'assistant', msg)
 }
 
 async function continueSlotAppointment(ctx: BotContext, settings: AppointmentSettings) {
   switch (ctx.session.flow_step) {
-    case 'picking_day':  return daySelected(ctx, settings)
-    case 'picking_slot': return slotSelected(ctx, settings)
-    case 'confirming':   return confirmStep(ctx, settings)
-    case 'collecting':
-    default:             return collectStep(ctx, settings)
+    case 'collect_name':    return onName(ctx, settings)
+    case 'collect_service': return onService(ctx, settings)
+    case 'picking_day':     return daySelected(ctx, settings)
+    case 'picking_slot':    return slotSelected(ctx, settings)
+    case 'confirming':      return confirmStep(ctx, settings)
+    default:                return startSlotAppointment(ctx, settings)
   }
 }
 
-// ─── Paso 1: recolección conversacional (IA) ─────────────────
-async function collectStep(ctx: BotContext, settings: AppointmentSettings) {
-  const { text, from, client, session } = ctx
+// ─── Paso 1: nombre (único texto abierto) ────────────────────
+async function onName(ctx: BotContext, settings: AppointmentSettings) {
+  const name = ctx.text.trim()
+  return askService(ctx, settings, { name })
+}
+
+// ─── Paso 2: especialidad / servicio (List) ──────────────────
+async function askService(ctx: BotContext, settings: AppointmentSettings, state: ApptState) {
+  const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
-  const history = session.history ?? []
-  const tz = settings.timezone
 
-  const now = formatInTimeZone(new Date(), tz, "EEEE d 'de' MMMM yyyy, HH:mm", { locale: es })
-  const servicesText = await buildServicesText(clientId, settings)
-  const extraText = buildExtraFieldsText(settings)
+  const names = (await fetchServiceNames(clientId)).slice(0, 10) // WA list máx 10
 
-  const systemPrompt = loadPrompt('prompt-appointment-slots.txt')
-    .replace('{COMPANY}', client.company_name ?? 'nuestra empresa')
-    .replace('{CURRENTDAY}', now)
-    .replaceAll('{SERVICE_LABEL}', settings.service_label)
-    .replace('{SERVICES}', servicesText)
-    .replace('{EXTRA_FIELDS}', extraText)
-    .replace('{HISTORY}', history.map(m => `${m.role}: ${m.content}`).join('\n'))
-    .replace('{TOKEN}', SLOTS_READY)
-
-  const messages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemPrompt },
-    ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-  ]
-
-  const response = await ai.createChat(messages)
-
-  if (!response.includes(SLOTS_READY)) {
-    await sendText(pid, token, from, response)
-    await appendToHistory(clientId, from, 'assistant', response)
+  // Sin catálogo → fallback a texto abierto
+  if (names.length === 0) {
+    await updateSession(clientId, from, { current_flow: 'appointment', flow_step: 'collect_service', state })
+    const msg = `¿Qué ${settings.service_label.toLowerCase()} necesitas?`
+    await sendText(pid!, token!, from, msg)
     return
   }
 
-  // Datos completos → extraer estructurado
-  const extractMessages: ChatCompletionMessageParam[] = [
-    {
-      role: 'system',
-      content: `Extrae los datos de la cita de esta conversación. Hoy es ${now}. Las fechas en zona América/México_City (UTC-6).`,
-    },
-    ...history.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
-  ]
-  const data = await ai.extractAppointmentData(extractMessages, {
-    serviceLabel: settings.service_label,
-    extraFieldKeys: (settings.intake_fields ?? []).map(f => f.key),
-  })
-
-  const state: ApptState = {
-    name: data.name,
-    service: data.service,
-    preferred_date: data.preferred_date,
-    extra: data.extra ?? {},
-  }
-
-  // Sin día válido → seguir preguntando
-  if (!data.preferred_date || !/^\d{4}-\d{2}-\d{2}$/.test(data.preferred_date)) {
-    const msg = '¿Para qué día te gustaría la cita?'
-    await sendText(pid, token, from, msg)
-    await appendToHistory(clientId, from, 'assistant', msg)
-    await updateSession(clientId, from, { state })
-    return
-  }
-
-  return presentSlots(ctx, settings, state, data.preferred_date)
+  const newState: ApptState = { ...state, offered_services: names }
+  await updateSession(clientId, from, { current_flow: 'appointment', flow_step: 'collect_service', state: newState })
+  await sendList(pid!, token!, from, settings.service_label, `Elige una ${settings.service_label.toLowerCase()}:`, 'Ver opciones', [
+    { title: settings.service_label, rows: names.map((n, i) => ({ id: `svc_${i}`, title: n.slice(0, 24) })) },
+  ])
 }
 
-// ─── Paso 2: mostrar slots del día ───────────────────────────
+async function onService(ctx: BotContext, settings: AppointmentSettings) {
+  const { text, from, client } = ctx
+  const state = (ctx.session.state ?? {}) as ApptState
+  const offered = state.offered_services ?? []
+
+  let service: string | undefined
+  if (text.startsWith('svc_')) {
+    service = offered[Number(text.slice(4))]
+  } else if (offered.length === 0) {
+    service = text.trim() // fallback texto abierto
+  } else {
+    // Escribió en vez de tapear → intentar match, si no re-listar
+    service = offered.find(n => n.toLowerCase() === text.trim().toLowerCase())
+  }
+
+  if (!service) return askService(ctx, settings, state) // re-listar
+  // Servicio listo → directo a elegir día (sin campos extra: bot genérico)
+  return presentDays(ctx, settings, { ...state, service }, todayISO(settings.timezone))
+}
+
+// ─── Paso 3: mostrar slots del día ───────────────────────────
 async function presentSlots(ctx: BotContext, settings: AppointmentSettings, state: ApptState, dayISO: string) {
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
@@ -449,7 +421,7 @@ async function presentDays(ctx: BotContext, settings: AppointmentSettings, state
   ])
 }
 
-// ─── Paso 3: el paciente elige día ───────────────────────────
+// ─── Paso 4: el cliente elige día ────────────────────────────
 async function daySelected(ctx: BotContext, settings: AppointmentSettings) {
   const { text } = ctx
   const state = (ctx.session.state ?? {}) as ApptState
@@ -460,7 +432,7 @@ async function daySelected(ctx: BotContext, settings: AppointmentSettings) {
   return presentDays(ctx, settings, state, todayISO(settings.timezone))
 }
 
-// ─── Paso 4: el paciente elige horario ───────────────────────
+// ─── Paso 5: el cliente elige horario ────────────────────────
 async function slotSelected(ctx: BotContext, settings: AppointmentSettings) {
   const { text } = ctx
   const state = (ctx.session.state ?? {}) as ApptState
@@ -484,20 +456,12 @@ async function presentConfirm(ctx: BotContext, settings: AppointmentSettings, st
 
   await updateSession(clientId, from, { current_flow: 'appointment', flow_step: 'confirming', state })
 
-  const extraLines = Object.entries(state.extra ?? {})
-    .filter(([, v]) => v)
-    .map(([k, v]) => {
-      const field = settings.intake_fields?.find(f => f.key === k)
-      return `${field?.label ?? k}: ${v}`
-    })
-
   const summary =
     `Confirma tu cita:\n\n` +
     `👤 ${state.name}\n` +
     `📋 ${settings.service_label}: ${state.service}\n` +
     `📅 ${fmtDay(state.chosen_day!)}\n` +
     `🕐 ${fmtTime(slotDate, tz)} hrs\n` +
-    (extraLines.length ? extraLines.map(l => `• ${l}`).join('\n') + '\n' : '') +
     `\n¿Confirmamos?`
 
   await sendButtons(pid, token, from, summary, [
@@ -540,7 +504,6 @@ async function doBooking(ctx: BotContext, settings: AppointmentSettings, state: 
     customerName: state.name ?? '',
     service: state.service ?? null,
     slotStart,
-    extra: state.extra ?? {},
     origin: 'whatsapp',
   })
 

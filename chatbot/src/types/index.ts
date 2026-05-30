@@ -64,14 +64,6 @@ export interface DayHours {
   close2?: string
 }
 
-export interface IntakeField {
-  key: string
-  label: string
-  type: 'text' | 'list'
-  options?: string[]
-  required?: boolean
-}
-
 export interface AppointmentSettings {
   client_id: string
   enabled: boolean
@@ -85,7 +77,6 @@ export interface AppointmentSettings {
   closed_dates: string[]              // ['YYYY-MM-DD', ...]
   service_label: string
   use_services_catalog: boolean
-  intake_fields: IntakeField[]
 }
 
 export type AppointmentStatus = 'nueva' | 'confirmada' | 'completada' | 'cancelada' | 'no_asistio'
@@ -98,7 +89,6 @@ export interface AppointmentRow {
   service: string | null
   starts_at: string
   ends_at: string
-  extra: Record<string, unknown>
   status: AppointmentStatus
   status_history: { status: string; at: string; by: string; note: string | null }[]
   origin: 'whatsapp' | 'panel'

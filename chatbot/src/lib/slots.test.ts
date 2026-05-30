@@ -23,7 +23,6 @@ function makeSettings(over: Partial<AppointmentSettings> = {}): AppointmentSetti
     closed_dates: [],
     service_label: 'Servicio',
     use_services_catalog: false,
-    intake_fields: [],
     ...over,
   }
 }
