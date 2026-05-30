@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label'
 import { CalendarDays, Search, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
+import { CHATBOT_URL } from '@/lib/config'
 
 interface Cliente {
   id: string
@@ -36,17 +37,42 @@ const STATUS: Record<string, { label: string; variant: 'default' | 'secondary' |
   nueva:      { label: 'Nueva',       variant: 'secondary' },
   confirmada: { label: 'Confirmada',  variant: 'default' },
   completada: { label: 'Completada',  variant: 'outline' },
-  cancelada:  { label: 'Cancelada',   variant: 'destructive' },
   no_asistio: { label: 'No asistió',  variant: 'destructive' },
+  cancelada:  { label: 'Cancelada',   variant: 'destructive' },
+  pasada:     { label: 'Pasada',      variant: 'outline' },
 }
+
+// Estados que el operador puede fijar a mano. 'cancelada' va por el botón
+// dedicado (libera Calendar); 'pasada' es derivado, no se asigna.
+const EDITABLE_STATUS = ['nueva', 'confirmada', 'completada', 'no_asistio']
 
 const TABS: { key: string; label: string }[] = [
   { key: 'all',        label: 'Todas' },
   { key: 'nueva',      label: 'Nuevas' },
   { key: 'confirmada', label: 'Confirmadas' },
-  { key: 'completada', label: 'Completadas' },
+  { key: 'pasada',     label: 'Pasadas' },
   { key: 'cancelada',  label: 'Canceladas' },
 ]
+
+// Cita vencida = ya terminó y no está cancelada.
+function isPast(a: Appointment): boolean {
+  return a.status !== 'cancelada' && new Date(a.ends_at).getTime() < Date.now()
+}
+
+// Estado efectivo para el badge (deriva 'pasada' sin escribir en BD).
+function displayStatus(a: Appointment): string {
+  if (a.status === 'cancelada') return 'cancelada'
+  if (a.status === 'completada' || a.status === 'no_asistio') return a.status
+  if (isPast(a)) return 'pasada'
+  return a.status
+}
+
+// Bucket para los tabs.
+function bucketOf(a: Appointment): string {
+  if (a.status === 'cancelada') return 'cancelada'
+  if (isPast(a)) return 'pasada'
+  return a.status // nueva | confirmada (futuras)
+}
 
 function fmt(iso: string, opts: Intl.DateTimeFormatOptions) {
   return new Date(iso).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', ...opts })
@@ -143,13 +169,34 @@ export default function Citas() {
     fetchAppts()
   }
 
+  async function cancelar() {
+    if (!selected) return
+    if (!confirm('¿Cancelar esta cita? Se libera el horario y se borra del calendario.')) return
+    setSaving(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setSaving(false); toast.error('Sesión expirada'); return }
+    const res = await fetch(`${CHATBOT_URL}/appointments/${selected.id}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+    })
+    setSaving(false)
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      toast.error(body.error ?? 'No se pudo cancelar')
+      return
+    }
+    toast.success('Cita cancelada')
+    setSelected(null)
+    fetchAppts()
+  }
+
   const counts = TABS.reduce((acc, t) => {
-    acc[t.key] = t.key === 'all' ? appts.length : appts.filter(a => a.status === t.key).length
+    acc[t.key] = t.key === 'all' ? appts.length : appts.filter(a => bucketOf(a) === t.key).length
     return acc
   }, {} as Record<string, number>)
 
   const filtered = appts.filter(a => {
-    const matchTab = tab === 'all' || a.status === tab
+    const matchTab = tab === 'all' || bucketOf(a) === tab
     const matchSearch = !search.trim() ||
       a.customer_phone.includes(search) ||
       (a.customer_name?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
@@ -226,7 +273,7 @@ export default function Citas() {
                 </TableCell>
               </TableRow>
             ) : filtered.map(a => {
-              const badge = STATUS[a.status] ?? { label: a.status, variant: 'outline' as const }
+              const badge = STATUS[displayStatus(a)] ?? { label: a.status, variant: 'outline' as const }
               return (
                 <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openDetail(a)}>
                   <TableCell>
@@ -281,12 +328,13 @@ export default function Citas() {
 
               <div>
                 <Label>Estado</Label>
-                <Select value={editStatus} onValueChange={setEditStatus}>
+                <Select value={EDITABLE_STATUS.includes(editStatus) ? editStatus : 'nueva'} onValueChange={setEditStatus}>
                   <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {Object.entries(STATUS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                    {EDITABLE_STATUS.map(k => <SelectItem key={k} value={k}>{STATUS[k].label}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground mt-1">Para cancelar usa el botón de abajo (libera el horario y borra del calendario).</p>
               </div>
 
               <div>
@@ -301,9 +349,14 @@ export default function Citas() {
               </div>
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelected(null)}>Cerrar</Button>
-            <Button onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
+          <DialogFooter className="gap-2 sm:justify-between">
+            {selected && selected.status !== 'cancelada' ? (
+              <Button variant="destructive" onClick={cancelar} disabled={saving}>Cancelar cita</Button>
+            ) : <span />}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSelected(null)}>Cerrar</Button>
+              <Button onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -7,8 +7,10 @@ import { handleWebhook } from './webhook/handler'
 import botsRouter from './routes/bots'
 import documentsRouter from './routes/documents'
 import adminRouter from './routes/admin'
+import appointmentsRouter from './routes/appointments'
 import { requireApiKey } from './middleware/auth'
 import { requireSuperAdmin } from './middleware/requireSuperAdmin'
+import { requireAuth } from './middleware/requireAuth'
 import { startReminderCron } from './services/reminder'
 
 const app = express()
@@ -45,6 +47,9 @@ app.use('/documents', requireApiKey, documentsRouter)
 
 // Admin API for user management (requires Bearer token from a super_admin)
 app.use('/admin', requireSuperAdmin, adminRouter)
+
+// Appointments API (authenticated; el handler valida super_admin o dueño)
+app.use('/appointments', requireAuth, appointmentsRouter)
 
 // Health check for Railway
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }))

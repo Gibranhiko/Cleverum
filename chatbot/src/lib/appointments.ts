@@ -54,7 +54,72 @@ export function getDbBusyForDay(clientId: string, dayISO: string, tz: string) {
   return getDbBusyForRange(clientId, b.start, b.end)
 }
 
-// Citas próximas (no canceladas) de un teléfono — para "Consultar mi cita".
+export async function getAppointmentById(id: string): Promise<AppointmentRow | null> {
+  const { data } = await supabase.from('appointments').select('*').eq('id', id).maybeSingle()
+  return (data as AppointmentRow) ?? null
+}
+
+// Cancela una cita: status='cancelada' + borra el evento de Calendar (libera el slot).
+export async function cancelAppointment(appt: AppointmentRow, calendar: GoogleCalendarService | null): Promise<boolean> {
+  const nowISO = new Date().toISOString()
+  const history = [...(appt.status_history ?? []), { status: 'cancelada', at: nowISO, by: 'bot', note: null }]
+  const { error } = await supabase
+    .from('appointments')
+    .update({ status: 'cancelada', status_history: history, updated_at: nowISO })
+    .eq('id', appt.id)
+  if (error) {
+    console.error('[Appointments] cancel error:', error)
+    return false
+  }
+  if (calendar && appt.calendar_event_id) {
+    try {
+      await calendar.deleteEvent(appt.calendar_event_id)
+    } catch (err) {
+      console.error('[Appointments] cancel: calendar delete failed (kept cancelada en DB):', err)
+    }
+  }
+  return true
+}
+
+// Reagenda una cita a un nuevo slot: re-check + update DB + mueve el evento de Calendar.
+// No cambia el `status` (sigue nueva/confirmada); solo deja rastro en status_history.
+export async function rescheduleAppointment(
+  appt: AppointmentRow,
+  newSlotStart: Date,
+  settings: AppointmentSettings,
+  calendar: GoogleCalendarService | null
+): Promise<BookResult> {
+  const slotEnd = addMinutes(newSlotStart, settings.slot_minutes)
+  const nowISO = new Date().toISOString()
+
+  if (calendar) {
+    const available = await calendar.checkAvailability(newSlotStart, settings.slot_minutes / 60)
+    if (!available) return { ok: false, reason: 'slot_taken' }
+  }
+
+  const history = [...(appt.status_history ?? []), { status: 'reagendada', at: nowISO, by: 'bot', note: appt.starts_at }]
+  const { error } = await supabase
+    .from('appointments')
+    .update({ starts_at: newSlotStart.toISOString(), ends_at: slotEnd.toISOString(), status_history: history, updated_at: nowISO })
+    .eq('id', appt.id)
+
+  if (error) {
+    if ((error as any).code === '23505') return { ok: false, reason: 'slot_taken' }
+    console.error('[Appointments] reschedule error:', error)
+    return { ok: false, reason: 'error' }
+  }
+
+  if (calendar && appt.calendar_event_id) {
+    try {
+      await calendar.updateEvent(appt.calendar_event_id, newSlotStart, settings.slot_minutes / 60)
+    } catch (err) {
+      console.error('[Appointments] reschedule: calendar move failed:', err)
+    }
+  }
+  return { ok: true }
+}
+
+// Citas próximas (no canceladas) de un teléfono — para "Mi cita".
 export async function getUpcomingAppointments(clientId: string, phone: string): Promise<AppointmentRow[]> {
   const { data } = await supabase
     .from('appointments')

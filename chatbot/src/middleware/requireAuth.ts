@@ -1,15 +1,9 @@
 import { Request, Response, NextFunction } from 'express'
 import supabase from '../lib/supabase'
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: { id: string; role: string; client_id?: string | null }
-    }
-  }
-}
-
-export async function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
+// Autentica al usuario (Bearer token) y deja su perfil en req.user, SIN exigir
+// super_admin. El handler decide la autorización fina (ej. dueño del recurso).
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization
   if (!authHeader?.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Missing Authorization Bearer token' })
@@ -25,7 +19,7 @@ export async function requireSuperAdmin(req: Request, res: Response, next: NextF
 
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
-    .select('role')
+    .select('role, client_id')
     .eq('id', userData.user.id)
     .single()
 
@@ -34,11 +28,6 @@ export async function requireSuperAdmin(req: Request, res: Response, next: NextF
     return
   }
 
-  if (profile.role !== 'super_admin') {
-    res.status(403).json({ error: 'Forbidden — super_admin required' })
-    return
-  }
-
-  req.user = { id: userData.user.id, role: profile.role }
+  req.user = { id: userData.user.id, role: profile.role, client_id: profile.client_id }
   next()
 }

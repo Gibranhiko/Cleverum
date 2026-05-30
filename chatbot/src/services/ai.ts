@@ -55,27 +55,6 @@ class AIService {
     }
   }
 
-  determineIntent(messages: ChatCompletionMessageParam[]) {
-    return this.callTool<{ intent: string }>(
-      messages,
-      'fn_get_intent',
-      {
-        description: 'Classify the user intent from the conversation',
-        parameters: {
-          type: 'object',
-          properties: {
-            intent: {
-              type: 'string',
-              enum: ['saludo', 'agendar_cita', 'consultar_servicios', 'consultar_empresa', 'hablar'],
-            },
-          },
-          required: ['intent'],
-        },
-      },
-      { intent: 'hablar' }
-    )
-  }
-
   determineAppointment(messages: ChatCompletionMessageParam[]) {
     return this.callTool<{
       appointment: { name: string; phone: string; service: string; date: string }
