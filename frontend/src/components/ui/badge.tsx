@@ -37,7 +37,7 @@ function Badge({
   const Comp = asChild ? Slot.Root : "span"
 
   return (
-    // @ts-expect-error — Slot.Root SlotProps.children incompatible with React 19 ReactPortal type
+    // @ts-ignore — Slot.Root SlotProps.children a veces choca con el tipo ReactPortal de React 19 (según versión resuelta)
     <Comp
       data-slot="badge"
       data-variant={variant}
