@@ -179,6 +179,7 @@ export default function Citas() {
     }
     const { days } = await res.json()
     setRdays(days)
+    if (days.length > 0) pickDay(days[0].value) // abre con el primer día disponible
   }
 
   async function pickDay(day: string) {
@@ -371,7 +372,7 @@ export default function Citas() {
 
       {/* Modal de detalle */}
       <Dialog open={!!selected} onOpenChange={o => !o && setSelected(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Detalle de cita</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-4">
@@ -392,48 +393,45 @@ export default function Citas() {
 
               {rescheduling ? (
                 <div className="space-y-3">
-                  <div>
-                    <Label>Nuevo día</Label>
-                    {rloading && rdays.length === 0 ? (
-                      <p className="text-sm text-muted-foreground mt-1">Cargando días disponibles...</p>
-                    ) : rdays.length === 0 ? (
-                      <p className="text-sm text-muted-foreground mt-1">No hay días con disponibilidad en el horizonte configurado.</p>
-                    ) : (
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {rdays.map(d => (
-                          <button
-                            key={d.value}
-                            onClick={() => pickDay(d.value)}
-                            className={`px-2.5 py-1.5 rounded-lg text-xs border transition-colors ${rday === d.value ? 'bg-violet-600 text-white border-violet-600' : 'bg-muted hover:bg-muted/70 border-transparent'}`}
-                          >
-                            {d.label}
-                          </button>
-                        ))}
+                  {rdays.length === 0 && !rloading ? (
+                    <p className="text-sm text-muted-foreground">No hay días con disponibilidad en el horizonte configurado.</p>
+                  ) : (
+                    <>
+                      <div>
+                        <Label>Nuevo día</Label>
+                        <input
+                          type="date"
+                          value={rday}
+                          min={rdays[0]?.value}
+                          max={rdays[rdays.length - 1]?.value}
+                          onChange={e => e.target.value && pickDay(e.target.value)}
+                          className="mt-1 block rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                        />
                       </div>
-                    )}
-                  </div>
 
-                  {rday && (
-                    <div>
-                      <Label>Nuevo horario</Label>
-                      {rloading ? (
-                        <p className="text-sm text-muted-foreground mt-1">Cargando horarios...</p>
-                      ) : rslots.length === 0 ? (
-                        <p className="text-sm text-muted-foreground mt-1">No hay horarios libres ese día. Elige otro.</p>
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5 mt-1">
-                          {rslots.map(s => (
-                            <button
-                              key={s.value}
-                              onClick={() => setRslot(s.value)}
-                              className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${rslot === s.value ? 'bg-violet-600 text-white border-violet-600' : 'bg-muted hover:bg-muted/70 border-transparent'}`}
-                            >
-                              {s.label}
-                            </button>
-                          ))}
+                      {rday && (
+                        <div>
+                          <Label>Nuevo horario</Label>
+                          {rloading ? (
+                            <p className="text-sm text-muted-foreground mt-1">Cargando horarios...</p>
+                          ) : rslots.length === 0 ? (
+                            <p className="text-sm text-muted-foreground mt-1">No hay horarios libres ese día. Elige otro.</p>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {rslots.map(s => (
+                                <button
+                                  key={s.value}
+                                  onClick={() => setRslot(s.value)}
+                                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${rslot === s.value ? 'bg-violet-600 text-white border-violet-600' : 'bg-muted hover:bg-muted/70 border-transparent'}`}
+                                >
+                                  {s.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </div>
               ) : (

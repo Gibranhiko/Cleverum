@@ -168,7 +168,8 @@ export class GoogleCalendarService {
     settings: AppointmentSettings,
     extraBusy: Interval[] = [],
     now: Date = new Date(),
-    exclude?: Interval
+    exclude?: Interval,
+    maxSlots?: number
   ): Promise<Date[]> {
     const bounds = dayBoundsUtc(dayISO, settings.timezone)
     let calendarBusy = await this.getBusyIntervals(bounds.start, bounds.end)
@@ -178,6 +179,7 @@ export class GoogleCalendarService {
       settings,
       busy: [...calendarBusy, ...extraBusy],
       now,
+      maxSlots,
     })
   }
 
