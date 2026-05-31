@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { UserCheck, Bot, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { CHATBOT_URL, chatbotHeaders } from '@/lib/config'
+import { flowLabel } from '@/lib/formatters'
 
 export interface HistoryMsg {
   role: 'user' | 'assistant'
@@ -26,12 +27,13 @@ export interface Session {
 interface ChatPanelProps {
   session: Session
   clienteId: string
+  customerName?: string
   onToggleTakeover: (session: Session) => void
   onToggleBotForUser: (session: Session) => void
   onMessageSent?: () => void
 }
 
-export default function ChatPanel({ session, clienteId, onToggleTakeover, onToggleBotForUser, onMessageSent }: ChatPanelProps) {
+export default function ChatPanel({ session, clienteId, customerName, onToggleTakeover, onToggleBotForUser, onMessageSent }: ChatPanelProps) {
   const [replyText, setReplyText] = useState('')
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
@@ -71,11 +73,12 @@ export default function ChatPanel({ session, clienteId, onToggleTakeover, onTogg
     <>
       <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
         <div>
-          <p className="font-medium">{session.phone_number}</p>
+          <p className="font-medium">{customerName ?? session.phone_number}</p>
+          {customerName && <p className="text-xs text-muted-foreground font-mono">{session.phone_number}</p>}
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             {session.current_flow && (
               <Badge variant="secondary" className="text-xs">
-                {session.current_flow}{session.flow_step ? ` · ${session.flow_step}` : ''}
+                {flowLabel(session.current_flow, session.flow_step)}
               </Badge>
             )}
             {session.human_takeover && (

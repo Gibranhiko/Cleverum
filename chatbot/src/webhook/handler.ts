@@ -11,6 +11,17 @@ import { ClientRow, BotConfigRow } from '../types'
 
 const COMMANDS = new Set(['botoff', 'status', 'boton'])
 
+const MEDIA_LABELS: Record<string, string> = {
+  image: '📷 [imagen]',
+  audio: '🎤 [audio]',
+  voice: '🎤 [nota de voz]',
+  video: '🎬 [video]',
+  document: '📎 [documento]',
+  sticker: '🌟 [sticker]',
+  location: '📍 [ubicación]',
+  contacts: '👤 [contacto]',
+}
+
 const OPT_OUT_SIGNALS = [
   'stop', 'unsubscribe', 'darme de baja', 'darse de baja',
   'dejar de recibir', 'no quiero mensajes', 'ya no quiero mensajes',
@@ -121,17 +132,30 @@ export async function handleWebhook(req: Request, res: Response) {
 
 async function processMessage(message: any, phoneNumberId: string) {
   const from: string = message.from
-  let text = ''
+  let text = ''            // valor para RUTEAR (id del tap o el texto)
+  let displayText = ''     // valor LEGIBLE que se guarda en el historial
   const isInteractive = message.type === 'interactive'
 
   if (message.type === 'text') {
     text = message.text?.body ?? ''
+    displayText = text
   } else if (isInteractive) {
     const it = message.interactive
-    if (it.type === 'button_reply') text = it.button_reply.id
-    else if (it.type === 'list_reply') text = it.list_reply.id
+    if (it.type === 'button_reply') {
+      text = it.button_reply.id
+      displayText = it.button_reply.title ?? text
+    } else if (it.type === 'list_reply') {
+      text = it.list_reply.id
+      displayText = it.list_reply.title ?? text
+    }
   } else {
-    return // ignore audio, image, etc.
+    // Multimedia u otro tipo: no lo procesa el bot, pero dejamos rastro en el
+    // historial para que el operador sepa que el cliente envió algo.
+    const client = await getCachedClient(phoneNumberId)
+    if (client) {
+      await appendToHistory(client.id, from, 'user', MEDIA_LABELS[message.type] ?? `[${message.type}]`)
+    }
+    return
   }
 
   if (!text.trim()) return
@@ -180,7 +204,7 @@ async function processMessage(message: any, phoneNumberId: string) {
     }
   }
 
-  await appendToHistory(client.id, from, 'user', text)
+  await appendToHistory(client.id, from, 'user', displayText)
 
   const botConfig = await getCachedBotConfig(client.id)
   const ctx = { text, from, client, session, botConfig }
