@@ -83,7 +83,8 @@ router.get('/:id/slots', async (req: Request, res: Response) => {
       return
     }
     const extraBusy = await getDbBusyForDay(appt.client_id, day, settings.timezone, appt.id)
-    const slots = await calendar.getAvailableSlots(day, settings, extraBusy, new Date(), exclude)
+    // maxSlots alto: el panel muestra todos los huecos (el tope de 8 es solo para WhatsApp).
+    const slots = await calendar.getAvailableSlots(day, settings, extraBusy, new Date(), exclude, 96)
     res.json({
       slots: slots.map(s => ({ value: s.toISOString(), label: formatInTimeZone(s, settings.timezone, 'HH:mm') })),
     })

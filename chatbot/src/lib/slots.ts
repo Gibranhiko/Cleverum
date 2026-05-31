@@ -32,6 +32,7 @@ export interface FreeSlotsInput {
   settings: AppointmentSettings
   busy: Interval[]               // intervalos ocupados (Calendar ∪ DB), en UTC
   now: Date                      // momento actual (UTC)
+  maxSlots?: number              // override del tope (WhatsApp=8; panel=sin tope)
 }
 
 // True si [aStart,aEnd) se traslapa con [bStart,bEnd).
@@ -112,5 +113,5 @@ export function computeFreeSlots(input: FreeSlotsInput): Date[] {
   })
 
   free.sort((a, b) => a.getTime() - b.getTime())
-  return free.slice(0, settings.max_slots_listed)
+  return free.slice(0, input.maxSlots ?? settings.max_slots_listed)
 }
