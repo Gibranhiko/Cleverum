@@ -33,25 +33,28 @@ export function invalidateAppointmentSettings(clientId: string) {
 export async function getDbBusyForRange(
   clientId: string,
   start: Date,
-  end: Date
+  end: Date,
+  excludeId?: string   // ignora esta cita (al reagendarla, su slot debe verse libre)
 ): Promise<Interval[]> {
-  const { data } = await supabase
+  let query = supabase
     .from('appointments')
-    .select('starts_at, ends_at, status')
+    .select('id, starts_at, ends_at, status')
     .eq('client_id', clientId)
     .neq('status', 'cancelada')
     .gte('starts_at', start.toISOString())
     .lt('starts_at', end.toISOString())
+  if (excludeId) query = query.neq('id', excludeId)
 
+  const { data } = await query
   return (data ?? []).map((r: any) => ({
     start: new Date(r.starts_at),
     end: new Date(r.ends_at),
   }))
 }
 
-export function getDbBusyForDay(clientId: string, dayISO: string, tz: string) {
+export function getDbBusyForDay(clientId: string, dayISO: string, tz: string, excludeId?: string) {
   const b = dayBoundsUtc(dayISO, tz)
-  return getDbBusyForRange(clientId, b.start, b.end)
+  return getDbBusyForRange(clientId, b.start, b.end, excludeId)
 }
 
 export async function getAppointmentById(id: string): Promise<AppointmentRow | null> {
@@ -132,10 +135,10 @@ export async function getUpcomingAppointments(clientId: string, phone: string): 
   return (data ?? []) as AppointmentRow[]
 }
 
-export function getDbBusyForHorizon(clientId: string, fromDayISO: string, settings: AppointmentSettings) {
+export function getDbBusyForHorizon(clientId: string, fromDayISO: string, settings: AppointmentSettings, excludeId?: string) {
   const start = dayBoundsUtc(fromDayISO, settings.timezone).start
   const end = dayBoundsUtc(addDaysISO(fromDayISO, settings.horizon_days), settings.timezone).start
-  return getDbBusyForRange(clientId, start, end)
+  return getDbBusyForRange(clientId, start, end, excludeId)
 }
 
 // ─── Booking con doble escritura (B3 / decisión A2) ──────────
