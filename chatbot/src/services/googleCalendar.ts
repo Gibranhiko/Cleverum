@@ -10,6 +10,10 @@ import {
 
 const TIMEZONE = 'America/Mexico_City'
 
+function sameInterval(a: Interval, b: Interval): boolean {
+  return a.start.getTime() === b.start.getTime() && a.end.getTime() === b.end.getTime()
+}
+
 export interface CalendarEvent {
   summary: string
   description?: string
@@ -157,15 +161,18 @@ export class GoogleCalendarService {
   }
 
   // Horarios libres de un día. `extraBusy` = citas en DB (red de seguridad A1).
+  // `exclude` = intervalo a ignorar (al reagendar, el evento propio de la cita).
   // Lanza si la API falla — el caller decide el fallback (NO fabricar slots, edge #12).
   async getAvailableSlots(
     dayISO: string,
     settings: AppointmentSettings,
     extraBusy: Interval[] = [],
-    now: Date = new Date()
+    now: Date = new Date(),
+    exclude?: Interval
   ): Promise<Date[]> {
     const bounds = dayBoundsUtc(dayISO, settings.timezone)
-    const calendarBusy = await this.getBusyIntervals(bounds.start, bounds.end)
+    let calendarBusy = await this.getBusyIntervals(bounds.start, bounds.end)
+    if (exclude) calendarBusy = calendarBusy.filter(b => !sameInterval(b, exclude))
     return computeFreeSlots({
       dayISO,
       settings,
@@ -182,11 +189,13 @@ export class GoogleCalendarService {
     settings: AppointmentSettings,
     extraBusy: Interval[] = [],
     n = 5,
-    now: Date = new Date()
+    now: Date = new Date(),
+    exclude?: Interval
   ): Promise<string[]> {
     const rangeStart = dayBoundsUtc(fromDayISO, settings.timezone).start
     const rangeEnd = dayBoundsUtc(addDaysISO(fromDayISO, settings.horizon_days), settings.timezone).start
-    const calendarBusy = await this.getBusyIntervals(rangeStart, rangeEnd)
+    let calendarBusy = await this.getBusyIntervals(rangeStart, rangeEnd)
+    if (exclude) calendarBusy = calendarBusy.filter(b => !sameInterval(b, exclude))
     const busy = [...calendarBusy, ...extraBusy]
 
     const days: string[] = []

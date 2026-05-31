@@ -89,6 +89,13 @@ export default function Citas() {
   const [editStatus, setEditStatus] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  // Reagenda
+  const [rescheduling, setRescheduling] = useState(false)
+  const [rdays, setRdays] = useState<{ value: string; label: string }[]>([])
+  const [rday, setRday] = useState('')
+  const [rslots, setRslots] = useState<{ value: string; label: string }[]>([])
+  const [rslot, setRslot] = useState('')
+  const [rloading, setRloading] = useState(false)
 
   useEffect(() => {
     supabase
@@ -147,6 +154,63 @@ export default function Citas() {
     setSelected(a)
     setEditStatus(a.status)
     setEditNotes(a.internal_notes ?? '')
+    setRescheduling(false)
+    setRday(''); setRslot(''); setRslots([]); setRdays([])
+  }
+
+  async function authHeaders(): Promise<Record<string, string> | null> {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { toast.error('Sesión expirada'); return null }
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }
+  }
+
+  async function startReschedule() {
+    if (!selected) return
+    setRescheduling(true); setRday(''); setRslot(''); setRslots([]); setRdays([]); setRloading(true)
+    const headers = await authHeaders()
+    if (!headers) { setRloading(false); return }
+    const res = await fetch(`${CHATBOT_URL}/appointments/${selected.id}/days`, { headers })
+    setRloading(false)
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}))
+      toast.error(b.error ?? 'No se pudieron cargar los días')
+      setRescheduling(false)
+      return
+    }
+    const { days } = await res.json()
+    setRdays(days)
+  }
+
+  async function pickDay(day: string) {
+    if (!selected) return
+    setRday(day); setRslot(''); setRslots([]); setRloading(true)
+    const headers = await authHeaders()
+    if (!headers) { setRloading(false); return }
+    const res = await fetch(`${CHATBOT_URL}/appointments/${selected.id}/slots?day=${day}`, { headers })
+    setRloading(false)
+    if (!res.ok) { toast.error('No se pudieron cargar los horarios'); return }
+    const { slots } = await res.json()
+    setRslots(slots)
+  }
+
+  async function confirmReschedule() {
+    if (!selected || !rslot) return
+    setSaving(true)
+    const headers = await authHeaders()
+    if (!headers) { setSaving(false); return }
+    const res = await fetch(`${CHATBOT_URL}/appointments/${selected.id}/reschedule`, {
+      method: 'POST', headers, body: JSON.stringify({ start: rslot }),
+    })
+    setSaving(false)
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}))
+      toast.error(b.error ?? 'No se pudo reagendar')
+      if (rday) pickDay(rday) // recargar slots por si se ocupó
+      return
+    }
+    toast.success('Cita reagendada')
+    setSelected(null)
+    fetchAppts()
   }
 
   async function save() {
@@ -326,37 +390,99 @@ export default function Citas() {
                 </div>
               )}
 
-              <div>
-                <Label>Estado</Label>
-                <Select value={EDITABLE_STATUS.includes(editStatus) ? editStatus : 'nueva'} onValueChange={setEditStatus}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {EDITABLE_STATUS.map(k => <SelectItem key={k} value={k}>{STATUS[k].label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground mt-1">Para cancelar usa el botón de abajo (libera el horario y borra del calendario).</p>
-              </div>
+              {rescheduling ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Nuevo día</Label>
+                    {rloading && rdays.length === 0 ? (
+                      <p className="text-sm text-muted-foreground mt-1">Cargando días disponibles...</p>
+                    ) : rdays.length === 0 ? (
+                      <p className="text-sm text-muted-foreground mt-1">No hay días con disponibilidad en el horizonte configurado.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {rdays.map(d => (
+                          <button
+                            key={d.value}
+                            onClick={() => pickDay(d.value)}
+                            className={`px-2.5 py-1.5 rounded-lg text-xs border transition-colors ${rday === d.value ? 'bg-violet-600 text-white border-violet-600' : 'bg-muted hover:bg-muted/70 border-transparent'}`}
+                          >
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-              <div>
-                <Label>Notas internas</Label>
-                <textarea
-                  value={editNotes}
-                  onChange={e => setEditNotes(e.target.value)}
-                  rows={3}
-                  className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-                  placeholder="Notas para el equipo (no se envían al cliente)"
-                />
-              </div>
+                  {rday && (
+                    <div>
+                      <Label>Nuevo horario</Label>
+                      {rloading ? (
+                        <p className="text-sm text-muted-foreground mt-1">Cargando horarios...</p>
+                      ) : rslots.length === 0 ? (
+                        <p className="text-sm text-muted-foreground mt-1">No hay horarios libres ese día. Elige otro.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {rslots.map(s => (
+                            <button
+                              key={s.value}
+                              onClick={() => setRslot(s.value)}
+                              className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${rslot === s.value ? 'bg-violet-600 text-white border-violet-600' : 'bg-muted hover:bg-muted/70 border-transparent'}`}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <Label>Estado</Label>
+                    <Select value={EDITABLE_STATUS.includes(editStatus) ? editStatus : 'nueva'} onValueChange={setEditStatus}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {EDITABLE_STATUS.map(k => <SelectItem key={k} value={k}>{STATUS[k].label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">Para cancelar usa el botón de abajo (libera el horario y borra del calendario).</p>
+                  </div>
+
+                  <div>
+                    <Label>Notas internas</Label>
+                    <textarea
+                      value={editNotes}
+                      onChange={e => setEditNotes(e.target.value)}
+                      rows={3}
+                      className="mt-1 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+                      placeholder="Notas para el equipo (no se envían al cliente)"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
           <DialogFooter className="gap-2 sm:justify-between">
-            {selected && selected.status !== 'cancelada' ? (
-              <Button variant="destructive" onClick={cancelar} disabled={saving}>Cancelar cita</Button>
-            ) : <span />}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSelected(null)}>Cerrar</Button>
-              <Button onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
-            </div>
+            {rescheduling ? (
+              <>
+                <Button variant="outline" onClick={() => setRescheduling(false)} disabled={saving}>← Volver</Button>
+                <Button onClick={confirmReschedule} disabled={saving || !rslot}>{saving ? 'Moviendo...' : 'Mover cita'}</Button>
+              </>
+            ) : (
+              <>
+                {selected && selected.status !== 'cancelada' ? (
+                  <Button variant="destructive" onClick={cancelar} disabled={saving}>Cancelar cita</Button>
+                ) : <span />}
+                <div className="flex gap-2">
+                  {selected && selected.status !== 'cancelada' && (
+                    <Button variant="outline" onClick={startReschedule} disabled={saving}>🕐 Reagendar</Button>
+                  )}
+                  <Button variant="outline" onClick={() => setSelected(null)}>Cerrar</Button>
+                  <Button onClick={save} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</Button>
+                </div>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

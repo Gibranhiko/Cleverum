@@ -22,6 +22,7 @@ export default function Conversaciones() {
   const [loading, setLoading] = useState(false)
   const [showAll, setShowAll] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [names, setNames] = useState<Record<string, string>>({})
 
   useEffect(() => {
     supabase
@@ -39,6 +40,7 @@ export default function Conversaciones() {
   useEffect(() => {
     if (!clienteId) return
     fetchSessions()
+    fetchNames()
 
     const channel = supabase
       .channel(`conv-${clienteId}`)
@@ -73,6 +75,21 @@ export default function Conversaciones() {
       if (updated) setSelected(updated)
     }
     setLoading(false)
+  }
+
+  // Mapa teléfono → nombre, de las tablas con datos de cliente (citas + tickets).
+  async function fetchNames() {
+    const [appts, tickets] = await Promise.all([
+      supabase.from('appointments').select('customer_phone, customer_name').eq('client_id', clienteId),
+      supabase.from('tickets').select('customer_phone, customer_name').eq('client_id', clienteId),
+    ])
+    const map: Record<string, string> = {}
+    for (const r of [...(appts.data ?? []), ...(tickets.data ?? [])]) {
+      const phone = (r as any).customer_phone
+      const name = (r as any).customer_name
+      if (phone && name && !map[phone]) map[phone] = name
+    }
+    setNames(map)
   }
 
   async function toggleTakeover(session: Session) {
@@ -139,6 +156,7 @@ export default function Conversaciones() {
             sessions={visibleSessions}
             selected={selected}
             showAll={showAll}
+            names={names}
             onSelect={setSelected}
           />
         </div>
@@ -156,6 +174,7 @@ export default function Conversaciones() {
             key={selected.id}
             session={selected}
             clienteId={clienteId}
+            customerName={names[selected.phone_number]}
             onToggleTakeover={toggleTakeover}
             onToggleBotForUser={toggleBotForUser}
             onMessageSent={fetchSessions}
