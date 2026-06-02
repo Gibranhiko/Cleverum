@@ -26,6 +26,19 @@ import { BotContext, AppointmentSettings, AppointmentRow } from '../types'
 
 const APPOINTMENT_COMPLETE = 'CITA_CONFIRMADA'
 
+// Palabras (exactas) que sacan al usuario de cualquier flujo y muestran el menú.
+const RESET_KEYWORDS = new Set([
+  'menu', 'menú', 'inicio', 'hola', 'buenas', 'buenos dias', 'buenos días',
+  'hi', 'ola', 'salir', 'cancelar', 'regresar', 'volver', 'menu principal',
+])
+
+// Flujo abandonado: si pasan +2h sin actividad, el siguiente mensaje arranca limpio.
+const FLOW_TTL_MS = 2 * 60 * 60 * 1000
+
+// Opción "🏠 Menú" para listas y botones de los flujos (id capturado en handleInfoBot).
+const MENU_ROW = { id: 'menu_home', title: '🏠 Menú' }
+const MENU_BTN = { id: 'menu_home', title: '🏠 Menú' }
+
 function loadPrompt(name: string): string {
   return fs.readFileSync(path.join(__dirname, '..', 'prompts', name), 'utf-8')
 }
@@ -44,10 +57,18 @@ export async function handleInfoBot(ctx: BotContext) {
 
   const lower = text.trim().toLowerCase()
 
-  // Escape global: "menu" resetea cualquier flujo y muestra el menú (sin mascot).
-  if (lower === 'menu' || lower === 'menú') {
+  // Salida global al menú (sin IA): palabra clave exacta o la opción "🏠 Menú".
+  // Se evalúa ANTES de los guards de flujo → siempre saca al usuario de cualquier flujo.
+  if (RESET_KEYWORDS.has(lower) || text === 'menu_home') {
     await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
-    console.log('[InfoBot] menu command → sending menu')
+    console.log('[InfoBot] reset → sending menu')
+    return sendInfoMenu(ctx, false)
+  }
+
+  // TTL: flujo abandonado (>2h sin actividad) → arrancar limpio en el menú.
+  if (session.current_flow && Date.now() - new Date(session.last_message_at).getTime() > FLOW_TTL_MS) {
+    await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
+    console.log('[InfoBot] flow expired (TTL) → sending menu')
     return sendInfoMenu(ctx, false)
   }
 
@@ -304,7 +325,7 @@ async function askService(ctx: BotContext, settings: AppointmentSettings, state:
   const { from, client } = ctx
   const { wa_phone_number_id: pid, wa_access_token: token, id: clientId } = client
 
-  const names = (await fetchServiceNames(clientId)).slice(0, 10) // WA list máx 10
+  const names = (await fetchServiceNames(clientId)).slice(0, 9) // 9 + fila Menú = 10 (máx WA)
 
   // Sin catálogo → fallback a texto abierto
   if (names.length === 0) {
@@ -318,6 +339,7 @@ async function askService(ctx: BotContext, settings: AppointmentSettings, state:
   await updateSession(clientId, from, { current_flow: 'appointment', flow_step: 'collect_service', state: newState })
   await sendList(pid!, token!, from, settings.service_label, 'Elige una opción:', 'Ver opciones', [
     { title: settings.service_label, rows: names.map((n, i) => ({ id: `svc_${i}`, title: n.slice(0, 24) })) },
+    { title: ' ', rows: [MENU_ROW] },
   ])
 }
 
@@ -371,13 +393,10 @@ async function presentSlots(ctx: BotContext, settings: AppointmentSettings, stat
   await updateSession(clientId, from, { current_flow: 'appointment', flow_step: 'picking_slot', state: newState })
 
   const body = `Horarios disponibles para *${fmtDay(dayISO)}*. Elige uno:`
-  if (slots.length <= 3) {
-    await sendButtons(pid, token, from, body, slots.map(s => ({ id: `slot_${s.toISOString()}`, title: fmtTime(s, tz) })))
-  } else {
-    await sendList(pid, token, from, client.company_name ?? 'Citas', body, 'Ver horarios', [
-      { title: 'Horarios', rows: slots.map(s => ({ id: `slot_${s.toISOString()}`, title: fmtTime(s, tz) })) },
-    ])
-  }
+  await sendList(pid, token, from, client.company_name ?? 'Citas', body, 'Ver horarios', [
+    { title: 'Horarios', rows: slots.slice(0, 9).map(s => ({ id: `slot_${s.toISOString()}`, title: fmtTime(s, tz) })) },
+    { title: ' ', rows: [MENU_ROW] },
+  ])
 }
 
 // ─── Paso 2b: ofrecer próximos días con disponibilidad ───────
@@ -413,7 +432,8 @@ async function presentDays(ctx: BotContext, settings: AppointmentSettings, state
 
   const body = 'Elige el día para tu cita:'
   await sendList(pid, token, from, client.company_name ?? 'Citas', body, 'Ver días', [
-    { title: 'Días disponibles', rows: days.map(d => ({ id: `day_${d}`, title: fmtDay(d) })) },
+    { title: 'Días disponibles', rows: days.slice(0, 9).map(d => ({ id: `day_${d}`, title: fmtDay(d) })) },
+    { title: ' ', rows: [MENU_ROW] },
   ])
 }
 
@@ -463,6 +483,7 @@ async function presentConfirm(ctx: BotContext, settings: AppointmentSettings, st
   await sendButtons(pid, token, from, summary, [
     { id: 'confirm_yes', title: '✅ Confirmar' },
     { id: 'confirm_change', title: '🕐 Cambiar horario' },
+    MENU_BTN,
   ])
 }
 
@@ -479,6 +500,7 @@ async function confirmStep(ctx: BotContext, settings: AppointmentSettings) {
     await sendButtons(pid, token, from, 'Por favor confirma o cambia el horario:', [
       { id: 'confirm_yes', title: '✅ Confirmar' },
       { id: 'confirm_change', title: '🕐 Cambiar horario' },
+      MENU_BTN,
     ])
     return
   }
@@ -649,12 +671,13 @@ async function showMyAppointments(ctx: BotContext, settings: AppointmentSettings
   await sendList(pid!, token!, from, 'Mis citas', 'Elige la cita que quieres ver:', 'Ver citas', [
     {
       title: 'Próximas citas',
-      rows: upcoming.slice(0, 10).map(a => ({
+      rows: upcoming.slice(0, 9).map(a => ({
         id: `appt_${a.id}`,
         title: formatInTimeZone(new Date(a.starts_at), tz, "d MMM HH:mm", { locale: es }).slice(0, 24),
         description: a.service ?? undefined,
       })),
     },
+    { title: ' ', rows: [MENU_ROW] },
   ])
 }
 
@@ -674,6 +697,7 @@ async function presentApptActions(ctx: BotContext, settings: AppointmentSettings
 
   const buttons = [{ id: `cancel_${appt.id}`, title: '❌ Cancelar' }]
   if (slotsEnabled) buttons.unshift({ id: `resched_${appt.id}`, title: '🕐 Cambiar horario' })
+  buttons.push(MENU_BTN)
   await sendButtons(pid!, token!, from, body, buttons)
 }
 

@@ -35,10 +35,13 @@ export async function getSession(clientId: string, phone: string): Promise<Sessi
   }
 
   console.log(`[Session] cache miss ${phone} — fetching from DB`)
+  // NO refrescamos last_message_at en la lectura: debe reflejar la última ACTIVIDAD
+  // real (la fijan appendToHistory/updateSession). Así se puede medir inactividad
+  // para el TTL del flujo. En insert, la columna usa su default now().
   const { data, error } = await supabase
     .from('conversation_sessions')
     .upsert(
-      { client_id: clientId, phone_number: phone, last_message_at: new Date().toISOString() },
+      { client_id: clientId, phone_number: phone },
       { onConflict: 'client_id,phone_number', ignoreDuplicates: false }
     )
     .select()
