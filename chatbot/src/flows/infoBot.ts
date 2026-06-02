@@ -59,10 +59,13 @@ export async function handleInfoBot(ctx: BotContext) {
 
   // Salida global al menú (sin IA): palabra clave exacta o la opción "🏠 Menú".
   // Se evalúa ANTES de los guards de flujo → siempre saca al usuario de cualquier flujo.
+  // Si es la primera vez que escribe (historial vacío), igual mostramos el mascot:
+  // un "hola" inicial es a la vez saludo Y palabra clave, no debe perder el intro.
   if (RESET_KEYWORDS.has(lower) || text === 'menu_home') {
+    const isFirst = (session.history ?? []).length === 0
     await updateSession(clientId, from, { current_flow: null, flow_step: null, state: {} })
-    console.log('[InfoBot] reset → sending menu')
-    return sendInfoMenu(ctx, false)
+    console.log(`[InfoBot] reset → sending menu (first=${isFirst})`)
+    return sendInfoMenu(ctx, isFirst)
   }
 
   // TTL: flujo abandonado (>2h sin actividad) → arrancar limpio en el menú.
