@@ -4,9 +4,12 @@ import { ClientRow } from '../types'
 
 /**
  * Manda la imagen del mascot por media_id (entrega rápida y en orden). Sube la
- * imagen 1 vez por cliente y cachea el media_id en clients.mascot_media_id. Si
- * el media_id está expirado/inválido, re-sube una vez. Último recurso: manda
- * por link (orden no garantizado, pero al menos llega).
+ * imagen a WhatsApp y cachea el media_id + la URL con la que se subió
+ * (clients.mascot_media_id / mascot_media_url).
+ *
+ * Auto-sanación: re-sube si no hay media_id, si el media_id está expirado, o si
+ * la imagen cambió (mascot_media_url !== mascot_image_url actual). Último recurso:
+ * manda por link.
  *
  * Compartido por el bot servicios y el bot informativo.
  */
@@ -16,13 +19,19 @@ export async function sendMascotGreeting(client: ClientRow, from: string, greeti
 
   async function freshUpload(): Promise<string> {
     const mediaId = await uploadMedia(pid!, token!, imageUrl)
-    await supabase.from('clients').update({ mascot_media_id: mediaId }).eq('id', clientId)
+    await supabase
+      .from('clients')
+      .update({ mascot_media_id: mediaId, mascot_media_url: imageUrl })
+      .eq('id', clientId)
     client.mascot_media_id = mediaId
+    client.mascot_media_url = imageUrl
     return mediaId
   }
 
   try {
-    const mediaId = client.mascot_media_id ?? (await freshUpload())
+    // Re-subir si: no hay media_id, o la imagen cambió desde la última subida.
+    const needsUpload = !client.mascot_media_id || client.mascot_media_url !== imageUrl
+    const mediaId = needsUpload ? await freshUpload() : client.mascot_media_id!
     try {
       await sendImageById(pid!, token!, from, mediaId, greeting)
     } catch {
