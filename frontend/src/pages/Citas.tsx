@@ -394,7 +394,7 @@ export default function Citas() {
               {rescheduling ? (
                 <div className="space-y-3">
                   {rdays.length === 0 && !rloading ? (
-                    <p className="text-sm text-muted-foreground">No hay días con disponibilidad en el horizonte configurado.</p>
+                    <p className="text-sm text-muted-foreground">No hay días disponibles en las próximas fechas.</p>
                   ) : (
                     <>
                       <div>
