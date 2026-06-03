@@ -20,6 +20,7 @@ export interface ClientRow {
   mascot_name: string | null
   mascot_image_url: string | null
   mascot_media_id: string | null
+  mascot_media_url: string | null   // URL con la que se subió el media_id (para detectar cambios)
 }
 
 export interface TicketRow {

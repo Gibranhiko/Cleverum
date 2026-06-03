@@ -102,7 +102,9 @@ export default function ClienteModal({ open, cliente, onClose, onSaved }: Props)
       return
     }
 
-    // Cache busting via timestamp query — el browser y WhatsApp ven la nueva imagen
+    // Cache busting via timestamp query: refresca el preview del browser Y hace que
+    // la URL cambie, lo cual el bot detecta (mascot_media_url !== nueva URL) para
+    // re-subir la imagen nueva a WhatsApp (manda por media_id, no por URL — ver lib/mascot.ts).
     const { data: { publicUrl } } = supabase.storage.from('services').getPublicUrl(path)
     set('mascot_image_url', `${publicUrl}?v=${Date.now()}`)
     setUploadingMascot(false)
