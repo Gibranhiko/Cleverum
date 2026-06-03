@@ -175,6 +175,11 @@ async function processMessage(message: any, phoneNumberId: string) {
   }
 
   const session = await getSession(client.id, from)
+
+  // Guardar SIEMPRE el mensaje entrante del cliente (antes de los guards), para que
+  // aparezca en el panel aunque el bot no lo procese (takeover, bot silenciado).
+  await appendToHistory(client.id, from, 'user', displayText)
+
   if (session.bot_disabled_for_user) {
     console.warn(`[Webhook] Bot disabled for user ${from}`)
     return
@@ -203,8 +208,6 @@ async function processMessage(message: any, phoneNumberId: string) {
       return
     }
   }
-
-  await appendToHistory(client.id, from, 'user', displayText)
 
   const botConfig = await getCachedBotConfig(client.id)
   const ctx = { text, from, client, session, botConfig }
