@@ -18,7 +18,9 @@ export default function Conversaciones() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteId, setClienteId] = useState('')
   const [sessions, setSessions] = useState<Session[]>([])
-  const [selected, setSelected] = useState<Session | null>(null)
+  // Guardamos solo el ID; el objeto se deriva de `sessions` para que el realtime
+  // refresque la conversación abierta automáticamente (evita stale closure).
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [showAll, setShowAll] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
@@ -68,12 +70,7 @@ export default function Conversaciones() {
       setLoading(false)
       return
     }
-    const list = (data ?? []) as Session[]
-    setSessions(list)
-    if (selected) {
-      const updated = list.find(s => s.id === selected.id)
-      if (updated) setSelected(updated)
-    }
+    setSessions((data ?? []) as Session[])
     setLoading(false)
   }
 
@@ -119,12 +116,15 @@ export default function Conversaciones() {
     ? sessions
     : sessions.filter(s => new Date(s.last_message_at).getTime() > cutoff)
 
+  // Sesión abierta, derivada de la lista (siempre fresca tras realtime).
+  const selected = sessions.find(s => s.id === selectedId) ?? null
+
   return (
     <div className="flex gap-4 h-[calc(100vh-8rem)]">
       {/* Panel izquierdo */}
       <div className="w-64 shrink-0 flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <Select value={clienteId} onValueChange={v => { setClienteId(v); setSelected(null) }}>
+          <Select value={clienteId} onValueChange={v => { setClienteId(v); setSelectedId(null) }}>
             <SelectTrigger className="flex-1">
               <SelectValue placeholder="Cliente" />
             </SelectTrigger>
@@ -157,7 +157,7 @@ export default function Conversaciones() {
             selected={selected}
             showAll={showAll}
             names={names}
-            onSelect={setSelected}
+            onSelect={s => setSelectedId(s.id)}
           />
         </div>
       </div>

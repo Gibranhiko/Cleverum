@@ -11,6 +11,11 @@ import { ClientRow, BotConfigRow } from '../types'
 
 const COMMANDS = new Set(['botoff', 'status', 'boton'])
 
+// Takeover humano: si una conversación lleva >24h sin actividad, se devuelve al
+// bot automáticamente (evita takeovers olvidados que dejan al usuario sin respuesta).
+// 24h = ventana de atención de WhatsApp; pasada esa, la conversación ya está "cerrada".
+const TAKEOVER_TTL_MS = 24 * 60 * 60 * 1000
+
 const MEDIA_LABELS: Record<string, string> = {
   image: '📷 [imagen]',
   audio: '🎤 [audio]',
@@ -185,8 +190,16 @@ async function processMessage(message: any, phoneNumberId: string) {
     return
   }
   if (session.human_takeover) {
-    console.warn(`[Webhook] Human takeover active for ${from}`)
-    return
+    // TTL de takeover: si lleva >24h sin actividad, lo devolvemos al bot solo
+    // (un takeover olvidado dejaría al usuario sin respuesta para siempre).
+    if (Date.now() - new Date(session.last_message_at).getTime() > TAKEOVER_TTL_MS) {
+      console.log(`[Webhook] Takeover expired (TTL) for ${from} → returning to bot`)
+      await updateSession(client.id, from, { human_takeover: false })
+      // no return: el bot procesa este mensaje (su flujo viejo ya expiró por su propio TTL)
+    } else {
+      console.warn(`[Webhook] Human takeover active for ${from}`)
+      return
+    }
   }
 
   // Handle pending opt-out confirmation
