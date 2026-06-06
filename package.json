@@ -30,6 +30,6 @@
     "path-to-regexp": "0.1.13"
   },
   "dependencies": {
-    "concurrently": "^9.1.2"
+    "concurrently": "^10.0.3"
   }
 }
