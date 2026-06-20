@@ -10,17 +10,17 @@
     "test": "node --import tsx --test \"src/**/*.test.ts\""
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.4",
-    "axios": "^1.16.1",
+    "@supabase/supabase-js": "^2.108.2",
+    "axios": "^1.18.0",
     "date-fns": "^3.3.1",
     "date-fns-tz": "^3.2.0",
     "dotenv": "^16.4.2",
     "express": "^4.21.3",
     "express-rate-limit": "^8.3.2",
-    "form-data": "^4.0.5",
-    "google-auth-library": "^10.2.0",
+    "form-data": "^4.0.6",
+    "google-auth-library": "^10.7.0",
     "googleapis": "^173.0.0",
-    "node-cron": "^4.2.1",
+    "node-cron": "^4.4.1",
     "openai": "^4.27.0",
     "cors": "^2.8.5"
   },
@@ -28,7 +28,7 @@
     "@types/express": "^4.17.0",
     "@types/node": "^20.11.30",
     "nodemon": "^3.1.0",
-    "tsx": "^4.7.1",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   }
 }
